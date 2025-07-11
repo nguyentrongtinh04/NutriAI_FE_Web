@@ -2,10 +2,29 @@ import React from "react";
 
 export default function Welcome() {
   return (
-    <div className="min-h-screen w-full font-sans overflow-x-hidden bg-gradient-to-br from-[#f3faff] via-[#d9ecf9] to-[#c2dbf1] relative">
-      
-      {/* Logo riêng */}
-      <div className="absolute left-6 z-50">
+    <div className="min-h-screen w-full font-sans overflow-x-hidden relative bg-gradient-to-br from-[#e8f5ff] via-[#d2e6fb] to-[#bcdaf7]">
+
+      {/* Animated Aurora Blobs */}
+      <div className="absolute inset-0 -z-10 overflow-hidden">
+        <div className="absolute bg-blue-300/30 w-[500px] h-[500px] rounded-full blur-[120px] top-0 left-[-100px] animate-[ping_8s_infinite]" />
+        <div className="absolute bg-purple-100/30 w-[300px] h-[300px] rounded-full blur-[100px] bottom-10 right-0 animate-[pulse_10s_infinite]" />
+        <div className="absolute bg-white/30 w-[200px] h-[200px] rounded-full blur-[100px] top-1/2 left-[40%] animate-[spin_20s_linear_infinite]" />
+      </div>
+      {/* Clay-style Floating Icons */}
+      <div className="absolute w-full h-full pointer-events-none z-10 select-none">
+        <span className="text-[42px] absolute top-[15%] left-[10%] ">🥑</span>
+        <span className="text-[42px] absolute top-[45%] left-[55%] ">🥗</span>
+        <span className="text-[42px] absolute top-[18%] left-[40%] ">🏃‍♂️</span>
+        <span className="text-[34px] absolute top-[60%] left-[30%] ">💪</span>
+        <span className="text-[42px] absolute top-[20%] left-[25%] ">🏊‍♂️</span>
+        <span className="text-[42px] absolute top-[80%] left-[35%] ">🚴‍♂️</span>
+        <span className="text-[42px] absolute top-[60%] left-[2%] ">🏋️‍♂️</span>
+        <span className="text-[42px] absolute top-[75%] left-[50%] ">🥕</span>
+        <span className="text-[42px] absolute top-[85%] left-[15%] ">🩺</span>
+      </div>
+
+      {/* Logo + tagline */}
+      <div className="absolute left-6 z-50 flex flex-col items-start">
         <img
           src="/src/assets/logo.png"
           alt="Logo"
@@ -14,27 +33,27 @@ export default function Welcome() {
       </div>
 
       {/* Header */}
-      <header className="flex justify-end items-center max-w-7xl mx-auto px-6 py-8">
-        <nav className="hidden md:flex gap-6 text-[#1c3c64] text-sm font-semibold mr-auto ml-40">
+      <header className="flex justify-end items-center max-w-7xl mx-auto px-6 py-8 z-20 relative">
+        <nav className="hidden md:flex gap-10 text-[#1c3c64] text-l font-bold mr-auto ml-40">
           <a href="#" className="hover:text-[#347bbd] transition">Home</a>
           <a href="#" className="hover:text-[#347bbd] transition">Nutrition</a>
           <a href="#" className="hover:text-[#347bbd] transition">Advice</a>
         </nav>
 
-        <div className="flex gap-2">
-          <button className="px-4 py-1 rounded-full border border-[#90c2e7] text-sm text-[#1c3c64] hover:bg-[#d5eefd] transition">
+        <div className="flex gap-4">
+          <button className="px-4 py-1 rounded-full border border-[#90c2e7] text-l text-[#1c3c64] hover:bg-[#d5eefd] transition">
             Sign In
           </button>
-          <button className="px-5 py-1 rounded-full bg-[#2a78b8] text-white text-sm hover:bg-[#1c5a94] transition">
+          <button className="px-5 py-1 rounded-full bg-[#2a78b8] text-white text-l hover:bg-[#1c5a94] transition">
             Sign Up
           </button>
         </div>
       </header>
 
       {/* Main Section */}
-      <main className="flex flex-col-reverse md:flex-row items-center justify-between max-w-7xl mx-auto px-6 py-12 gap-10 md:gap-20">
-        {/* Glassmorphism Box */}
-        <div className="max-w-xl w-full backdrop-blur-lg bg-white/50 border border-white/30 rounded-3xl p-8 shadow-xl text-center md:text-left">
+      <main className="flex flex-col-reverse md:flex-row items-center justify-between max-w-7xl mx-auto px-6 py-12 gap-10 md:gap-20 z-20 relative">
+        {/* Box */}
+        <div className="max-w-xl w-full bg-white/60 backdrop-blur-xl border border-white/30 rounded-3xl p-8 shadow-[8px_8px_20px_rgba(0,0,0,0.05)] text-center md:text-left">
           <h1 className="text-4xl sm:text-5xl font-extrabold text-[#1c3c64] leading-tight">
             Welcome to <span className="text-[#2a78b8]">NutriAI</span>
           </h1>
