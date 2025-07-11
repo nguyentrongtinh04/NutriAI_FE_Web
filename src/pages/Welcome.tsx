@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 
 export default function Welcome() {
   return (
@@ -41,9 +42,12 @@ export default function Welcome() {
         </nav>
 
         <div className="flex gap-4">
-          <button className="px-4 py-1 rounded-full border border-[#90c2e7] text-l text-[#1c3c64] hover:bg-[#d5eefd] transition">
+          <Link
+            to="/login"
+            className="px-4 py-1 rounded-full border border-[#90c2e7] text-l text-[#1c3c64] hover:bg-[#d5eefd] transition"
+          >
             Sign In
-          </button>
+          </Link>
           <button className="px-5 py-1 rounded-full bg-[#2a78b8] text-white text-l hover:bg-[#1c5a94] transition">
             Sign Up
           </button>
