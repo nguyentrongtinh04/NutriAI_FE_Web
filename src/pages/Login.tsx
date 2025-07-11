@@ -6,7 +6,7 @@ export default function Login() {
     const [password, setPassword] = useState("");
     const [errorMsg, setErrorMsg] = useState("");
     const navigate = useNavigate();
-    
+
     const handleLogin = (e: React.FormEvent) => {
         e.preventDefault();
         if (!username || !password) {
@@ -85,7 +85,10 @@ export default function Login() {
                             Google Login
                         </button>
 
-                        <p className="text-sm text-right text-[#224665] mt-4 hover:underline cursor-pointer">
+                        <p
+                            onClick={() => navigate("/forgot-password")}
+                            className="text-sm text-right text-[#224665] mt-4 hover:underline cursor-pointer"
+                        >
                             Forgot password?
                         </p>
                     </form>
