@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { User, Phone, Lock, Eye, EyeOff, Sparkles, UserPlus, LogIn, ArrowRight } from "lucide-react";
+import { User, Phone, Lock, Eye, EyeOff, Sparkles, UserPlus, LogIn, ArrowRight, Mail, Users } from "lucide-react";
 
 export default function Register() {
     const navigate = useNavigate();
@@ -9,19 +9,23 @@ export default function Register() {
 
     const [form, setForm] = useState({
         fullName: "",
+        email: "",
         phone: "",
+        gender: "",
         password: "",
         confirmPassword: "",
     });
 
     const [errors, setErrors] = useState({
         fullName: "",
+        email: "",
         phone: "",
+        gender: "",
         password: "",
         confirmPassword: "",
     });
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
 
         // Prevent non-numeric input in phone field
@@ -36,7 +40,9 @@ export default function Register() {
 
         const newErrors: typeof errors = {
             fullName: "",
+            email: "",
             phone: "",
+            gender: "",
             password: "",
             confirmPassword: "",
         };
@@ -48,11 +54,24 @@ export default function Register() {
             isValid = false;
         }
 
+        if (!form.email.trim()) {
+            newErrors.email = "Email is required";
+            isValid = false;
+        } else if (!/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/.test(form.email)) {
+            newErrors.email = "Invalid email address";
+            isValid = false;
+        }
+
         if (!form.phone.trim()) {
             newErrors.phone = "Phone number is required";
             isValid = false;
         } else if (!/^\d{10,}$/.test(form.phone)) {
             newErrors.phone = "Phone must be at least 10 digits";
+            isValid = false;
+        }
+
+        if (!form.gender) {
+            newErrors.gender = "Please select your gender";
             isValid = false;
         }
 
@@ -136,7 +155,7 @@ export default function Register() {
             <div className="relative z-10 w-full max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-center justify-center gap-12">
                 
                 {/* Left Side Registration Form */}
-                <div className="w-full md:w-1/2 max-w-md">
+                <div className="w-full lg:w-2/3 max-w-4xl">
                     {/* Enhanced Glowing Border */}
                     <div className="absolute -inset-3 bg-gradient-to-r from-cyan-400 via-blue-500 to-cyan-400 rounded-3xl blur-xl opacity-60 animate-pulse"></div>
                     <div className="absolute -inset-2 bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-500 rounded-3xl blur-lg opacity-40 animate-pulse delay-500"></div>
@@ -150,7 +169,7 @@ export default function Register() {
                                 <div className="absolute -inset-2 bg-gradient-to-r from-blue-400/40 via-cyan-300/50 to-blue-500/40 rounded-full blur-xl animate-pulse"></div>
                                 <div className="absolute -inset-1 bg-white/30 rounded-full blur-lg animate-pulse delay-500"></div>
                                 <img 
-                                    src="/src/assets/logo.png" 
+                                     src="/src/assets/logo.png" 
                                     alt="NutriAI Logo" 
                                     className="relative w-25 h-20 object-contain rounded-full drop-shadow-2xl filter brightness-110 contrast-110 saturate-110" 
                                 />
@@ -166,127 +185,215 @@ export default function Register() {
                             </div>
                         </div>
 
-                        <form onSubmit={handleSubmit} className="space-y-6">
-                            {/* Enhanced Full Name Field */}
-                            <div className="relative group">
-                                <div className="absolute -inset-1 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-xl blur opacity-25 group-focus-within:opacity-50 transition duration-300"></div>
-                                <div className="relative">
-                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                        <User className="h-5 w-5 text-blue-500 group-focus-within:text-cyan-500 transition-colors animate-pulse" />
+                        <form onSubmit={handleSubmit}>
+                            {/* Two Column Form Layout */}
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                {/* Left Column: Full Name, Email, Phone */}
+                                <div className="space-y-6">
+                                    {/* Enhanced Full Name Field */}
+                                    <div className="relative group">
+                                        <div className="absolute -inset-1 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-xl blur opacity-25 group-focus-within:opacity-50 transition duration-300"></div>
+                                        <div className="relative">
+                                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                                <User className="h-5 w-5 text-blue-500 group-focus-within:text-cyan-500 transition-colors animate-pulse" />
+                                            </div>
+                                            <input
+                                                type="text"
+                                                name="fullName"
+                                                placeholder="Full Name"
+                                                value={form.fullName}
+                                                onChange={handleChange}
+                                                className={`w-full pl-12 pr-4 py-4 bg-blue-50/70 border-2 ${errors.fullName ? 'border-red-400' : 'border-blue-200'} rounded-xl text-blue-900 placeholder-blue-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-400 focus:bg-white/90 transition-all duration-300 backdrop-blur-sm`}
+                                            />
+                                            {/* Tooltip Error */}
+                                            {errors.fullName && (
+                                                <div className="absolute -top-2 right-4 z-10">
+                                                    <div className="relative">
+                                                        <div className="bg-red-500 text-white text-xs px-3 py-2 rounded-lg shadow-lg animate-pulse">
+                                                            {errors.fullName}
+                                                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-red-500"></div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
-                                    <input
-                                        type="text"
-                                        name="fullName"
-                                        placeholder="Full Name"
-                                        value={form.fullName}
-                                        onChange={handleChange}
-                                        className="w-full pl-12 pr-4 py-4 bg-blue-50/70 border-2 border-blue-200 rounded-xl text-blue-900 placeholder-blue-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-400 focus:bg-white/90 transition-all duration-300 backdrop-blur-sm"
-                                    />
-                                </div>
-                                {errors.fullName && (
-                                    <div className="relative mt-2">
-                                        <div className="absolute -inset-1 bg-gradient-to-r from-red-400 to-pink-400 rounded-lg blur opacity-30 animate-pulse"></div>
-                                        <p className="relative bg-red-50/90 border-2 border-red-200 rounded-lg p-2 text-red-600 text-sm backdrop-blur-sm">
-                                            {errors.fullName}
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
 
-                            {/* Enhanced Phone Field */}
-                            <div className="relative group">
-                                <div className="absolute -inset-1 bg-gradient-to-r from-cyan-400 to-blue-400 rounded-xl blur opacity-25 group-focus-within:opacity-50 transition duration-300"></div>
-                                <div className="relative">
-                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                        <Phone className="h-5 w-5 text-blue-500 group-focus-within:text-cyan-500 transition-colors animate-pulse" />
+                                    {/* Enhanced Email Field */}
+                                    <div className="relative group">
+                                        <div className="absolute -inset-1 bg-gradient-to-r from-cyan-400 to-blue-400 rounded-xl blur opacity-25 group-focus-within:opacity-50 transition duration-300"></div>
+                                        <div className="relative">
+                                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                                <Mail className="h-5 w-5 text-blue-500 group-focus-within:text-cyan-500 transition-colors animate-pulse" />
+                                            </div>
+                                            <input
+                                                type="email"
+                                                name="email"
+                                                placeholder="Email"
+                                                value={form.email}
+                                                onChange={handleChange}
+                                                className={`w-full pl-12 pr-4 py-4 bg-blue-50/70 border-2 ${errors.email ? 'border-red-400' : 'border-blue-200'} rounded-xl text-blue-900 placeholder-blue-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-400 focus:bg-white/90 transition-all duration-300 backdrop-blur-sm`}
+                                            />
+                                            {/* Tooltip Error */}
+                                            {errors.email && (
+                                                <div className="absolute -top-2 right-4 z-10">
+                                                    <div className="relative">
+                                                        <div className="bg-red-500 text-white text-xs px-3 py-2 rounded-lg shadow-lg animate-pulse whitespace-nowrap">
+                                                            {errors.email}
+                                                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-red-500"></div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
-                                    <input
-                                        type="text"
-                                        name="phone"
-                                        placeholder="Phone Number"
-                                        value={form.phone}
-                                        onChange={handleChange}
-                                        className="w-full pl-12 pr-4 py-4 bg-blue-50/70 border-2 border-blue-200 rounded-xl text-blue-900 placeholder-blue-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-400 focus:bg-white/90 transition-all duration-300 backdrop-blur-sm"
-                                    />
-                                </div>
-                                {errors.phone && (
-                                    <div className="relative mt-2">
-                                        <div className="absolute -inset-1 bg-gradient-to-r from-red-400 to-pink-400 rounded-lg blur opacity-30 animate-pulse"></div>
-                                        <p className="relative bg-red-50/90 border-2 border-red-200 rounded-lg p-2 text-red-600 text-sm backdrop-blur-sm">
-                                            {errors.phone}
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
 
-                            {/* Enhanced Password Field */}
-                            <div className="relative group">
-                                <div className="absolute -inset-1 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-xl blur opacity-25 group-focus-within:opacity-50 transition duration-300"></div>
-                                <div className="relative">
-                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                        <Lock className="h-5 w-5 text-blue-500 group-focus-within:text-cyan-500 transition-colors animate-pulse" />
+                                    {/* Enhanced Phone Field */}
+                                    <div className="relative group">
+                                        <div className="absolute -inset-1 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-xl blur opacity-25 group-focus-within:opacity-50 transition duration-300"></div>
+                                        <div className="relative">
+                                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                                <Phone className="h-5 w-5 text-blue-500 group-focus-within:text-cyan-500 transition-colors animate-pulse" />
+                                            </div>
+                                            <input
+                                                type="text"
+                                                name="phone"
+                                                placeholder="Phone"
+                                                value={form.phone}
+                                                onChange={handleChange}
+                                                className={`w-full pl-12 pr-4 py-4 bg-blue-50/70 border-2 ${errors.phone ? 'border-red-400' : 'border-blue-200'} rounded-xl text-blue-900 placeholder-blue-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-400 focus:bg-white/90 transition-all duration-300 backdrop-blur-sm`}
+                                            />
+                                            {/* Tooltip Error */}
+                                            {errors.phone && (
+                                                <div className="absolute -top-2 right-4 z-10">
+                                                    <div className="relative">
+                                                        <div className="bg-red-500 text-white text-xs px-3 py-2 rounded-lg shadow-lg animate-pulse whitespace-nowrap">
+                                                            {errors.phone}
+                                                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-red-500"></div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
-                                    <input
-                                        type={showPassword ? "text" : "password"}
-                                        name="password"
-                                        placeholder="Password"
-                                        value={form.password}
-                                        onChange={handleChange}
-                                        className="w-full pl-12 pr-12 py-4 bg-blue-50/70 border-2 border-blue-200 rounded-xl text-blue-900 placeholder-blue-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-400 focus:bg-white/90 transition-all duration-300 backdrop-blur-sm"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute inset-y-0 right-0 pr-4 flex items-center text-blue-500 hover:text-cyan-500 transition-colors"
-                                    >
-                                        {showPassword ? <EyeOff className="h-5 w-5 animate-pulse" /> : <Eye className="h-5 w-5 animate-pulse" />}
-                                    </button>
                                 </div>
-                                {errors.password && (
-                                    <div className="relative mt-2">
-                                        <div className="absolute -inset-1 bg-gradient-to-r from-red-400 to-pink-400 rounded-lg blur opacity-30 animate-pulse"></div>
-                                        <p className="relative bg-red-50/90 border-2 border-red-200 rounded-lg p-2 text-red-600 text-sm backdrop-blur-sm">
-                                            {errors.password}
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
 
-                            {/* Enhanced Confirm Password Field */}
-                            <div className="relative group">
-                                <div className="absolute -inset-1 bg-gradient-to-r from-cyan-400 to-blue-400 rounded-xl blur opacity-25 group-focus-within:opacity-50 transition duration-300"></div>
-                                <div className="relative">
-                                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                        <Lock className="h-5 w-5 text-blue-500 group-focus-within:text-cyan-500 transition-colors animate-pulse" />
+                                {/* Right Column: Gender, Password, Confirm Password */}
+                                <div className="space-y-6">
+                                    {/* Enhanced Gender Field */}
+                                    <div className="relative group">
+                                        <div className="absolute -inset-1 bg-gradient-to-r from-cyan-400 to-blue-400 rounded-xl blur opacity-25 group-focus-within:opacity-50 transition duration-300"></div>
+                                        <div className="relative">
+                                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                                <Users className="h-5 w-5 text-blue-500 group-focus-within:text-cyan-500 transition-colors animate-pulse" />
+                                            </div>
+                                            <select
+                                                name="gender"
+                                                value={form.gender}
+                                                onChange={handleChange}
+                                                className={`w-full pl-12 pr-4 py-4 bg-blue-50/70 border-2 ${errors.gender ? 'border-red-400' : 'border-blue-200'} rounded-xl text-blue-900 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-400 focus:bg-white/90 transition-all duration-300 backdrop-blur-sm appearance-none cursor-pointer`}
+                                            >
+                                                <option value="" className="text-blue-400">Select Gender</option>
+                                                <option value="male" className="text-blue-900">Male</option>
+                                                <option value="female" className="text-blue-900">Female</option>
+                                                <option value="other" className="text-blue-900">Other</option>
+                                            </select>
+                                            {/* Custom dropdown arrow */}
+                                            <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                                                <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                </svg>
+                                            </div>
+                                            {/* Tooltip Error */}
+                                            {errors.gender && (
+                                                <div className="absolute -top-2 right-4 z-10">
+                                                    <div className="relative">
+                                                        <div className="bg-red-500 text-white text-xs px-3 py-2 rounded-lg shadow-lg animate-pulse whitespace-nowrap">
+                                                            {errors.gender}
+                                                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-red-500"></div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
-                                    <input
-                                        type={showConfirmPassword ? "text" : "password"}
-                                        name="confirmPassword"
-                                        placeholder="Confirm Password"
-                                        value={form.confirmPassword}
-                                        onChange={handleChange}
-                                        className="w-full pl-12 pr-12 py-4 bg-blue-50/70 border-2 border-blue-200 rounded-xl text-blue-900 placeholder-blue-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-400 focus:bg-white/90 transition-all duration-300 backdrop-blur-sm"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                        className="absolute inset-y-0 right-0 pr-4 flex items-center text-blue-500 hover:text-cyan-500 transition-colors"
-                                    >
-                                        {showConfirmPassword ? <EyeOff className="h-5 w-5 animate-pulse" /> : <Eye className="h-5 w-5 animate-pulse" />}
-                                    </button>
+
+                                    {/* Enhanced Password Field */}
+                                    <div className="relative group">
+                                        <div className="absolute -inset-1 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-xl blur opacity-25 group-focus-within:opacity-50 transition duration-300"></div>
+                                        <div className="relative">
+                                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                                <Lock className="h-5 w-5 text-blue-500 group-focus-within:text-cyan-500 transition-colors animate-pulse" />
+                                            </div>
+                                            <input
+                                                type={showPassword ? "text" : "password"}
+                                                name="password"
+                                                placeholder="Password"
+                                                value={form.password}
+                                                onChange={handleChange}
+                                                className={`w-full pl-12 pr-12 py-4 bg-blue-50/70 border-2 ${errors.password ? 'border-red-400' : 'border-blue-200'} rounded-xl text-blue-900 placeholder-blue-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-400 focus:bg-white/90 transition-all duration-300 backdrop-blur-sm`}
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowPassword(!showPassword)}
+                                                className="absolute inset-y-0 right-0 pr-4 flex items-center text-blue-500 hover:text-cyan-500 transition-colors"
+                                            >
+                                                {showPassword ? <EyeOff className="h-5 w-5 animate-pulse" /> : <Eye className="h-5 w-5 animate-pulse" />}
+                                            </button>
+                                            {/* Tooltip Error */}
+                                            {errors.password && (
+                                                <div className="absolute -top-2 right-16 z-10">
+                                                    <div className="relative">
+                                                        <div className="bg-red-500 text-white text-xs px-3 py-2 rounded-lg shadow-lg animate-pulse whitespace-nowrap">
+                                                            {errors.password}
+                                                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-red-500"></div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Enhanced Confirm Password Field */}
+                                    <div className="relative group">
+                                        <div className="absolute -inset-1 bg-gradient-to-r from-cyan-400 to-blue-400 rounded-xl blur opacity-25 group-focus-within:opacity-50 transition duration-300"></div>
+                                        <div className="relative">
+                                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                                <Lock className="h-5 w-5 text-blue-500 group-focus-within:text-cyan-500 transition-colors animate-pulse" />
+                                            </div>
+                                            <input
+                                                type={showConfirmPassword ? "text" : "password"}
+                                                name="confirmPassword"
+                                                placeholder="Confirm Password"
+                                                value={form.confirmPassword}
+                                                onChange={handleChange}
+                                                className={`w-full pl-12 pr-12 py-4 bg-blue-50/70 border-2 ${errors.confirmPassword ? 'border-red-400' : 'border-blue-200'} rounded-xl text-blue-900 placeholder-blue-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-400 focus:bg-white/90 transition-all duration-300 backdrop-blur-sm`}
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                                className="absolute inset-y-0 right-0 pr-4 flex items-center text-blue-500 hover:text-cyan-500 transition-colors"
+                                            >
+                                                {showConfirmPassword ? <EyeOff className="h-5 w-5 animate-pulse" /> : <Eye className="h-5 w-5 animate-pulse" />}
+                                            </button>
+                                            {/* Tooltip Error */}
+                                            {errors.confirmPassword && (
+                                                <div className="absolute -top-2 right-16 z-10">
+                                                    <div className="relative">
+                                                        <div className="bg-red-500 text-white text-xs px-3 py-2 rounded-lg shadow-lg animate-pulse whitespace-nowrap">
+                                                            {errors.confirmPassword}
+                                                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-red-500"></div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
-                                {errors.confirmPassword && (
-                                    <div className="relative mt-2">
-                                        <div className="absolute -inset-1 bg-gradient-to-r from-red-400 to-pink-400 rounded-lg blur opacity-30 animate-pulse"></div>
-                                        <p className="relative bg-red-50/90 border-2 border-red-200 rounded-lg p-2 text-red-600 text-sm backdrop-blur-sm">
-                                            {errors.confirmPassword}
-                                        </p>
-                                    </div>
-                                )}
                             </div>
 
                             {/* Enhanced Buttons */}
-                            <div className="space-y-4">
+                            <div className="space-y-4 mt-8">
                                 {/* Register Button */}
                                 <div className="relative">
                                     <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-600 rounded-xl blur opacity-60 animate-pulse"></div>
@@ -296,7 +403,7 @@ export default function Register() {
                                     >
                                         <span className="relative z-10 flex items-center justify-center gap-2">
                                             <UserPlus className="w-5 h-5 animate-pulse" />
-                                            Register
+                                            Sign Up
                                         </span>
                                         <div className="absolute inset-0 bg-gradient-to-r from-cyan-600 via-blue-600 to-cyan-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                                         <div className="absolute inset-0 bg-white/20 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
@@ -317,7 +424,7 @@ export default function Register() {
                                                 <path fill="#4caf50" d="M24 44c5.9 0 10.9-1.9 14.5-5.2l-6.7-5.5c-2 1.3-4.6 2.1-7.8 2.1a12 12 0 0 1-11.3-8l-6.7 5.1C9.9 39.7 16.5 44 24 44z" />
                                                 <path fill="#1565c0" d="M43.6 20.5H42V20H24v8h11.3c-0.8 2.4-2.3 4.5-4.5 6l0.1-0.1 6.7 5.5c-0.5.5 7.4-5.4 7.4-15.9 0-1.2-.1-2.1-.4-3.5z" />
                                             </svg>
-                                            Register with Google
+                                            Sign Up with Google
                                         </span>
                                     </button>
                                 </div>
@@ -330,7 +437,7 @@ export default function Register() {
                                     onClick={() => navigate("/login")}
                                     className="text-blue-500 hover:text-cyan-500 text-sm transition-colors duration-300 underline decoration-blue-400 decoration-2 underline-offset-4 flex items-center justify-center gap-2 mx-auto group"
                                 >
-                                    Already have an account? Login
+                                    Already have an account? Sign In
                                     <ArrowRight className="w-4 h-4 group-hover:animate-bounce" />
                                 </button>
                             </div>
@@ -339,7 +446,7 @@ export default function Register() {
                 </div>
 
                 {/* Right Side Image */}
-                <div className="hidden md:flex justify-center items-center w-full md:w-1/2 px-8">
+                <div className="hidden lg:flex justify-center items-center w-full lg:w-1/3 px-4">
                     <div className="relative">
                         <div className="absolute -inset-4 bg-gradient-to-r from-blue-400/30 via-cyan-300/40 to-blue-500/30 rounded-full blur-2xl animate-pulse"></div>
                         <div className="absolute -inset-2 bg-white/20 rounded-full blur-xl animate-pulse delay-500"></div>

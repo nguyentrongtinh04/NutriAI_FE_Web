@@ -12,11 +12,14 @@ export default function Login() {
 
     const handleLogin = (e: React.FormEvent) => {
         e.preventDefault();
+
         if (!username || !password) {
-            setErrorMsg("Please enter both username and password.");
+            let message = "";
+            if (!username) message = "Username is required.";
+            else if (!password) message = "Password is required.";
+            setErrorMsg(message);
         } else {
             setErrorMsg("");
-            console.log("Logging in with:", username, password);
             setShowUserDetail(true);
         }
     };
@@ -38,7 +41,7 @@ export default function Login() {
                     <div className="absolute bottom-1/4 left-1/3 w-72 h-72 bg-gradient-to-r from-sky-400/55 via-blue-400/65 to-cyan-500/55 rounded-full blur-3xl animate-bounce delay-2000"></div>
                     <div className="absolute top-3/4 right-1/3 w-64 h-64 bg-gradient-to-r from-blue-300/45 via-cyan-400/55 to-blue-500/45 rounded-full blur-3xl animate-bounce delay-3000"></div>
                 </div>
-                
+
                 {/* Animated Light Rays */}
                 <div className="absolute inset-0">
                     <div className="absolute top-0 left-1/4 w-2 h-full bg-gradient-to-b from-cyan-400/60 via-transparent to-blue-500/60 transform rotate-12 animate-pulse"></div>
@@ -81,25 +84,25 @@ export default function Login() {
 
             {/* Main Container */}
             <div className="relative z-10 w-full max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-center justify-center gap-12">
-                
+
                 {/* Left Side Login Form */}
                 <div className="w-full md:w-1/2 max-w-md">
                     {/* Enhanced Glowing Border */}
                     <div className="absolute -inset-3 bg-gradient-to-r from-cyan-400 via-blue-500 to-cyan-400 rounded-3xl blur-xl opacity-60 animate-pulse"></div>
                     <div className="absolute -inset-2 bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-500 rounded-3xl blur-lg opacity-40 animate-pulse delay-500"></div>
-                    
+
                     {/* Main Card with Enhanced Glass Effect */}
                     <div className="relative bg-white/90 backdrop-blur-3xl rounded-3xl p-8 shadow-2xl border border-blue-200/60 shadow-cyan-500/20">
-                        
+
                         {/* Enhanced Header with Logo */}
                         <div className="flex items-center gap-4 mb-8">
                             <div className="relative">
                                 <div className="absolute -inset-2 bg-gradient-to-r from-blue-400/40 via-cyan-300/50 to-blue-500/40 rounded-full blur-xl animate-pulse"></div>
                                 <div className="absolute -inset-1 bg-white/30 rounded-full blur-lg animate-pulse delay-500"></div>
-                                <img 
-                                    src="/src/assets/logo.png" 
-                                    alt="NutriAI Logo" 
-                                    className="relative w-25 h-20 object-contain drop-shadow-2xl filter brightness-110 contrast-110 saturate-110" 
+                                <img
+                                    src="/src/assets/logo.png"
+                                    alt="NutriAI Logo"
+                                    className="relative w-25 h-20 object-contain drop-shadow-2xl filter brightness-110 contrast-110 saturate-110"
                                 />
                             </div>
                             <div>
@@ -113,19 +116,17 @@ export default function Login() {
                             </div>
                         </div>
 
-                        {/* Enhanced Error Message */}
-                        {errorMsg && (
-                            <div className="relative mb-6">
-                                <div className="absolute -inset-1 bg-gradient-to-r from-red-400 to-pink-400 rounded-lg blur opacity-30 animate-pulse"></div>
-                                <div className="relative bg-red-50/90 border-2 border-red-200 rounded-lg p-3 text-red-600 text-sm text-center backdrop-blur-sm">
-                                    {errorMsg}
-                                </div>
-                            </div>
-                        )}
-
                         <form onSubmit={handleLogin} className="space-y-6">
                             {/* Enhanced Username Field */}
                             <div className="relative group">
+                                {/* Tooltip */}
+                                {errorMsg.includes("Username") && (
+                                    <div className="absolute -top-8 left-0 bg-red-500 text-white text-xs px-3 py-1 rounded-md shadow-lg animate-fade-in">
+                                        {errorMsg}
+                                    </div>
+                                )}
+
+                                {/* Username Field */}
                                 <div className="absolute -inset-1 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-xl blur opacity-25 group-focus-within:opacity-50 transition duration-300"></div>
                                 <div className="relative">
                                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -136,13 +137,20 @@ export default function Login() {
                                         placeholder="Username"
                                         value={username}
                                         onChange={(e) => setUsername(e.target.value)}
-                                        className="w-full pl-12 pr-4 py-4 bg-blue-50/70 border-2 border-blue-200 rounded-xl text-blue-900 placeholder-blue-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-400 focus:bg-white/90 transition-all duration-300 backdrop-blur-sm"
+                                        className={`w-full pl-12 pr-4 py-4 bg-blue-50/70 border-2 ${errorMsg.includes("Username") ? "border-red-400" : "border-blue-200"
+                                            } rounded-xl text-blue-900 placeholder-blue-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-all duration-300 backdrop-blur-sm`}
                                     />
                                 </div>
                             </div>
 
                             {/* Enhanced Password Field */}
                             <div className="relative group">
+                                {/* Tooltip */}
+                                {errorMsg.includes("Password") && (
+                                    <div className="absolute -top-8 left-0 bg-red-500 text-white text-xs px-3 py-1 rounded-md shadow-lg animate-fade-in">
+                                        {errorMsg}
+                                    </div>
+                                )}
                                 <div className="absolute -inset-1 bg-gradient-to-r from-cyan-400 to-blue-400 rounded-xl blur opacity-25 group-focus-within:opacity-50 transition duration-300"></div>
                                 <div className="relative">
                                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -212,7 +220,7 @@ export default function Login() {
                                                 <path fill="#4caf50" d="M24 44c5.9 0 10.9-1.9 14.5-5.2l-6.7-5.5c-2 1.3-4.6 2.1-7.8 2.1a12 12 0 0 1-11.3-8l-6.7 5.1C9.9 39.7 16.5 44 24 44z" />
                                                 <path fill="#1565c0" d="M43.6 20.5H42V20H24v8h11.3c-0.8 2.4-2.3 4.5-4.5 6l0.1-0.1 6.7 5.5c-0.5.5 7.4-5.4 7.4-15.9 0-1.2-.1-2.1-.4-3.5z" />
                                             </svg>
-                                            Google Login
+                                            Google Sign In
                                         </span>
                                     </button>
                                 </div>
@@ -254,7 +262,7 @@ export default function Login() {
                         {/* Enhanced Modal Glow */}
                         <div className="absolute -inset-3 bg-gradient-to-r from-cyan-400 via-blue-500 to-cyan-400 rounded-3xl blur-xl opacity-60 animate-pulse"></div>
                         <div className="absolute -inset-2 bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-500 rounded-3xl blur-lg opacity-40 animate-pulse delay-500"></div>
-                        
+
                         <div className="relative bg-white/95 backdrop-blur-3xl rounded-3xl shadow-2xl p-6 md:p-10 border border-blue-200/60 shadow-cyan-500/20 transform scale-100 hover:scale-[1.01] transition-transform duration-300">
                             {/* Enhanced Skip Button */}
                             <button

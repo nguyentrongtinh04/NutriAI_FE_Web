@@ -212,7 +212,7 @@ export default function ResetPassword() {
                                 className="text-blue-500 hover:text-cyan-500 text-sm transition-colors duration-300 underline decoration-blue-400 decoration-2 underline-offset-4 flex items-center justify-center gap-2 mx-auto group"
                             >
                                 <ArrowLeft className="w-4 h-4 group-hover:animate-bounce" />
-                                Back to Login
+                                Back to Sign In
                             </button>
                         </div>
                     </form>

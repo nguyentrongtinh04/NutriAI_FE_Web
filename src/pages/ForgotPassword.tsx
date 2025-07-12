@@ -215,7 +215,7 @@ export default function ForgotPassword() {
                         className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 focus:ring-2"
                       />
                       <Phone className="w-4 h-4 text-blue-600 group-hover:text-cyan-500 transition-colors" />
-                      <span className="text-blue-700 font-medium group-hover:text-cyan-600 transition-colors">Via Phone</span>
+                      <span className="text-blue-700 font-medium group-hover:text-cyan-600 transition-colors">Phone</span>
                     </label>
                     <label className="flex items-center gap-2 cursor-pointer group">
                       <input 
@@ -226,7 +226,7 @@ export default function ForgotPassword() {
                         className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 focus:ring-2"
                       />
                       <Mail className="w-4 h-4 text-blue-600 group-hover:text-cyan-500 transition-colors" />
-                      <span className="text-blue-700 font-medium group-hover:text-cyan-600 transition-colors">Via Email</span>
+                      <span className="text-blue-700 font-medium group-hover:text-cyan-600 transition-colors">Email</span>
                     </label>
                   </div>
                 </div>
@@ -290,7 +290,7 @@ export default function ForgotPassword() {
                   >
                     <span className="flex items-center justify-center gap-2">
                       <ArrowLeft className="w-5 h-5 group-hover:animate-pulse" />
-                      Back to Login
+                      Back to Sign In
                     </span>
                   </button>
                 </div>
