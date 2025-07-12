@@ -9,17 +9,17 @@ export default function ForgotPassword() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
+  
     if (!input.trim()) {
       setError("Please enter your phone number or email.");
       return;
     }
-
+  
     if (method === "phone" && !/^\d{10,}$/.test(input)) {
       setError("Phone number must be at least 10 digits.");
       return;
     }
-
+  
     if (
       method === "email" &&
       !/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/.test(input)
@@ -27,12 +27,11 @@ export default function ForgotPassword() {
       setError("Invalid email address.");
       return;
     }
-
+  
     setError("");
-    alert("📩 A reset link has been sent!");
-    // TODO: Gửi API xác thực
+    navigate("/otp"); // ✅ Điều hướng đến trang OTP
   };
-
+  
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-[#e8f5ff] via-[#d2e6fb] to-[#bcdaf7] px-4">
       <div className="w-full max-w-md bg-white/60 backdrop-blur-xl rounded-3xl p-8 shadow-lg">
