@@ -20,7 +20,8 @@ export default function Login() {
             setErrorMsg(message);
         } else {
             setErrorMsg("");
-            setShowUserDetail(true);
+            // Redirect to Home page after successful login
+            navigate("/home");
         }
     };
 
