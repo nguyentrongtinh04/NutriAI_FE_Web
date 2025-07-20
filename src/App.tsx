@@ -7,7 +7,7 @@ import ResetPassword from "./pages/ResetPassword";
 import Home from "./pages/Home";
 import ProfileSettings from "./pages/Settings/ProfileSettings";
 import EditProfile from "./pages/Settings/EditProfile";
-
+import ChangeAvatar from "./pages/Settings/ChangeAvatar"; 
 function App() {
   return (
     <Router>
@@ -20,6 +20,7 @@ function App() {
         <Route path="/home" element={<Home />} />
         <Route path="/profile" element={<ProfileSettings />} />
         <Route path="/profile/edit" element={<EditProfile />} />
+        <Route path="/profile/change-avatar" element={<ChangeAvatar />} />
       </Routes>
     </Router>
   );
