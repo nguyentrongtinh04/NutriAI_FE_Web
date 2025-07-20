@@ -6,6 +6,8 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import Home from "./pages/Home";
 import ProfileSettings from "./pages/Settings/ProfileSettings";
+import EditProfile from "./pages/Settings/EditProfile";
+
 function App() {
   return (
     <Router>
@@ -17,6 +19,7 @@ function App() {
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/home" element={<Home />} />
         <Route path="/profile" element={<ProfileSettings />} />
+        <Route path="/profile/edit" element={<EditProfile />} />
       </Routes>
     </Router>
   );
