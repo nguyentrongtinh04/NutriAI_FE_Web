@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Bell, Settings, User, Utensils, LogOut, ChevronDown } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 export default function Header() {
   const navigate = useNavigate();
@@ -92,12 +92,16 @@ export default function Header() {
 
                   {/* Menu Items */}
                   <div className="p-2">
-                    <button className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-blue-50 rounded-xl transition-all duration-300 group">
+                    <Link 
+                      to="/profile"
+                      className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-blue-50 rounded-xl transition-all duration-300 group"
+                      onClick={() => setShowUserMenu(false)}
+                    >
                       <div className="w-8 h-8 bg-gradient-to-r from-blue-400/20 to-cyan-400/20 rounded-lg flex items-center justify-center group-hover:from-blue-400/30 group-hover:to-cyan-400/30 transition-all duration-300">
                         <User className="w-4 h-4 text-blue-600" />
                       </div>
                       <span className="text-gray-700 font-medium">Profile Settings</span>
-                    </button>
+                    </Link>
 
                     <button className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-blue-50 rounded-xl transition-all duration-300 group">
                       <div className="w-8 h-8 bg-gradient-to-r from-green-400/20 to-emerald-400/20 rounded-lg flex items-center justify-center group-hover:from-green-400/30 group-hover:to-emerald-400/30 transition-all duration-300">
