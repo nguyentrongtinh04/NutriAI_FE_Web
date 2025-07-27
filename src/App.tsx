@@ -9,6 +9,7 @@ import ProfileSettings from "./pages/Settings/Profile/ProfileSettings";
 import EditProfile from "./pages/Settings/Profile/EditProfile";
 import ChangeAvatar from "./pages/Settings/Profile/ChangeAvatar"; 
 import Settings from "./pages/Settings/Account/Settings";
+import NotificationSettings from "./pages/Settings/Notifications/NotificationSettings"; 
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
         <Route path="/profile/edit" element={<EditProfile />} />
         <Route path="/profile/change-avatar" element={<ChangeAvatar />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/notifications" element={<NotificationSettings />} />
       </Routes>
     </Router>
   );

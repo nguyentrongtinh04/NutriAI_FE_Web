@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Bell, Settings, User, LogOut, ChevronDown, MessageCircle, HelpCircle, BellRing } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
+import ChatBot from './ChatBot';
 
 export default function Header() {
   const navigate = useNavigate();
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
+  const [showChatBot, setShowChatBot] = useState(false);
 
   const handleSignOut = () => {
     localStorage.removeItem('accessToken');
@@ -19,8 +21,18 @@ export default function Header() {
     navigate('/settings');
   };
 
+  const handleNotificationSettingsClick = () => {
+    navigate('/notifications');
+    setShowSettingsMenu(false);
+  };
+
+  const handleAIChatClick = () => {
+    setShowChatBot(true);
+    setShowSettingsMenu(false);
+  };
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-sm border-b border-blue-200/50 shadow-lg">
+    <>
+      <header className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-sm border-b border-blue-200/50 shadow-lg">
       <div className="max-w-9xl mx-auto px-6 py-4 flex items-center justify-between">
         {/* Logo */}
         <div className="flex items-center gap-3">
@@ -122,7 +134,10 @@ export default function Header() {
                     </button>
 
                     {/* Notification Settings */}
-                    <button className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-blue-50 rounded-xl transition-all duration-300 group transform hover:scale-[1.02]">
+                    <button 
+                      className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-blue-50 rounded-xl transition-all duration-300 group transform hover:scale-[1.02]"
+                      onClick={handleNotificationSettingsClick}
+                    >
                       <div className="w-8 h-8 bg-gradient-to-r from-purple-400/20 to-indigo-400/20 rounded-lg flex items-center justify-center group-hover:from-purple-400/30 group-hover:to-indigo-400/30 transition-all duration-300 group-hover:animate-pulse">
                         <BellRing className="w-4 h-4 text-purple-600" />
                       </div>
@@ -130,7 +145,10 @@ export default function Header() {
                     </button>
 
                     {/* AI Chat */}
-                    <button className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-blue-50 rounded-xl transition-all duration-300 group transform hover:scale-[1.02]">
+                    <button 
+                      className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-blue-50 rounded-xl transition-all duration-300 group transform hover:scale-[1.02]"
+                      onClick={handleAIChatClick}
+                    >
                       <div className="w-8 h-8 bg-gradient-to-r from-cyan-400/20 to-teal-400/20 rounded-lg flex items-center justify-center group-hover:from-cyan-400/30 group-hover:to-teal-400/30 transition-all duration-300 group-hover:animate-pulse">
                         <MessageCircle className="w-4 h-4 text-cyan-600" />
                       </div>
@@ -173,7 +191,7 @@ export default function Header() {
             {showSettingsMenu && (
               <div 
                 className="fixed inset-0 z-40" 
-              onClick={() => setShowSettingsMenu(!showSettingsMenu)}
+                onClick={() => setShowSettingsMenu(!showSettingsMenu)}
               ></div>
             )}
           </div>
@@ -190,6 +208,10 @@ export default function Header() {
           </div>
         </div>
       </div>
-    </header>
+      </header>
+      
+      {/* ChatBot Component */}
+      <ChatBot isOpen={showChatBot} onClose={() => setShowChatBot(false)} />
+    </>
   );
 }
