@@ -5,9 +5,11 @@ import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import Home from "./pages/Home";
-import ProfileSettings from "./pages/Settings/ProfileSettings";
-import EditProfile from "./pages/Settings/EditProfile";
-import ChangeAvatar from "./pages/Settings/ChangeAvatar"; 
+import ProfileSettings from "./pages/Settings/Profile/ProfileSettings";
+import EditProfile from "./pages/Settings/Profile/EditProfile";
+import ChangeAvatar from "./pages/Settings/Profile/ChangeAvatar"; 
+import Settings from "./pages/Settings/Account/Settings";
+
 function App() {
   return (
     <Router>
@@ -21,6 +23,7 @@ function App() {
         <Route path="/profile" element={<ProfileSettings />} />
         <Route path="/profile/edit" element={<EditProfile />} />
         <Route path="/profile/change-avatar" element={<ChangeAvatar />} />
+        <Route path="/settings" element={<Settings />} />
       </Routes>
     </Router>
   );
