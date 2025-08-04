@@ -6,8 +6,6 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import Home from "./pages/Home";
 import ProfileSettings from "./pages/Settings/Profile/ProfileSettings";
-import EditProfile from "./pages/Settings/Profile/EditProfile";
-import ChangeAvatar from "./pages/Settings/Profile/ChangeAvatar"; 
 import Settings from "./pages/Settings/Account/Settings";
 import NotificationSettings from "./pages/Settings/Notifications/NotificationSettings"; 
 import UserSupport from "./pages/Settings/Support/UserSupport";
@@ -23,11 +21,10 @@ function App() {
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/home" element={<Home />} />
         <Route path="/profile" element={<ProfileSettings />} />
-        <Route path="/profile/edit" element={<EditProfile />} />
-        <Route path="/profile/change-avatar" element={<ChangeAvatar />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/notifications" element={<NotificationSettings />} />
         <Route path="/support" element={<UserSupport />} />
+
       </Routes>
     </Router>
   );

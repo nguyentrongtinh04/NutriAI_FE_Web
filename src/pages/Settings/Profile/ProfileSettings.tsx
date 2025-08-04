@@ -1,7 +1,8 @@
 import React, { useState, useRef } from 'react';
-import { ArrowLeft, User, Edit, Camera, Settings, Mail, Phone, Calendar, Save, X, Upload, Check } from 'lucide-react';
+import { ArrowLeft, User, Edit, Camera, Settings, Mail, Phone, Calendar, Save, X, Upload, Check, Heart, Activity, Weight, Ruler, Target, Apple, Droplets, Moon, FileText, AlertTriangle, Pill, Clock } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
-export default function ProfileSettings() {
+export default function HealthInformation() {
   const [userData, setUserData] = useState({
     name: 'Admin User',
     email: 'admin@nutriai.com',
@@ -11,8 +12,24 @@ export default function ProfileSettings() {
     avatar: '/src/assets/default-avatar.jpg'
   });
 
+  const [healthData, setHealthData] = useState({
+    height: '175', // cm
+    weight: '70',  // kg
+    medicalHistory: 'No significant medical history',
+    currentMedications: 'None',
+    allergies: 'No known allergies',
+    chronicConditions: 'None',
+    emergencyContact: 'John Doe - +1 234 567 8901',
+    pastSurgeries: 'None',
+    familyHistory: 'No significant family medical history',
+    immunizations: 'Up to date with standard vaccinations',
+    previousHospitalizations: 'None'
+  });
+
+  const [activeTab, setActiveTab] = useState('information-your');
   const [isEditing, setIsEditing] = useState(false);
-  const [editedData, setEditedData] = useState(userData);
+  const [editedUserData, setEditedUserData] = useState(userData);
+  const [editedHealthData, setEditedHealthData] = useState(healthData);
   const [showAvatarModal, setShowAvatarModal] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -20,24 +37,54 @@ export default function ProfileSettings() {
 
   const handleEdit = () => {
     setIsEditing(true);
-    setEditedData(userData);
+    setEditedUserData(userData);
+    setEditedHealthData(healthData);
   };
 
   const handleSave = () => {
-    setUserData(editedData);
+    setUserData(editedUserData);
+    setHealthData(editedHealthData);
     setIsEditing(false);
   };
 
   const handleCancel = () => {
-    setEditedData(userData);
+    setEditedUserData(userData);
+    setEditedHealthData(healthData);
     setIsEditing(false);
   };
 
-  const handleInputChange = (field: string, value: string) => {
-    setEditedData(prev => ({
+  const handleUserInputChange = (field: string, value: string) => {
+    setEditedUserData(prev => ({
       ...prev,
       [field]: value
     }));
+  };
+
+  const handleHealthInputChange = (field: string, value: string) => {
+    setEditedHealthData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  // Calculate BMI
+  const calculateBMI = (weight: string, height: string) => {
+    const weightNum = parseFloat(weight);
+    const heightNum = parseFloat(height);
+    if (weightNum > 0 && heightNum > 0) {
+      const heightInMeters = heightNum / 100;
+      const bmi = weightNum / (heightInMeters * heightInMeters);
+      return bmi.toFixed(1);
+    }
+    return '0.0';
+  };
+
+  const getBMICategory = (bmi: string) => {
+    const bmiNum = parseFloat(bmi);
+    if (bmiNum < 18.5) return { category: 'Underweight', color: 'text-blue-600', bgColor: 'bg-blue-100' };
+    if (bmiNum < 25) return { category: 'Normal', color: 'text-green-600', bgColor: 'bg-green-100' };
+    if (bmiNum < 30) return { category: 'Overweight', color: 'text-yellow-600', bgColor: 'bg-yellow-100' };
+    return { category: 'Obese', color: 'text-red-600', bgColor: 'bg-red-100' };
   };
 
   // Avatar Modal Functions
@@ -95,6 +142,25 @@ export default function ProfileSettings() {
     }
   };
 
+  const tabs = [
+    {
+      id: 'information-your',
+      name: 'Information Your',
+      icon: User,
+      color: 'from-blue-500 to-cyan-500',
+      bgColor: 'from-blue-50 to-cyan-50',
+      borderColor: 'border-blue-200/50'
+    },
+    {
+      id: 'medical-history',
+      name: 'Medical History',
+      icon: FileText,
+      color: 'from-green-500 to-emerald-500',
+      bgColor: 'from-green-50 to-emerald-50',
+      borderColor: 'border-green-200/50'
+    },
+  ];
+
   return (
     <div className="min-h-screen w-full relative overflow-hidden bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 font-sans">
       {/* Enhanced Aurora Background Effects */}
@@ -130,10 +196,10 @@ export default function ProfileSettings() {
 
       {/* Header */}
       <div className="relative z-20 p-6">
-        <button
-          onClick={() => window.history.back()}
-          className="inline-flex items-center gap-3 text-white hover:text-cyan-300 transition-all duration-300 group"
-        >
+        <Link 
+                  to="/home" 
+                  className="inline-flex items-center gap-3 text-white hover:text-cyan-300 transition-all duration-300 group"
+                >
           <div className="relative">
             <div className="absolute -inset-3 bg-gradient-to-r from-blue-400/40 via-cyan-400/50 to-blue-500/40 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-all duration-500 animate-pulse"></div>
             <div className="absolute -inset-2 bg-gradient-to-r from-cyan-400/30 via-blue-400/40 to-cyan-500/30 rounded-2xl blur-lg opacity-0 group-hover:opacity-100 transition-all duration-300"></div>
@@ -144,7 +210,7 @@ export default function ProfileSettings() {
               </span>
             </div>
           </div>
-        </button>
+        </Link>
       </div>
 
       {/* Avatar Modal */}
@@ -247,76 +313,82 @@ export default function ProfileSettings() {
       )}
 
       {/* Main Content */}
-      <div className="relative z-20 max-w-6xl mx-auto px-2 py-2">
+      <div className="relative z-20 max-w-7xl mx-auto px-4 py-2">
         {/* Page Title */}
-        <div className="text-center mb-6">
+        <div className="text-center mb-8">
           <h1 className="text-5xl font-extrabold text-white mb-4">
             <span className="bg-gradient-to-r from-cyan-400 via-blue-300 to-cyan-400 bg-clip-text text-transparent">
-              Profile Settings
+              Health Information
             </span>
           </h1>
-          <p className="text-blue-200 text-lg">Manage your account and preferences</p>
+          <p className="text-blue-200 text-lg">Manage your personal and medical history information</p>
         </div>
 
         {/* Profile Content */}
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Profile Summary Card */}
+        <div className="grid lg:grid-cols-4 gap-6">
+          {/* Profile Summary Card - Balanced Size */}
           <div className="lg:col-span-1">
             <div className="relative">
               <div className="absolute -inset-3 bg-gradient-to-r from-cyan-400 via-blue-500 to-cyan-400 rounded-3xl blur-xl opacity-60 animate-pulse"></div>
               <div className="absolute -inset-2 bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-500 rounded-3xl blur-lg opacity-40 animate-pulse delay-500"></div>
 
-              <div className="relative bg-white/95 backdrop-blur-3xl border-2 border-blue-200/60 rounded-3xl p-8 shadow-2xl shadow-cyan-500/20">
+              <div className="relative bg-white/95 backdrop-blur-3xl border-2 border-blue-200/60 rounded-3xl p-6 shadow-2xl shadow-cyan-500/20">
                 {/* Avatar Section */}
-                <div className="text-center mb-8">
+                <div className="text-center mb-6">
                   <div className="relative inline-block">
                     <div className="absolute -inset-2 bg-gradient-to-r from-blue-400/50 to-cyan-400/50 rounded-full blur-lg animate-pulse"></div>
-                    <div className="relative w-32 h-32 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center overflow-hidden">
+                    <div className="relative w-24 h-24 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center overflow-hidden">
                       {userData.avatar && userData.avatar !== '/src/assets/default-avatar.jpg' ? (
                         <img src={userData.avatar} alt="Avatar" className="w-full h-full object-cover" />
                       ) : (
-                        <User className="w-16 h-16 text-white" />
+                        <User className="w-12 h-12 text-white" />
                       )}
                     </div>
                     <button
                       onClick={() => setShowAvatarModal(true)}
-                      className="absolute -bottom-2 -right-2 w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center text-white hover:scale-110 transition-transform duration-300 shadow-lg"
+                      className="absolute -bottom-1 -right-1 w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center text-white hover:scale-110 transition-transform duration-300 shadow-lg"
                     >
-                      <Camera className="w-5 h-5" />
+                      <Camera className="w-4 h-4" />
                     </button>
                   </div>
-                  <h2 className="text-2xl font-bold text-gray-800 mt-4">{userData.name}</h2>
-                  <p className="text-blue-600 font-medium">{userData.email}</p>
+                  <h2 className="text-xl font-bold text-gray-800 mt-3">{userData.name}</h2>
+                  <p className="text-blue-600 font-medium text-sm">{userData.email}</p>
                 </div>
 
-                {/* Quick Actions */}
-                <div className="space-y-4">
-                  <div className="w-full flex items-center gap-3 p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl border border-blue-200/50">
-                    <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">
-                      <User className="w-5 h-5 text-white" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-semibold text-gray-800">Information Your</p>
-                      <p className="text-sm text-gray-600">Personal details</p>
-                    </div>
-                  </div>
-
-                  <div className="w-full flex items-center gap-3 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200/50">
-                    <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
-                      <Settings className="w-5 h-5 text-white" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-semibold text-gray-800">Information Health</p>
-                      <p className="text-sm text-gray-600">Health metrics</p>
-                    </div>
-                  </div>
+                {/* Navigation Tabs */}
+                <div className="space-y-3">
+                  {tabs.map((tab) => {
+                    const IconComponent = tab.icon;
+                    const isActive = activeTab === tab.id;
+                    
+                    return (
+                      <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id)}
+                        className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all duration-300 transform hover:scale-105 ${
+                          isActive
+                            ? `bg-gradient-to-r ${tab.bgColor} ${tab.borderColor} border-2 shadow-lg`
+                            : 'bg-white/50 border-gray-200/50 hover:bg-white/70'
+                        }`}
+                      >
+                        <div className={`w-8 h-8 bg-gradient-to-r ${tab.color} rounded-lg flex items-center justify-center`}>
+                          <IconComponent className="w-4 h-4 text-white" />
+                        </div>
+                        <div className="flex-1 text-left">
+                          <p className={`font-semibold text-sm ${isActive ? 'text-gray-800' : 'text-gray-700'}`}>
+                            {tab.name}
+                          </p>
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Profile Details */}
-          <div className="lg:col-span-2">
+          {/* Content Area - Larger Size */}
+          <div className="lg:col-span-3">
             <div className="relative">
               <div className="absolute -inset-3 bg-gradient-to-r from-cyan-400 via-blue-500 to-cyan-400 rounded-3xl blur-xl opacity-60 animate-pulse"></div>
               <div className="absolute -inset-2 bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-500 rounded-3xl blur-lg opacity-40 animate-pulse delay-500"></div>
@@ -324,8 +396,14 @@ export default function ProfileSettings() {
               <div className="relative bg-white/95 backdrop-blur-3xl border-2 border-blue-200/60 rounded-3xl p-8 shadow-2xl shadow-cyan-500/20">
                 <div className="flex justify-between items-center mb-6">
                   <h3 className="text-2xl font-bold text-gray-800 flex items-center gap-3">
-                    <Settings className="w-6 h-6 text-blue-500" />
-                    Account Information
+                    {tabs.find(tab => tab.id === activeTab) && (
+                      <>
+                        {React.createElement(tabs.find(tab => tab.id === activeTab)!.icon, {
+                          className: "w-6 h-6 text-blue-500"
+                        })}
+                        {tabs.find(tab => tab.id === activeTab)?.name}
+                      </>
+                    )}
                   </h3>
 
                   <div className="flex gap-2">
@@ -358,94 +436,320 @@ export default function ProfileSettings() {
                   </div>
                 </div>
 
-                <div className="grid md:grid-cols-2 gap-6">
-                  {/* Personal Information */}
-                  <div className="space-y-6">
-                    <div className="p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl border border-blue-200/50">
-                      <div className="flex items-center gap-3 mb-2">
-                        <Mail className="w-5 h-5 text-blue-500" />
-                        <span className="font-semibold text-gray-700">Email</span>
-                      </div>
-                      {isEditing ? (
-                        <div className="flex items-center gap-3 bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200/50 rounded-xl px-4 py-3">
-                          <input
-                            type="email"
-                            value={editedData.email}
-                            onChange={(e) => handleInputChange('email', e.target.value)}
-                            className="flex-1 bg-transparent text-gray-800 placeholder-gray-400 outline-none focus:ring-0"
-                            placeholder="Enter your email"
-                          />
+                {/* Information Your Content */}
+                {activeTab === 'information-your' && (
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div className="space-y-6">
+                      <div className="p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl border border-blue-200/50">
+                        <div className="flex items-center gap-3 mb-2">
+                          <User className="w-5 h-5 text-blue-500" />
+                          <span className="font-semibold text-gray-700">Full Name</span>
                         </div>
-                      ) : (
-                        <p className="text-gray-800 ml-8">{userData.email}</p>
-                      )}
-                    </div>
-
-                    <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200/50">
-                      <div className="flex items-center gap-3 mb-2">
-                        <Phone className="w-5 h-5 text-green-500" />
-                        <span className="font-semibold text-gray-700">Phone</span>
-                      </div>
-                      {isEditing ? (
-                        <div className="flex items-center gap-3 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200/50 rounded-xl px-4 py-3">
+                        {isEditing ? (
                           <input
-                            type="tel"
-                            value={editedData.phone}
-                            onChange={(e) => handleInputChange('phone', e.target.value)}
-                            className="flex-1 bg-transparent text-gray-800 placeholder-gray-400 outline-none focus:ring-0"
-                            placeholder="Enter your phone"
+                            type="text"
+                            value={editedUserData.name}
+                            onChange={(e) => handleUserInputChange('name', e.target.value)}
+                            className="w-full bg-white/70 border border-blue-200/50 rounded-lg px-4 py-3 text-gray-800 placeholder-gray-400 outline-none focus:ring-2 focus:ring-blue-300"
+                            placeholder="Enter your full name"
                           />
-                        </div>
-                      ) : (
-                        <p className="text-gray-800 ml-8">{userData.phone}</p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Additional Information */}
-                  <div className="space-y-6">
-                    <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-200/50">
-                      <div className="flex items-center gap-3 mb-2">
-                        <User className="w-5 h-5 text-purple-500" />
-                        <span className="font-semibold text-gray-700">Gender</span>
+                        ) : (
+                          <p className="text-gray-800 ml-8">{userData.name}</p>
+                        )}
                       </div>
-                      {isEditing ? (
-                        <div className="flex items-center gap-3 bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200/50 rounded-xl px-4 py-3">
+
+                      <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-200/50">
+                        <div className="flex items-center gap-3 mb-2">
+                          <User className="w-5 h-5 text-purple-500" />
+                          <span className="font-semibold text-gray-700">Gender</span>
+                        </div>
+                        {isEditing ? (
                           <select
-                            value={editedData.gender}
-                            onChange={(e) => handleInputChange('gender', e.target.value)}
-                            className="flex-1 bg-transparent text-gray-800 outline-none focus:ring-0"
+                            value={editedUserData.gender}
+                            onChange={(e) => handleUserInputChange('gender', e.target.value)}
+                            className="w-full bg-white/70 border border-purple-200/50 rounded-lg px-4 py-3 text-gray-800 outline-none focus:ring-2 focus:ring-purple-300"
                           >
                             <option value="Male">Male</option>
                             <option value="Female">Female</option>
                             <option value="Other">Other</option>
                           </select>
-                        </div>
-                      ) : (
-                        <p className="text-gray-800 ml-8">{userData.gender}</p>
-                      )}
+                        ) : (
+                          <p className="text-gray-800 ml-8">{userData.gender}</p>
+                        )}
+                      </div>
                     </div>
 
-                    <div className="p-4 bg-gradient-to-r from-orange-50 to-red-50 rounded-xl border border-orange-200/50">
-                      <div className="flex items-center gap-3 mb-2">
-                        <Calendar className="w-5 h-5 text-orange-500" />
-                        <span className="font-semibold text-gray-700">Birth Date</span>
+                    <div className="space-y-6">
+                      <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200/50">
+                        <div className="flex items-center gap-3 mb-2">
+                          <Phone className="w-5 h-5 text-green-500" />
+                          <span className="font-semibold text-gray-700">Phone</span>
+                        </div>
+                        {isEditing ? (
+                          <input
+                            type="tel"
+                            value={editedUserData.phone}
+                            onChange={(e) => handleUserInputChange('phone', e.target.value)}
+                            className="w-full bg-white/70 border border-green-200/50 rounded-lg px-4 py-3 text-gray-800 placeholder-gray-400 outline-none focus:ring-2 focus:ring-green-300"
+                            placeholder="Enter your phone"
+                          />
+                        ) : (
+                          <p className="text-gray-800 ml-8">{userData.phone}</p>
+                        )}
                       </div>
-                      {isEditing ? (
-                        <div className="flex items-center gap-3 bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200/50 rounded-xl px-4 py-3">
+
+                      <div className="p-4 bg-gradient-to-r from-orange-50 to-red-50 rounded-xl border border-orange-200/50">
+                        <div className="flex items-center gap-3 mb-2">
+                          <Calendar className="w-5 h-5 text-orange-500" />
+                          <span className="font-semibold text-gray-700">Birth Date</span>
+                        </div>
+                        {isEditing ? (
                           <input
                             type="date"
-                            value={editedData.birthDate}
-                            onChange={(e) => handleInputChange('birthDate', e.target.value)}
-                            className="flex-1 bg-transparent text-gray-800 outline-none focus:ring-0"
+                            value={editedUserData.birthDate}
+                            onChange={(e) => handleUserInputChange('birthDate', e.target.value)}
+                            className="w-full bg-white/70 border border-orange-200/50 rounded-lg px-4 py-3 text-gray-800 outline-none focus:ring-2 focus:ring-orange-300"
                           />
-                        </div>
-                      ) : (
-                        <p className="text-gray-800 ml-8">{new Date(userData.birthDate).toLocaleDateString()}</p>
-                      )}
+                        ) : (
+                          <p className="text-gray-800 ml-8">{new Date(userData.birthDate).toLocaleDateString()}</p>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
+
+                {/* Medical History Content */}
+                {activeTab === 'medical-history' && (
+                  <div className="space-y-8">
+                    {/* Body Measurements Section */}
+                    <div>
+                      <h4 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                        <Activity className="w-5 h-5 text-blue-500" />
+                        Body Measurements
+                      </h4>
+                      <div className="grid md:grid-cols-3 gap-6">
+                        <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200/50">
+                          <div className="flex items-center gap-3 mb-2">
+                            <Ruler className="w-5 h-5 text-green-500" />
+                            <span className="font-semibold text-gray-700">Height (cm)</span>
+                          </div>
+                          {isEditing ? (
+                            <input
+                              type="number"
+                              value={editedHealthData.height}
+                              onChange={(e) => handleHealthInputChange('height', e.target.value)}
+                              className="w-full bg-white/70 border border-green-200/50 rounded-lg px-4 py-3 text-gray-800 placeholder-gray-400 outline-none focus:ring-2 focus:ring-green-300"
+                              placeholder="Enter your height"
+                            />
+                          ) : (
+                            <p className="text-gray-800 ml-8">{healthData.height} cm</p>
+                          )}
+                        </div>
+
+                        <div className="p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl border border-blue-200/50">
+                          <div className="flex items-center gap-3 mb-2">
+                            <Weight className="w-5 h-5 text-blue-500" />
+                            <span className="font-semibold text-gray-700">Weight (kg)</span>
+                          </div>
+                          {isEditing ? (
+                            <input
+                              type="number"
+                              step="0.1"
+                              value={editedHealthData.weight}
+                              onChange={(e) => handleHealthInputChange('weight', e.target.value)}
+                              className="w-full bg-white/70 border border-blue-200/50 rounded-lg px-4 py-3 text-gray-800 placeholder-gray-400 outline-none focus:ring-2 focus:ring-blue-300"
+                              placeholder="Enter your weight"
+                            />
+                          ) : (
+                            <p className="text-gray-800 ml-8">{healthData.weight} kg</p>
+                          )}
+                        </div>
+
+                        {/* BMI Display */}
+                        <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-200/50">
+                          <div className="flex items-center gap-3 mb-2">
+                            <Target className="w-5 h-5 text-purple-500" />
+                            <span className="font-semibold text-gray-700">BMI</span>
+                          </div>
+                          <div className="ml-8">
+                            <p className="text-2xl font-bold text-gray-800">
+                              {calculateBMI(isEditing ? editedHealthData.weight : healthData.weight, isEditing ? editedHealthData.height : healthData.height)}
+                            </p>
+                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getBMICategory(calculateBMI(isEditing ? editedHealthData.weight : healthData.weight, isEditing ? editedHealthData.height : healthData.height)).bgColor} ${getBMICategory(calculateBMI(isEditing ? editedHealthData.weight : healthData.weight, isEditing ? editedHealthData.height : healthData.height)).color}`}>
+                              {getBMICategory(calculateBMI(isEditing ? editedHealthData.weight : healthData.weight, isEditing ? editedHealthData.height : healthData.height)).category}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Medical History Section */}
+                    <div>
+                      <h4 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                        <FileText className="w-5 h-5 text-red-500" />
+                        Medical History Overview
+                      </h4>
+                      <div className="grid md:grid-cols-2 gap-6">
+                        <div className="space-y-6">
+                          <div className="p-4 bg-gradient-to-r from-red-50 to-pink-50 rounded-xl border border-red-200/50">
+                            <div className="flex items-center gap-3 mb-2">
+                              <Heart className="w-5 h-5 text-red-500" />
+                              <span className="font-semibold text-gray-700">General Medical History</span>
+                            </div>
+                            {isEditing ? (
+                              <textarea
+                                value={editedHealthData.medicalHistory}
+                                onChange={(e) => handleHealthInputChange('medicalHistory', e.target.value)}
+                                className="w-full bg-white/70 border border-red-200/50 rounded-lg px-4 py-3 text-gray-800 placeholder-gray-400 outline-none focus:ring-2 focus:ring-red-300 resize-none"
+                                rows={3}
+                                placeholder="Enter your medical history"
+                              />
+                            ) : (
+                              <p className="text-gray-800 ml-8">{healthData.medicalHistory}</p>
+                            )}
+                          </div>
+
+                          <div className="p-4 bg-gradient-to-r from-orange-50 to-red-50 rounded-xl border border-orange-200/50">
+                            <div className="flex items-center gap-3 mb-2">
+                              <AlertTriangle className="w-5 h-5 text-orange-500" />
+                              <span className="font-semibold text-gray-700">Allergies</span>
+                            </div>
+                            {isEditing ? (
+                              <textarea
+                                value={editedHealthData.allergies}
+                                onChange={(e) => handleHealthInputChange('allergies', e.target.value)}
+                                className="w-full bg-white/70 border border-orange-200/50 rounded-lg px-4 py-3 text-gray-800 placeholder-gray-400 outline-none focus:ring-2 focus:ring-orange-300 resize-none"
+                                rows={3}
+                                placeholder="List any allergies"
+                              />
+                            ) : (
+                              <p className="text-gray-800 ml-8">{healthData.allergies}</p>
+                            )}
+                          </div>
+
+                          <div className="p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl border border-indigo-200/50">
+                            <div className="flex items-center gap-3 mb-2">
+                              <Clock className="w-5 h-5 text-indigo-500" />
+                              <span className="font-semibold text-gray-700">Past Surgeries</span>
+                            </div>
+                            {isEditing ? (
+                              <textarea
+                                value={editedHealthData.pastSurgeries}
+                                onChange={(e) => handleHealthInputChange('pastSurgeries', e.target.value)}
+                                className="w-full bg-white/70 border border-indigo-200/50 rounded-lg px-4 py-3 text-gray-800 placeholder-gray-400 outline-none focus:ring-2 focus:ring-indigo-300 resize-none"
+                                rows={3}
+                                placeholder="List any past surgeries"
+                              />
+                            ) : (
+                              <p className="text-gray-800 ml-8">{healthData.pastSurgeries}</p>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="space-y-6">
+                          <div className="p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl border border-blue-200/50">
+                            <div className="flex items-center gap-3 mb-2">
+                              <Pill className="w-5 h-5 text-blue-500" />
+                              <span className="font-semibold text-gray-700">Current Medications</span>
+                            </div>
+                            {isEditing ? (
+                              <textarea
+                                value={editedHealthData.currentMedications}
+                                onChange={(e) => handleHealthInputChange('currentMedications', e.target.value)}
+                                className="w-full bg-white/70 border border-blue-200/50 rounded-lg px-4 py-3 text-gray-800 placeholder-gray-400 outline-none focus:ring-2 focus:ring-blue-300 resize-none"
+                                rows={3}
+                                placeholder="List current medications"
+                              />
+                            ) : (
+                              <p className="text-gray-800 ml-8">{healthData.currentMedications}</p>
+                            )}
+                          </div>
+
+                          <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-200/50">
+                            <div className="flex items-center gap-3 mb-2">
+                              <Activity className="w-5 h-5 text-purple-500" />
+                              <span className="font-semibold text-gray-700">Chronic Conditions</span>
+                            </div>
+                            {isEditing ? (
+                              <textarea
+                                value={editedHealthData.chronicConditions}
+                                onChange={(e) => handleHealthInputChange('chronicConditions', e.target.value)}
+                                className="w-full bg-white/70 border border-purple-200/50 rounded-lg px-4 py-3 text-gray-800 placeholder-gray-400 outline-none focus:ring-2 focus:ring-purple-300 resize-none"
+                                rows={3}
+                                placeholder="List any chronic conditions"
+                              />
+                            ) : (
+                              <p className="text-gray-800 ml-8">{healthData.chronicConditions}</p>
+                            )}
+                          </div>
+
+                          <div className="p-4 bg-gradient-to-r from-teal-50 to-green-50 rounded-xl border border-teal-200/50">
+                            <div className="flex items-center gap-3 mb-2">
+                              <Droplets className="w-5 h-5 text-teal-500" />
+                              <span className="font-semibold text-gray-700">Immunizations</span>
+                            </div>
+                            {isEditing ? (
+                              <textarea
+                                value={editedHealthData.immunizations}
+                                onChange={(e) => handleHealthInputChange('immunizations', e.target.value)}
+                                className="w-full bg-white/70 border border-teal-200/50 rounded-lg px-4 py-3 text-gray-800 placeholder-gray-400 outline-none focus:ring-2 focus:ring-teal-300 resize-none"
+                                rows={3}
+                                placeholder="List immunization history"
+                              />
+                            ) : (
+                              <p className="text-gray-800 ml-8">{healthData.immunizations}</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Family & Hospital History */}
+                    <div>
+                      <h4 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                        <Heart className="w-5 h-5 text-pink-500" />
+                        Family & Medical History
+                      </h4>
+                      <div className="grid md:grid-cols-2 gap-6">
+                        <div className="p-4 bg-gradient-to-r from-pink-50 to-rose-50 rounded-xl border border-pink-200/50">
+                          <div className="flex items-center gap-3 mb-2">
+                            <Heart className="w-5 h-5 text-pink-500" />
+                            <span className="font-semibold text-gray-700">Family Medical History</span>
+                          </div>
+                          {isEditing ? (
+                            <textarea
+                              value={editedHealthData.familyHistory}
+                              onChange={(e) => handleHealthInputChange('familyHistory', e.target.value)}
+                              className="w-full bg-white/70 border border-pink-200/50 rounded-lg px-4 py-3 text-gray-800 placeholder-gray-400 outline-none focus:ring-2 focus:ring-pink-300 resize-none"
+                              rows={4}
+                              placeholder="Enter family medical history"
+                            />
+                          ) : (
+                            <p className="text-gray-800 ml-8">{healthData.familyHistory}</p>
+                          )}
+                        </div>
+
+                        <div className="p-4 bg-gradient-to-r from-gray-50 to-slate-50 rounded-xl border border-gray-200/50">
+                          <div className="flex items-center gap-3 mb-2">
+                            <Settings className="w-5 h-5 text-gray-500" />
+                            <span className="font-semibold text-gray-700">Previous Hospitalizations</span>
+                          </div>
+                          {isEditing ? (
+                            <textarea
+                              value={editedHealthData.previousHospitalizations}
+                              onChange={(e) => handleHealthInputChange('previousHospitalizations', e.target.value)}
+                              className="w-full bg-white/70 border border-gray-200/50 rounded-lg px-4 py-3 text-gray-800 placeholder-gray-400 outline-none focus:ring-2 focus:ring-gray-300 resize-none"
+                              rows={4}
+                              placeholder="List any previous hospitalizations"
+                            />
+                          ) : (
+                            <p className="text-gray-800 ml-8">{healthData.previousHospitalizations}</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}     
               </div>
             </div>
           </div>
