@@ -43,7 +43,7 @@ export default function MainDashboard() {
             icon: Target,
             gradient: 'from-blue-400/30 to-cyan-400/30',
             iconColor: 'text-blue-500',
-            onClick: () => navigate('/goals')
+            onClick: () => navigate('/plans', { state: { from: '/home' } })
         },
         {
             id: 'reports',

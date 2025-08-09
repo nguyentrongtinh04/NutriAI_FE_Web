@@ -11,6 +11,8 @@ import NotificationSettings from "./pages/Settings/Notifications/NotificationSet
 import UserSupport from "./pages/Settings/Support/UserSupport";
 import Goals from './pages/Goals';
 import Reports from './pages/Reports';
+import Plans from './pages/Plans/Planslist';
+import NotificationsPage from './components/NotificationsPage';
 function App() {
   return (
       <Routes>
@@ -26,6 +28,8 @@ function App() {
         <Route path="/support" element={<UserSupport />} />
         <Route path="/goals" element={<Goals />} />
         <Route path="/reports" element={<Reports />} />
+        <Route path="/plans" element={<Plans />} />
+        <Route path="/notificationpages" element={<NotificationsPage />} />
       </Routes>
   );
 }

@@ -36,6 +36,11 @@ export default function Header() {
     setShowSettingsMenu(false);
   };
 
+  // New function to handle notification bell click
+  const handleNotificationClick = () => {
+    navigate('/notificationpages');
+  };
+
   return (
     <>
       <header className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-sm border-b border-blue-200/50 shadow-lg">
@@ -73,10 +78,27 @@ export default function Header() {
 
           {/* User Actions */}
           <div className="flex items-center gap-4">
-            {/* Notification Bell */}
-            <div className="relative">
-              <Bell className="w-6 h-6 text-blue-600 cursor-pointer hover:text-blue-800 transition-colors" />
-              <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+            {/* Enhanced Notification Bell */}
+            <div className="relative group">
+              {/* Animated Glow Effect */}
+              <div className="absolute -inset-2 bg-gradient-to-r from-blue-400/20 via-cyan-400/30 to-blue-500/20 rounded-full blur-lg opacity-0 group-hover:opacity-100 transition-all duration-500 animate-pulse"></div>
+              
+              <div 
+                className="relative p-2 rounded-full cursor-pointer transition-all duration-300 transform hover:scale-110 hover:bg-blue-50"
+                onClick={handleNotificationClick}
+              >
+                <Bell className="w-6 h-6 text-blue-600 group-hover:text-blue-800 transition-colors duration-300 group-hover:animate-pulse" />
+                {/* Enhanced notification dot with animation */}
+                <div className="absolute -top-1 -right-1">
+                  <div className="relative">
+                    <div className="w-4 h-4 bg-gradient-to-r from-red-500 to-pink-500 rounded-full animate-pulse shadow-lg"></div>
+                    <div className="absolute inset-0 bg-gradient-to-r from-red-400 to-pink-400 rounded-full animate-ping opacity-75"></div>
+                    <span className="absolute inset-0 flex items-center justify-center text-[10px] text-white font-bold">
+                      2
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
             
             {/* Settings Menu */}

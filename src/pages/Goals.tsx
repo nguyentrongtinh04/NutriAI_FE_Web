@@ -1,6 +1,11 @@
-import React, { useState } from 'react';
-import { ArrowLeft, Target, Plus, Edit, Trash2, Calendar, TrendingUp, Award, CheckCircle, Circle, Star, Zap, Heart, Activity, Apple, Droplets, Moon, Clock, Trophy, Flag, ChevronLeft, ChevronRight, X, User, Utensils, AlertCircle, DollarSign } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import React, { useMemo, useState } from 'react';
+import {
+    ArrowLeft, ChevronRight, ChevronLeft, ChevronRight as CaretRight,
+    Utensils, Calendar, Clock, Target, TrendingUp, CheckCircle,
+    Timer, ChefHat, FileText, BarChart3, Sparkles
+} from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
+
 interface MealPlan {
     id: string;
     title: string;
@@ -16,9 +21,11 @@ interface MealPlan {
 
 interface MealSchedule {
     day: string;
-    date: string;
+    date: string; // yyyy-mm-dd
     meals: Meal[];
 }
+
+type MealStatus = 'doing' | 'done' | 'late';
 
 interface Meal {
     time: string;
@@ -26,660 +33,568 @@ interface Meal {
     description: string;
     calories: number;
     type: 'breakfast' | 'lunch' | 'dinner' | 'snack';
-}
-
-interface QuestionnaireData {
-    duration: string;
-    goal: string;
-    dietType: string;
-    mealsPerDay: string;
-    mealTimes: string;
-    sleepSchedule: string;
-    activityLevel: string;
-    allergies: string;
-    healthConditions: string;
-    medications: string;
-    favoriteFood: string;
-    dislikedFood: string;
-    cuisinePreference: string;
-    cookingTime: string;
-    budget: string;
-    cookingEquipment: string;
-    specialRequirements: string;
+    status: MealStatus;
 }
 
 interface GoalsProps {
     onBack?: () => void;
+    previousPageLabel?: string;
 }
 
-export default function Goals({ onBack }: GoalsProps) {
+export default function Goals({ onBack, previousPageLabel = 'Danh sách lịch trình' }: GoalsProps) {
     const navigate = useNavigate();
-    const goBack = onBack ?? (() => navigate('/'));  // <-- fallback
-    const [currentWeek, setCurrentWeek] = useState(new Date());
-    const [showAddModal, setShowAddModal] = useState(false);
-    const [showQuestionnaireModal, setShowQuestionnaireModal] = useState(false);
-    const [showConfirmationModal, setShowConfirmationModal] = useState(false);
-    const [currentStep, setCurrentStep] = useState(1);
-    const [questionnaireData, setQuestionnaireData] = useState<QuestionnaireData>({
-        duration: '',
-        goal: '',
-        dietType: '',
-        mealsPerDay: '',
-        mealTimes: '',
-        sleepSchedule: '',
-        activityLevel: '',
-        allergies: '',
-        healthConditions: '',
-        medications: '',
-        favoriteFood: '',
-        dislikedFood: '',
-        cuisinePreference: '',
-        cookingTime: '',
-        budget: '',
-        cookingEquipment: '',
-        specialRequirements: ''
-    });
-
-    const [mealPlans, setMealPlans] = useState<MealPlan[]>([
-        {
-            id: '1',
-            title: 'Kế hoạch giảm cân 4 tuần',
-            description: 'Chế độ ăn low-carb với 3 bữa chính',
-            duration: '4 tuần',
-            goal: 'Giảm cân',
-            dietType: 'Low-carb',
-            mealsPerDay: 3,
-            schedule: [],
-            createdAt: new Date('2025-01-01'),
-            status: 'active'
+    const goBack = onBack ?? (() => navigate('/'));
+    const location = useLocation();
+    const handleBack = () => {
+        if (location.state?.from) {
+            navigate(location.state.from);
+        } else {
+            navigate('/plans'); // fallback
         }
-    ]);
-
-    const isBeforeToday = (date: Date) => {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        return date < today;
     };
+    const planMeta = location?.state?.planMeta as { id: string; name: string; startDate: string; endDate: string } | undefined;
+    
+    const [currentWeek, setCurrentWeek] = useState(new Date());
+    const [dayNotes, setDayNotes] = useState<Record<string, string>>({});
+
+    // Nếu có startDate từ danh sách, set tuần đang xem = tuần chứa startDate
+    React.useEffect(() => {
+        if (planMeta?.startDate) setCurrentWeek(new Date(planMeta.startDate));
+    }, [planMeta]);
+
+    const dayNames = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'];
+    const timeSlots = [
+        { key: 'morning', label: 'Sáng', icon: '🌅' },
+        { key: 'afternoon', label: 'Chiều', icon: '☀️' },
+        { key: 'evening', label: 'Tối', icon: '🌙' },
+    ] as const;
 
     const getWeekDates = (date: Date) => {
-        const week = [];
+        const week: Date[] = [];
         const startOfWeek = new Date(date);
         const day = startOfWeek.getDay();
         const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1);
         startOfWeek.setDate(diff);
-
         for (let i = 0; i < 7; i++) {
-            const currentDate = new Date(startOfWeek);
-            currentDate.setDate(startOfWeek.getDate() + i);
-            week.push(currentDate);
+            const d = new Date(startOfWeek);
+            d.setDate(startOfWeek.getDate() + i);
+            week.push(d);
         }
         return week;
     };
 
-    const weekDates = getWeekDates(currentWeek);
-    const dayNames = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'];
-    const timeSlots = [
-        { key: 'morning', label: 'Sáng', color: 'from-yellow-400 to-orange-400' },
-        { key: 'afternoon', label: 'Chiều', color: 'from-blue-400 to-cyan-400' },
-        { key: 'evening', label: 'Tối', color: 'from-purple-400 to-pink-400' }
-    ];
+    const weekDates = useMemo(() => getWeekDates(currentWeek), [currentWeek]);
 
-    const questions = [
-        {
-            step: 1,
-            title: "Mục tiêu và thời gian",
-            questions: [
-                {
-                    key: 'duration',
-                    question: 'Bạn muốn theo lịch ăn uống này trong bao lâu?',
-                    options: ['2 tuần', '1 tháng', '3 tháng', '6 tháng', 'Dài hạn (1 năm+)']
-                },
-                {
-                    key: 'goal',
-                    question: 'Mục tiêu ăn uống của bạn là gì?',
-                    options: ['Giảm cân', 'Tăng cơ', 'Giữ dáng', 'Cải thiện sức khỏe', 'Hỗ trợ bệnh lý']
-                },
-                {
-                    key: 'dietType',
-                    question: 'Bạn có muốn theo chế độ ăn cụ thể nào không?',
-                    options: ['Keto', 'Eat Clean', 'Địa Trung Hải', 'Thuần chay', 'Low-carb', 'Không có']
-                }
-            ]
-        },
-        {
-            step: 2,
-            title: "Thói quen và nhu cầu ăn uống",
-            questions: [
-                {
-                    key: 'mealsPerDay',
-                    question: 'Mỗi ngày bạn muốn ăn bao nhiêu bữa?',
-                    options: ['2 bữa chính', '3 bữa chính', '3 bữa chính + 1 bữa phụ', '3 bữa chính + 2 bữa phụ']
-                },
-                {
-                    key: 'mealTimes',
-                    question: 'Thời gian các bữa ăn của bạn thường vào lúc nào?',
-                    options: ['6h-12h-18h', '7h-12h-19h', '8h-13h-20h', 'Linh hoạt theo công việc']
-                },
-                {
-                    key: 'sleepSchedule',
-                    question: 'Bạn thường dậy lúc mấy giờ và đi ngủ lúc mấy giờ?',
-                    options: ['5h-21h', '6h-22h', '7h-23h', '8h-24h', 'Không cố định']
-                },
-                {
-                    key: 'activityLevel',
-                    question: 'Mức độ hoạt động thể chất của bạn như thế nào?',
-                    options: ['Ngồi nhiều, ít vận động', 'Vận động nhẹ 1-2 lần/tuần', 'Tập gym thường xuyên', 'Vận động viên/hoạt động cao']
-                }
-            ]
-        },
-        {
-            step: 3,
-            title: "Tình trạng sức khỏe và dị ứng",
-            questions: [
-                {
-                    key: 'allergies',
-                    question: 'Bạn có dị ứng với thực phẩm nào không?',
-                    options: ['Không có', 'Hải sản', 'Sữa và chế phẩm từ sữa', 'Đậu phộng', 'Gluten', 'Khác']
-                },
-                {
-                    key: 'healthConditions',
-                    question: 'Bạn có đang mắc các bệnh lý nào không?',
-                    options: ['Không có', 'Tiểu đường', 'Cao huyết áp', 'Gan nhiễm mỡ', 'Dạ dày', 'Khác']
-                },
-                {
-                    key: 'medications',
-                    question: 'Bạn có đang dùng thuốc hay thực phẩm chức năng nào không?',
-                    options: ['Không có', 'Thuốc điều trị bệnh lý', 'Vitamin tổng hợp', 'Protein powder', 'Khác']
-                }
-            ]
-        },
-        {
-            step: 4,
-            title: "Thực phẩm yêu thích và kiêng kỵ",
-            questions: [
-                {
-                    key: 'favoriteFood',
-                    question: 'Bạn thích ăn những loại thực phẩm nào?',
-                    options: ['Thịt và hải sản', 'Rau củ quả', 'Ngũ cốc và tinh bột', 'Sữa và chế phẩm', 'Tất cả']
-                },
-                {
-                    key: 'dislikedFood',
-                    question: 'Có món nào bạn không thích hoặc không thể ăn không?',
-                    options: ['Không có', 'Rau xanh', 'Hải sản', 'Thịt đỏ', 'Đồ chua cay', 'Khác']
-                },
-                {
-                    key: 'cuisinePreference',
-                    question: 'Bạn muốn chế độ ăn bao gồm món Việt hay có thể kết hợp món Tây, Nhật, Hàn,...?',
-                    options: ['Chỉ món Việt', 'Chủ yếu món Việt + ít món nước ngoài', 'Kết hợp đa dạng', 'Ưu tiên món Tây/Nhật/Hàn']
-                }
-            ]
-        },
-        {
-            step: 5,
-            title: "Điều kiện và yêu cầu khác",
-            questions: [
-                {
-                    key: 'cookingTime',
-                    question: 'Bạn có thời gian nấu ăn không, hay cần thực đơn đơn giản/dễ mua bên ngoài?',
-                    options: ['Có thời gian nấu ăn', 'Nấu đơn giản 15-30 phút', 'Chủ yếu mua ngoài', 'Kết hợp nấu và mua']
-                },
-                {
-                    key: 'budget',
-                    question: 'Bạn có ngân sách cụ thể cho mỗi ngày/tuần/tháng không?',
-                    options: ['Dưới 100k/ngày', '100-200k/ngày', '200-300k/ngày', 'Trên 300k/ngày', 'Không giới hạn']
-                },
-                {
-                    key: 'cookingEquipment',
-                    question: 'Bạn có thiết bị nấu ăn nào?',
-                    options: ['Bếp gas cơ bản', 'Bếp gas + lò vi sóng', 'Đầy đủ thiết bị (nồi chiên không dầu, máy xay,...)', 'Không có thiết bị nấu ăn']
-                },
-                {
-                    key: 'specialRequirements',
-                    question: 'Bạn có yêu cầu gì đặc biệt khác không?',
-                    options: ['Không có', 'Ăn chay vào ngày rằm, mồng 1', 'Cần tăng cường canxi', 'Cần giảm muối', 'Khác']
-                }
-            ]
-        }
-    ];
+    const formatDateVN = (d: Date) =>
+        d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
-    const navigateWeek = (direction: 'prev' | 'next') => {
-        const newDate = new Date(currentWeek);
-        newDate.setDate(currentWeek.getDate() + (direction === 'next' ? 7 : -7));
-        setCurrentWeek(newDate);
+    const weekNumberInMonth = (d: Date) => Math.ceil(d.getDate() / 7);
+
+    const navigateWeek = (dir: 'prev' | 'next') => {
+        const nd = new Date(currentWeek);
+        nd.setDate(currentWeek.getDate() + (dir === 'next' ? 7 : -7));
+        setCurrentWeek(nd);
     };
 
-    const formatDate = (date: Date) => {
-        return date.toLocaleDateString('vi-VN', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric'
-        });
-    };
+    const generateHardcodedSchedule = (baseDate: Date): MealSchedule[] => {
+        const days = getWeekDates(baseDate);
+        const statusCycle: MealStatus[] = ['doing', 'done', 'late', 'done', 'doing', 'late', 'done'];
 
-    const handleQuestionnaireSubmit = () => {
-        setShowQuestionnaireModal(false);
-        setShowConfirmationModal(true);
-    };
-
-    const handleConfirmPlan = () => {
-        // Generate meal plan based on questionnaire data
-        const newPlan: MealPlan = {
-            id: Date.now().toString(),
-            title: `Kế hoạch ${questionnaireData.goal} - ${questionnaireData.duration}`,
-            description: `Chế độ ăn ${questionnaireData.dietType} với ${questionnaireData.mealsPerDay}`,
-            duration: questionnaireData.duration,
-            goal: questionnaireData.goal,
-            dietType: questionnaireData.dietType,
-            mealsPerDay: parseInt(questionnaireData.mealsPerDay.charAt(0)),
-            schedule: generateMealSchedule(questionnaireData, currentWeek),
-            createdAt: new Date(),
-            status: 'active'
-        };
-
-        setMealPlans([...mealPlans, newPlan]);
-        setShowConfirmationModal(false);
-        setQuestionnaireData({
-            duration: '',
-            goal: '',
-            dietType: '',
-            mealsPerDay: '',
-            mealTimes: '',
-            sleepSchedule: '',
-            activityLevel: '',
-            allergies: '',
-            healthConditions: '',
-            medications: '',
-            favoriteFood: '',
-            dislikedFood: '',
-            cuisinePreference: '',
-            cookingTime: '',
-            budget: '',
-            cookingEquipment: '',
-            specialRequirements: ''
-        });
-        setCurrentStep(1);
-    };
-
-    const generateMealSchedule = (data: QuestionnaireData, baseDate: Date): MealSchedule[] => {
-        const week = getWeekDates(baseDate); // Tuần đang xem
-
-        return week.map((date, i) => ({
-            day: dayNames[i],
-            date: date.toISOString().split('T')[0], // 'yyyy-mm-dd' định dạng chuẩn
+        return days.map((d, idx) => ({
+            day: dayNames[idx],
+            date: d.toISOString().split('T')[0],
             meals: [
                 {
-                    time: '7:00',
+                    time: '07:00',
                     name: 'Phở gà',
-                    description: 'Phở gà với rau thơm',
+                    description: 'Phở gà + rau thơm',
                     calories: 350,
-                    type: 'breakfast'
+                    type: 'breakfast',
+                    status: statusCycle[idx],
                 },
                 {
                     time: '12:00',
                     name: 'Cơm gà nướng',
-                    description: 'Cơm gà nướng với salad',
+                    description: 'Gà nướng + salad dầu giấm',
                     calories: 450,
-                    type: 'lunch'
+                    type: 'lunch',
+                    status: idx % 2 === 0 ? 'done' : 'doing',
                 },
                 {
                     time: '18:00',
                     name: 'Canh chua cá',
-                    description: 'Canh chua cá với rau muống',
+                    description: 'Cá lóc + rau muống',
                     calories: 300,
-                    type: 'dinner'
-                }
-            ]
+                    type: 'dinner',
+                    status: idx % 3 === 0 ? 'late' : 'doing',
+                },
+            ],
         }));
     };
 
-    const getMealsForDayAndTime = (date: Date, timeSlot: string) => {
-        const activePlan = mealPlans.find(plan => plan.status === 'active');
+    const [mealPlans] = useState<MealPlan[]>([
+        {
+            id: 'plan-1',
+            title: planMeta?.name || 'Kế hoạch giảm cân 4 tuần',
+            description: 'Low-carb nhẹ, 3 bữa chính',
+            duration: '4 tuần',
+            goal: 'Giảm cân',
+            dietType: 'Low-carb',
+            mealsPerDay: 3,
+            schedule: generateHardcodedSchedule(currentWeek),
+            createdAt: new Date('2025-01-01'),
+            status: 'active',
+        },
+    ]);
+
+    const activePlan = mealPlans.find(p => p.status === 'active') ?? mealPlans[0];
+
+    // Tính toán thông tin cho 4 ô
+    const getWeekProgress = () => {
+        if (!activePlan) return { completed: 0, total: 7, percentage: 0 };
+
+        const today = new Date();
+        const currentWeekDates = getWeekDates(today);
+        let completed = 0;
+
+        currentWeekDates.forEach(date => {
+            const dateStr = date.toISOString().split('T')[0];
+            const daySchedule = activePlan.schedule.find(s => s.date === dateStr);
+            if (daySchedule) {
+                const doneMeals = daySchedule.meals.filter(m => m.status === 'done').length;
+                const totalMeals = daySchedule.meals.length;
+                if (doneMeals === totalMeals) completed++;
+            }
+        });
+
+        return { completed, total: 7, percentage: Math.round((completed / 7) * 100) };
+    };
+
+    const getNextMealTime = () => {
+        if (!activePlan) return null;
+
+        const today = new Date();
+        const todayStr = today.toISOString().split('T')[0];
+        const todaySchedule = activePlan.schedule.find(s => s.date === todayStr);
+
+        if (todaySchedule) {
+            const nextMeal = todaySchedule.meals.find(m => m.status === 'doing');
+            return nextMeal ? { time: nextMeal.time, name: nextMeal.name } : null;
+        }
+        return null;
+    };
+
+    const getTodayNote = () => {
+        const today = new Date();
+        const todayStr = today.toISOString().split('T')[0];
+        return dayNotes[todayStr] || '';
+    };
+
+    const weekProgress = getWeekProgress();
+    const nextMeal = getNextMealTime();
+    const todayNote = getTodayNote();
+
+    const getMealsForDayAndSlot = (date: Date, slot: typeof timeSlots[number]['key']) => {
         if (!activePlan) return [];
+        const dateStr = date.toISOString().split('T')[0];
+        const s = activePlan.schedule.find(x => x.date === dateStr);
+        if (!s) return [];
 
-        const dateStr = date.toISOString().split('T')[0]; // 'yyyy-mm-dd'
-        const daySchedule = activePlan.schedule.find(schedule => schedule.date === dateStr);
-        if (!daySchedule) return [];
-
-        return daySchedule.meals.filter(meal => {
-            if (timeSlot === 'morning') return meal.type === 'breakfast';
-            if (timeSlot === 'afternoon') return meal.type === 'lunch';
-            if (timeSlot === 'evening') return meal.type === 'dinner';
+        return s.meals.filter(m => {
+            if (slot === 'morning') return m.type === 'breakfast';
+            if (slot === 'afternoon') return m.type === 'lunch';
+            if (slot === 'evening') return m.type === 'dinner';
             return false;
         });
     };
 
+    const statusStyles: Record<MealStatus, { wrap: string; dot: string; label: string; glow: string }> = {
+        doing: {
+            wrap: 'bg-blue-50/90 border-blue-200 hover:bg-blue-100/90',
+            dot: 'bg-blue-500',
+            label: 'Đang làm',
+            glow: 'from-blue-400/30 to-cyan-400/30'
+        },
+        done: {
+            wrap: 'bg-emerald-50/90 border-emerald-200 hover:bg-emerald-100/90',
+            dot: 'bg-emerald-500',
+            label: 'Đã làm',
+            glow: 'from-emerald-400/30 to-green-400/30'
+        },
+        late: {
+            wrap: 'bg-rose-50/90 border-rose-200 hover:bg-rose-100/90',
+            dot: 'bg-rose-500',
+            label: 'Trễ lịch',
+            glow: 'from-rose-400/30 to-pink-400/30'
+        },
+    };
+
     return (
-        <div className="w-full py-4 px-2">
-            {/* Header */}
-            <div className="mb-6 flex items-center justify-between">
-                <button onClick={goBack} className="inline-flex items-center gap-2 text-white hover:text-cyan-300">F
-                    <ArrowLeft className="w-5 h-5" />
-                    <span className="font-semibold">Quay lại Dashboard</span>
-                </button>
+        <main className="relative z-20 w-full px-4 py-10 pt-[10px]">
+            {/* Background Gradient Effect */}
+            <div className="fixed inset-0 bg-gradient-to-br from-blue-50 via-white to-cyan-50 -z-10"></div>
+
+            {/* ===== Header / Breadcrumb ===== */}
+            <div className="mb-8 relative">
+                <div className="absolute -inset-4 bg-gradient-to-r from-blue-400/20 via-cyan-400/30 to-blue-400/20 rounded-3xl blur-2xl animate-pulse"></div>
+                <div className="relative">
+                    <div className="bg-white/90 backdrop-blur-sm border border-blue-200 rounded-2xl p-4 shadow-xl">
+                        <div className="flex items-center gap-3 text-gray-600">
+                            <button 
+                                onClick={handleBack}
+                                className="inline-flex items-center gap-2 hover:text-blue-600 transition-all duration-300 group"
+                            >
+                                <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform duration-300" />
+                                <span className="font-medium">{previousPageLabel}</span>
+                            </button>
+                            <ChevronRight className="w-4 h-4 text-gray-400" />
+                            <span className="font-medium text-blue-600">{activePlan?.title ?? 'Lịch trình'}</span>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            {/* Title */}
-            <div className="text-center mb-8">
-                <h1 className="text-4xl font-extrabold text-white bg-gradient-to-r from-cyan-400 via-blue-300 to-cyan-400 bg-clip-text text-transparent">
-                    Lịch trình ăn uống theo tuần
-                </h1>
-                <p className="text-blue-200 text-lg mt-2">Quản lý và theo dõi chế độ ăn uống khoa học</p>
-            </div>
-
-            {/* Stats Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8 max-w-7xl mx-auto px-4">
+            {/* ===== Title Section ===== */}
+            <div className="text-center mb-8 relative">
+                <div className="absolute -inset-4 bg-gradient-to-r from-cyan-400/20 via-blue-400/30 to-cyan-400/20 rounded-3xl blur-2xl animate-pulse"></div>
                 <div className="relative">
-                    <div className="absolute -inset-2 bg-gradient-to-r from-green-400 via-emerald-500 to-green-400 rounded-2xl blur-lg opacity-60 animate-pulse"></div>
-                    <div className="relative bg-white/95 backdrop-blur-3xl border-2 border-green-200/60 rounded-2xl p-6 shadow-xl">
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
-                                <Trophy className="w-6 h-6 text-white" />
+                    <div className="bg-white/90 backdrop-blur-sm border border-blue-200 rounded-3xl p-8 shadow-xl">
+                        {/* Main Title with Icon */}
+                        <div className="flex items-center justify-center gap-4 mb-4">
+                            <div className="w-16 h-16 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                                <Target className="w-8 h-8 text-white animate-pulse" />
                             </div>
-                            <div>
-                                <p className="text-2xl font-bold text-gray-800">{mealPlans.filter(p => p.status === 'completed').length}</p>
-                                <p className="text-green-600 font-medium text-sm">Hoàn thành</p>
-                            </div>
+                            <h1 className="text-4xl md:text-5xl font-bold flex items-center gap-3">
+                                <span className="bg-gradient-to-r from-blue-600 via-cyan-600 to-blue-600 bg-clip-text text-transparent animate-pulse">
+                                    {activePlan?.title ?? 'Lịch trình ăn uống'}
+                                </span>
+                            </h1>
                         </div>
-                    </div>
-                </div>
 
-                <div className="relative">
-                    <div className="absolute -inset-2 bg-gradient-to-r from-blue-400 via-cyan-500 to-blue-400 rounded-2xl blur-lg opacity-60 animate-pulse"></div>
-                    <div className="relative bg-white/95 backdrop-blur-3xl border-2 border-blue-200/60 rounded-2xl p-6 shadow-xl">
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
-                                <Target className="w-6 h-6 text-white" />
-                            </div>
-                            <div>
-                                <p className="text-2xl font-bold text-gray-800">{mealPlans.filter(p => p.status === 'active').length}</p>
-                                <p className="text-blue-600 font-medium text-sm">Đang thực hiện</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                        {/* Description */}
+                        <p className="text-gray-600 text-lg mb-6">{activePlan?.description}</p>
 
-                <div className="relative">
-                    <div className="absolute -inset-2 bg-gradient-to-r from-purple-400 via-indigo-500 to-purple-400 rounded-2xl blur-lg opacity-60 animate-pulse"></div>
-                    <div className="relative bg-white/95 backdrop-blur-3xl border-2 border-purple-200/60 rounded-2xl p-6 shadow-xl">
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-xl flex items-center justify-center">
-                                <TrendingUp className="w-6 h-6 text-white" />
+                        {/* Info Tags */}
+                        <div className="flex items-center justify-center gap-6 text-sm flex-wrap">
+                            <div className="flex items-center gap-2 bg-blue-50 px-4 py-2 rounded-full border border-blue-200 shadow-sm hover:shadow-md transition-all duration-300">
+                                <Clock className="w-4 h-4 text-blue-600" />
+                                <span className="text-blue-700 font-medium">{activePlan?.duration}</span>
                             </div>
-                            <div>
-                                <p className="text-2xl font-bold text-gray-800">25%</p>
-                                <p className="text-purple-600 font-medium text-sm">Tiến độ tuần</p>
+                            <div className="flex items-center gap-2 bg-green-50 px-4 py-2 rounded-full border border-green-200 shadow-sm hover:shadow-md transition-all duration-300">
+                                <TrendingUp className="w-4 h-4 text-green-600" />
+                                <span className="text-green-700 font-medium">{activePlan?.goal}</span>
                             </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="relative">
-                    <div className="absolute -inset-2 bg-gradient-to-r from-orange-400 via-red-500 to-orange-400 rounded-2xl blur-lg opacity-60 animate-pulse"></div>
-                    <div className="relative bg-white/95 backdrop-blur-3xl border-2 border-orange-200/60 rounded-2xl p-6 shadow-xl">
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl flex items-center justify-center">
-                                <Flag className="w-6 h-6 text-white" />
-                            </div>
-                            <div>
-                                <p className="text-2xl font-bold text-gray-800">2</p>
-                                <p className="text-orange-600 font-medium text-sm">Ưu tiên cao</p>
+                            <div className="flex items-center gap-2 bg-orange-50 px-4 py-2 rounded-full border border-orange-200 shadow-sm hover:shadow-md transition-all duration-300">
+                                <Utensils className="w-4 h-4 text-orange-600" />
+                                <span className="text-orange-700 font-medium">{activePlan?.dietType}</span>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* Add Goal Button */}
-            <div className="flex justify-center mb-6">
-                <button
-                    onClick={() => setShowQuestionnaireModal(true)}
-                    className="flex items-center gap-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-8 py-4 rounded-xl hover:scale-105 transition-all duration-300 shadow-lg"
-                >
-                    <Plus className="w-6 h-6" />
-                    <span className="font-semibold text-lg">Thêm mục tiêu ăn uống</span>
-                </button>
-            </div>
-
-            {/* Main Content */}
-            <div className="relative z-20 max-w-7xl mx-auto px-4 py-2">
-                {/* Week Navigation */}
-                <div className="flex items-center justify-center gap-4 mb-6">
-                    <button
-                        onClick={() => navigateWeek('prev')}
-                        className="w-10 h-10 bg-white/20 hover:bg-white/30 rounded-lg flex items-center justify-center transition-colors"
-                    >
-                        <ChevronLeft className="w-5 h-5 text-white" />
-                    </button>
-                    <h2 className="text-2xl font-bold text-white">
-                        Tuần {Math.ceil(weekDates[0].getDate() / 7)} - Tháng {weekDates[0].getMonth() + 1}, {weekDates[0].getFullYear()}
-                    </h2>
-                    <button
-                        onClick={() => navigateWeek('next')}
-                        className="w-10 h-10 bg-white/20 hover:bg-white/30 rounded-lg flex items-center justify-center transition-colors"
-                    >
-                        <ChevronRight className="w-5 h-5 text-white" />
-                    </button>
-                </div>
-
-                {/* Calendar Grid */}
-                <div className="relative">
-                    <div className="absolute -inset-4 bg-gradient-to-r from-cyan-400/20 via-blue-500/20 to-cyan-400/20 rounded-3xl blur-xl"></div>
-                    <div className="relative bg-white/95 backdrop-blur-3xl border-2 border-white/30 rounded-2xl overflow-hidden shadow-2xl">
-                        {/* Calendar Header */}
-                        <div className="grid grid-cols-8 border-b border-gray-200">
-                            <div className="p-4 bg-yellow-50 border-r border-gray-200">
-                                <div className="text-sm font-medium text-gray-600 text-center">Bữa ăn</div>
+            {/* ===== Info Cards Row ===== */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                {/* Tiến độ tuần */}
+                <div className="relative group">
+                    <div className="absolute -inset-1 bg-gradient-to-r from-green-400/30 to-emerald-400/30 rounded-2xl opacity-0 group-hover:opacity-100 blur transition-all duration-500"></div>
+                    <div className="relative bg-white/90 backdrop-blur-sm border border-blue-200 rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:scale-105 hover:-translate-y-1">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-12 h-12 bg-gradient-to-r from-green-400 to-emerald-500 rounded-xl flex items-center justify-center group-hover:animate-bounce">
+                                <BarChart3 className="w-6 h-6 text-white" />
                             </div>
-                            {weekDates.map((date, index) => (
-                                <div key={index} className="p-4 text-center border-r border-gray-200 last:border-r-0">
-                                    <div className="text-lg font-bold text-blue-600">
-                                        {dayNames[index]}
-                                    </div>
-                                    <div className="text-sm text-gray-600 mt-1">
-                                        {formatDate(date)}
-                                    </div>
+                            <div>
+                                <h3 className="font-bold text-gray-800">Tiến độ tuần</h3>
+                                <p className="text-xs text-gray-600">Hoàn thành theo ngày</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className="flex-1">
+                                <div className="flex justify-between text-sm text-gray-600 mb-2">
+                                    <span className="font-medium">{weekProgress.completed}/{weekProgress.total} ngày</span>
+                                    <span className="font-bold text-green-600">{weekProgress.percentage}%</span>
                                 </div>
-                            ))}
-                        </div>
-
-                        {/* Calendar Body */}
-                        <div className="divide-y divide-gray-200">
-                            {timeSlots.map((timeSlot) => (
-                                <div key={timeSlot.key} className="grid grid-cols-8 min-h-[120px]">
-                                    <div className="p-4 bg-yellow-50 border-r border-gray-200 flex items-center justify-center">
-                                        <div className={`text-sm font-semibold bg-gradient-to-r ${timeSlot.color} bg-clip-text text-transparent`}>
-                                            {timeSlot.label}
-                                        </div>
-                                    </div>
-                                    {weekDates.map((date, dayIndex) => {
-                                        const dayMeals = getMealsForDayAndTime(date, timeSlot.key);
-                                        const shouldShow = dayMeals.length > 0 || !isBeforeToday(weekDates[dayIndex]);
-                                        if (!shouldShow) return <div key={dayIndex} className="border-r border-gray-200 last:border-r-0"></div>;
-
-                                        return (
-                                            <div key={dayIndex} className="p-2 border-r border-gray-200 last:border-r-0 min-h-[120px]">
-                                                <div className="space-y-2">
-                                                    {dayMeals.map((meal, mealIndex) => (
-                                                        <div
-                                                            key={mealIndex}
-                                                            className="relative p-3 rounded-lg bg-green-50 border-l-4 border-green-500 cursor-pointer transition-all duration-200 hover:shadow-lg"
-                                                        >
-                                                            <div className="flex items-start gap-2">
-                                                                <div className="w-6 h-6 bg-green-500 rounded-md flex items-center justify-center flex-shrink-0 mt-0.5">
-                                                                    <Utensils className="w-3 h-3 text-white" />
-                                                                </div>
-                                                                <div className="flex-1 min-w-0">
-                                                                    <h4 className="font-medium text-sm leading-tight text-gray-800">
-                                                                        {meal.name}
-                                                                    </h4>
-                                                                    <p className="text-xs text-gray-600 mt-1 leading-tight">
-                                                                        {meal.description}
-                                                                    </p>
-                                                                    <div className="flex items-center gap-1 mt-2">
-                                                                        <Clock className="w-3 h-3 text-gray-500" />
-                                                                        <span className="text-xs text-gray-500">{meal.time}</span>
-                                                                        <span className="text-xs text-gray-500 ml-2">{meal.calories} kcal</span>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Questionnaire Modal */}
-            {showQuestionnaireModal && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                        <div className="p-6 border-b border-gray-200">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <h2 className="text-2xl font-bold text-gray-800">Tạo kế hoạch ăn uống</h2>
-                                    <p className="text-gray-600 mt-1">Bước {currentStep} / {questions.length}</p>
-                                </div>
-                                <button
-                                    onClick={() => setShowQuestionnaireModal(false)}
-                                    className="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-lg flex items-center justify-center transition-colors"
-                                >
-                                    <X className="w-4 h-4 text-gray-600" />
-                                </button>
-                            </div>
-
-                            {/* Progress Bar */}
-                            <div className="mt-4">
-                                <div className="w-full bg-gray-200 rounded-full h-2">
+                                <div className="w-full bg-gray-200 rounded-full h-3">
                                     <div
-                                        className="bg-gradient-to-r from-blue-500 to-cyan-500 h-2 rounded-full transition-all duration-300"
-                                        style={{ width: `${(currentStep / questions.length) * 100}%` }}
+                                        className="bg-gradient-to-r from-green-400 to-emerald-500 h-3 rounded-full transition-all duration-1000"
+                                        style={{ width: `${weekProgress.percentage}%` }}
                                     ></div>
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </div>
 
-                        <div className="p-6">
-                            {questions.map((section) => (
-                                section.step === currentStep && (
-                                    <div key={section.step}>
-                                        <h3 className="text-xl font-semibold text-gray-800 mb-6">{section.title}</h3>
-                                        <div className="space-y-6">
-                                            {section.questions.map((q) => (
-                                                <div key={q.key}>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-3">
-                                                        {q.question}
-                                                    </label>
-                                                    <div className="grid grid-cols-1 gap-2">
-                                                        {q.options.map((option) => (
-                                                            <button
-                                                                key={option}
-                                                                onClick={() => setQuestionnaireData({
-                                                                    ...questionnaireData,
-                                                                    [q.key]: option
-                                                                })}
-                                                                className={`p-3 text-left rounded-lg border-2 transition-all duration-200 ${questionnaireData[q.key as keyof QuestionnaireData] === option
-                                                                    ? 'border-blue-500 bg-blue-50 text-blue-700'
-                                                                    : 'border-gray-200 hover:border-gray-300 text-gray-700'
-                                                                    }`}
-                                                            >
-                                                                {option}
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )
-                            ))}
+                {/* Thời gian tiếp theo */}
+                <div className="relative group">
+                    <div className="absolute -inset-1 bg-gradient-to-r from-blue-400/30 to-cyan-400/30 rounded-2xl opacity-0 group-hover:opacity-100 blur transition-all duration-500"></div>
+                    <div className="relative bg-white/90 backdrop-blur-sm border border-blue-200 rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:scale-105 hover:-translate-y-1">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-12 h-12 bg-gradient-to-r from-blue-400 to-cyan-500 rounded-xl flex items-center justify-center group-hover:animate-bounce">
+                                <Timer className="w-6 h-6 text-white" />
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-gray-800">Thời gian tiếp theo</h3>
+                                <p className="text-xs text-gray-600">Bữa ăn sắp tới</p>
+                            </div>
                         </div>
+                        {nextMeal ? (
+                            <div className="text-center">
+                                <div className="text-2xl font-bold text-blue-600 mb-1">{nextMeal.time}</div>
+                                <div className="text-sm text-gray-600 truncate bg-blue-50 px-3 py-1 rounded-full">{nextMeal.name}</div>
+                            </div>
+                        ) : (
+                            <div className="text-center text-gray-500">
+                                <CheckCircle className="w-8 h-8 mx-auto mb-2 text-green-500" />
+                                <div className="text-sm font-medium">Hoàn thành hôm nay</div>
+                            </div>
+                        )}
+                    </div>
+                </div>
 
-                        <div className="p-6 border-t border-gray-200 flex justify-between">
-                            <button
-                                onClick={() => setCurrentStep(Math.max(1, currentStep - 1))}
-                                disabled={currentStep === 1}
-                                className="px-6 py-2 text-gray-600 hover:text-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                            >
-                                Quay lại
-                            </button>
+                {/* Món ăn tiếp theo */}
+                <div className="relative group">
+                    <div className="absolute -inset-1 bg-gradient-to-r from-orange-400/30 to-red-400/30 rounded-2xl opacity-0 group-hover:opacity-100 blur transition-all duration-500"></div>
+                    <div className="relative bg-white/90 backdrop-blur-sm border border-blue-200 rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:scale-105 hover:-translate-y-1">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-12 h-12 bg-gradient-to-r from-orange-400 to-red-500 rounded-xl flex items-center justify-center group-hover:animate-bounce">
+                                <ChefHat className="w-6 h-6 text-white" />
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-gray-800">Món ăn tiếp theo</h3>
+                                <p className="text-xs text-gray-600">Chuẩn bị sẵn sàng</p>
+                            </div>
+                        </div>
+                        {nextMeal ? (
+                            <div className="text-center">
+                                <div className="text-lg font-bold text-gray-800 truncate mb-2">{nextMeal.name}</div>
+                                <div className="text-xs text-orange-600 bg-orange-50 px-3 py-1 rounded-full inline-flex items-center gap-1">
+                                    <Sparkles className="w-3 h-3" />
+                                    Sắp đến giờ
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="text-center text-gray-500">
+                                <Utensils className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                                <div className="text-sm">Không có món tiếp theo</div>
+                            </div>
+                        )}
+                    </div>
+                </div>
 
-                            {currentStep < questions.length ? (
-                                <button
-                                    onClick={() => setCurrentStep(currentStep + 1)}
-                                    className="px-6 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg hover:scale-105 transition-transform"
-                                >
-                                    Tiếp theo
-                                </button>
+                {/* Ghi chú hôm nay */}
+                <div className="relative group">
+                    <div className="absolute -inset-1 bg-gradient-to-r from-purple-400/30 to-pink-400/30 rounded-2xl opacity-0 group-hover:opacity-100 blur transition-all duration-500"></div>
+                    <div className="relative bg-white/90 backdrop-blur-sm border border-blue-200 rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:scale-105 hover:-translate-y-1">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-12 h-12 bg-gradient-to-r from-purple-400 to-pink-500 rounded-xl flex items-center justify-center group-hover:animate-bounce">
+                                <FileText className="w-6 h-6 text-white" />
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-gray-800">Ghi chú hôm nay</h3>
+                                <p className="text-xs text-gray-600">Nhật ký cá nhân</p>
+                            </div>
+                        </div>
+                        <div className="text-center">
+                            {todayNote ? (
+                                <div className="text-sm text-gray-700 line-clamp-3 bg-purple-50 p-3 rounded-xl border border-purple-200">
+                                    {todayNote}
+                                </div>
                             ) : (
-                                <button
-                                    onClick={handleQuestionnaireSubmit}
-                                    className="px-6 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg hover:scale-105 transition-transform"
-                                >
-                                    Hoàn thành
-                                </button>
+                                <div className="text-gray-500">
+                                    <FileText className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                                    <div className="text-sm">Chưa có ghi chú</div>
+                                </div>
                             )}
                         </div>
                     </div>
                 </div>
-            )}
+            </div>
 
-            {/* Confirmation Modal */}
-            {showConfirmationModal && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-                        <div className="p-6 border-b border-gray-200">
-                            <h2 className="text-2xl font-bold text-gray-800">Xác nhận thông tin</h2>
-                            <p className="text-gray-600 mt-1">Vui lòng kiểm tra lại thông tin trước khi tạo kế hoạch</p>
+            {/* ===== Week Navigation ===== */}
+            <div className="flex items-center justify-center gap-6 mb-8">
+                <button
+                    onClick={() => navigateWeek('prev')}
+                    className="relative group"
+                >
+                    <div className="absolute -inset-1 bg-gradient-to-r from-gray-400 to-gray-500 rounded-2xl opacity-0 group-hover:opacity-20 blur transition-opacity duration-300"></div>
+                    <div className="relative w-12 h-12 bg-white/90 backdrop-blur-sm hover:bg-gray-50 border border-gray-300 rounded-2xl flex items-center justify-center transition-all duration-300 hover:shadow-lg transform hover:scale-105">
+                        <ChevronLeft className="w-6 h-6 text-gray-600 group-hover:-translate-x-1 transition-transform duration-300" />
+                    </div>
+                </button>
+
+                <div className="relative">
+                    <div className="absolute -inset-2 bg-gradient-to-r from-blue-400/20 via-cyan-400/30 to-blue-400/20 rounded-3xl blur-xl"></div>
+                    <div className="relative text-center bg-white/90 backdrop-blur-sm border border-blue-200 rounded-2xl px-8 py-4 shadow-xl">
+                        <div className="text-2xl font-bold text-gray-800 flex items-center justify-center gap-3 mb-2">
+                            <Calendar className="w-6 h-6 text-blue-600" />
+                            <span className="bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+                                Tuần {weekNumberInMonth(weekDates[0])} - Tháng {weekDates[0].getMonth() + 1}, {weekDates[0].getFullYear()}
+                            </span>
                         </div>
+                        <div className="text-gray-600 font-medium">
+                            {formatDateVN(weekDates[0])} – {formatDateVN(weekDates[6])}
+                        </div>
+                    </div>
+                </div>
 
-                        <div className="p-6">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {Object.entries(questionnaireData).map(([key, value]) => {
-                                    if (!value) return null;
+                <button
+                    onClick={() => navigateWeek('next')}
+                    className="relative group"
+                >
+                    <div className="absolute -inset-1 bg-gradient-to-r from-gray-400 to-gray-500 rounded-2xl opacity-0 group-hover:opacity-20 blur transition-opacity duration-300"></div>
+                    <div className="relative w-12 h-12 bg-white/90 backdrop-blur-sm hover:bg-gray-50 border border-gray-300 rounded-2xl flex items-center justify-center transition-all duration-300 hover:shadow-lg transform hover:scale-105">
+                        <CaretRight className="w-6 h-6 text-gray-600 group-hover:translate-x-1 transition-transform duration-300" />
+                    </div>
+                </button>
+            </div>
 
-                                    const questionData = questions
-                                        .flatMap(section => section.questions)
-                                        .find(q => q.key === key);
+            {/* ===== Status Legend ===== */}
+            <div className="flex items-center justify-center gap-6 mb-8">
+                <div className="relative">
+                    <div className="absolute -inset-1 bg-gradient-to-r from-gray-400/20 to-gray-500/20 rounded-2xl blur"></div>
+                    <div className="relative flex items-center gap-6 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-2xl px-6 py-3 shadow-lg">
+                        <span className="inline-flex items-center gap-2 text-gray-700 font-medium">
+                            <span className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
+                            Đã làm
+                        </span>
+                        <span className="inline-flex items-center gap-2 text-gray-700 font-medium">
+                            <span className="w-3 h-3 rounded-full bg-blue-500 animate-pulse"></span>
+                            Đang làm
+                        </span>
+                        <span className="inline-flex items-center gap-2 text-gray-700 font-medium">
+                            <span className="w-3 h-3 rounded-full bg-rose-500 animate-pulse"></span>
+                            Trễ lịch
+                        </span>
+                    </div>
+                </div>
+            </div>
 
+            {/* ===== Main Schedule Grid ===== */}
+            <div className="relative mb-8">
+                <div className="absolute -inset-1 bg-gradient-to-r from-blue-400/10 via-cyan-400/20 to-blue-400/10 rounded-3xl blur-xl"></div>
+                <div className="relative bg-white/90 backdrop-blur-sm border border-blue-200 rounded-3xl overflow-hidden shadow-xl">
+                    {/* Header */}
+                    <div className="grid grid-cols-8 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-blue-50">
+                        <div className="p-4 border-r border-gray-200">
+                            <div className="text-sm font-bold text-gray-700 text-center flex items-center justify-center gap-2">
+                                <Utensils className="w-5 h-5 text-blue-600" />
+                                <span className="bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+                                    Bữa ăn
+                                </span>
+                            </div>
+                        </div>
+                        {weekDates.map((date, index) => (
+                            <div key={index} className="p-4 text-center border-r border-gray-200 last:border-r-0">
+                                <div className="text-lg font-bold text-gray-800">{dayNames[index]}</div>
+                                <div className="text-sm text-gray-600 mt-1 bg-white/50 px-2 py-1 rounded-full">
+                                    {formatDateVN(date)}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Body */}
+                    <div className="divide-y divide-gray-200">
+                        {timeSlots.map((slot, slotIndex) => (
+                            <div key={slot.key} className="grid grid-cols-8 min-h-[140px]">
+                                {/* Time Slot Label */}
+                                <div className="p-4 bg-gradient-to-r from-gray-50 to-blue-50 border-r border-gray-200 flex items-center justify-center">
+                                    <div className="text-center">
+                                        <div className="text-2xl mb-2 animate-bounce" style={{ animationDelay: `${slotIndex * 200}ms` }}>
+                                            {slot.icon}
+                                        </div>
+                                        <div className="text-sm font-bold text-gray-700 bg-white/70 px-3 py-1 rounded-full">
+                                            {slot.label}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Days */}
+                                {weekDates.map((date, dayIndex) => {
+                                    const meals = getMealsForDayAndSlot(date, slot.key);
                                     return (
-                                        <div key={key} className="p-4 bg-gray-50 rounded-lg">
-                                            <h4 className="font-medium text-gray-800 mb-2">
-                                                {questionData?.question}
-                                            </h4>
-                                            <p className="text-blue-600 font-semibold">{value}</p>
+                                        <div key={dayIndex} className="p-3 border-r border-gray-200 last:border-r-0">
+                                            <div className="space-y-3 h-full">
+                                                {meals.map((meal, i) => {
+                                                    const st = statusStyles[meal.status];
+                                                    return (
+                                                        <div
+                                                            key={i}
+                                                            className="relative group"
+                                                            style={{ animationDelay: `${(dayIndex * 100) + (i * 50)}ms` }}
+                                                        >
+                                                            <div className={`absolute -inset-1 bg-gradient-to-r ${st.glow} rounded-2xl opacity-0 group-hover:opacity-100 blur transition-all duration-500`}></div>
+                                                            <div className={`relative p-4 rounded-2xl border ${st.wrap} transition-all duration-300 cursor-pointer transform hover:scale-105 hover:-translate-y-1 shadow-sm hover:shadow-lg`}>
+                                                                <div className="flex items-start gap-3">
+                                                                    <div className="w-8 h-8 rounded-xl bg-gradient-to-r from-gray-100 to-gray-200 flex items-center justify-center flex-shrink-0 mt-1 group-hover:scale-110 transition-transform duration-300">
+                                                                        <Utensils className="w-4 h-4 text-gray-600" />
+                                                                    </div>
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <div className="flex items-center gap-2 mb-2">
+                                                                            <span className={`w-3 h-3 rounded-full ${st.dot} animate-pulse`} />
+                                                                            <h4 className="font-bold text-gray-800 truncate group-hover:text-blue-600 transition-colors duration-300">
+                                                                                {meal.name}
+                                                                            </h4>
+                                                                        </div>
+                                                                        <p className="text-sm text-gray-600 mb-3 line-clamp-2">{meal.description}</p>
+                                                                        <div className="flex items-center justify-between text-sm">
+                                                                            <div className="flex items-center gap-2 text-gray-500 bg-white/70 px-2 py-1 rounded-full">
+                                                                                <Clock className="w-3 h-3" />
+                                                                                <span className="font-medium">{meal.time}</span>
+                                                                            </div>
+                                                                            <div className="text-gray-500 bg-white/70 px-2 py-1 rounded-full font-medium">
+                                                                                {meal.calories} kcal
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
                                         </div>
                                     );
                                 })}
                             </div>
-                        </div>
+                        ))}
 
-                        <div className="p-6 border-t border-gray-200 flex justify-between">
-                            <button
-                                onClick={() => {
-                                    setShowConfirmationModal(false);
-                                    setShowQuestionnaireModal(true);
-                                }}
-                                className="px-6 py-2 text-gray-600 hover:text-gray-800 transition-colors"
-                            >
-                                Chỉnh sửa
-                            </button>
-
-                            <button
-                                onClick={handleConfirmPlan}
-                                className="px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-lg hover:scale-105 transition-transform font-semibold"
-                            >
-                                Tạo kế hoạch ăn uống
-                            </button>
+                        {/* Notes Row */}
+                        <div className="grid grid-cols-8 bg-gradient-to-r from-gray-50 to-blue-50">
+                            <div className="p-4 border-r border-gray-200 flex items-center justify-center">
+                                <span className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                                    <FileText className="w-5 h-5 text-purple-600" />
+                                    <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                                        Ghi chú
+                                    </span>
+                                </span>
+                            </div>
+                            {weekDates.map((date, idx) => {
+                                const key = date.toISOString().split('T')[0];
+                                return (
+                                    <div key={idx} className="p-3 border-r border-gray-200 last:border-r-0">
+                                        <div className="relative">
+                                            <div className="absolute -inset-1 bg-gradient-to-r from-purple-400/20 to-pink-400/20 rounded-xl opacity-0 focus-within:opacity-100 blur transition-opacity duration-300"></div>
+                                            <textarea
+                                                value={dayNotes[key] ?? ''}
+                                                onChange={(e) =>
+                                                    setDayNotes((prev) => ({ ...prev, [key]: e.target.value }))
+                                                }
+                                                placeholder="Viết ghi chú..."
+                                                className="relative w-full min-h-[80px] text-sm rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 p-3 resize-y bg-white/90 backdrop-blur-sm transition-all duration-300 placeholder-gray-400 shadow-sm focus:shadow-lg"
+                                            />
+                                        </div>
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
                 </div>
-            )}
-        </div>
+            </div>
+
+            {/* Bottom spacing */}
+            <div className="h-16"></div>
+        </main>
     );
 }
