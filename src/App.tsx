@@ -9,10 +9,10 @@ import ProfileSettings from "./pages/Settings/Profile/ProfileSettings";
 import Settings from "./pages/Settings/Account/Settings";
 import NotificationSettings from "./pages/Settings/Notifications/NotificationSettings"; 
 import UserSupport from "./pages/Settings/Support/UserSupport";
-
+import Goals from './pages/Goals';
+import Reports from './pages/Reports';
 function App() {
   return (
-    <Router>
       <Routes>
         <Route path="/" element={<Welcome />} />
         <Route path="/login" element={<Login />} />
@@ -24,9 +24,9 @@ function App() {
         <Route path="/settings" element={<Settings />} />
         <Route path="/notifications" element={<NotificationSettings />} />
         <Route path="/support" element={<UserSupport />} />
-
+        <Route path="/goals" element={<Goals />} />
+        <Route path="/reports" element={<Reports />} />
       </Routes>
-    </Router>
   );
 }
 

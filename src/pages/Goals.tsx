@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ArrowLeft, Target, Plus, Edit, Trash2, Calendar, TrendingUp, Award, CheckCircle, Circle, Star, Zap, Heart, Activity, Apple, Droplets, Moon, Clock, Trophy, Flag, ChevronLeft, ChevronRight, X, User, Utensils, AlertCircle, DollarSign } from 'lucide-react';
-
+import { useNavigate } from 'react-router-dom';
 interface MealPlan {
     id: string;
     title: string;
@@ -49,10 +49,12 @@ interface QuestionnaireData {
 }
 
 interface GoalsProps {
-    onBack: () => void;
+    onBack?: () => void;
 }
 
 export default function Goals({ onBack }: GoalsProps) {
+    const navigate = useNavigate();
+    const goBack = onBack ?? (() => navigate('/'));  // <-- fallback
     const [currentWeek, setCurrentWeek] = useState(new Date());
     const [showAddModal, setShowAddModal] = useState(false);
     const [showQuestionnaireModal, setShowQuestionnaireModal] = useState(false);
@@ -350,7 +352,7 @@ export default function Goals({ onBack }: GoalsProps) {
         <div className="w-full py-4 px-2">
             {/* Header */}
             <div className="mb-6 flex items-center justify-between">
-                <button onClick={onBack} className="inline-flex items-center gap-2 text-white hover:text-cyan-300 transition-all">
+                <button onClick={goBack} className="inline-flex items-center gap-2 text-white hover:text-cyan-300">F
                     <ArrowLeft className="w-5 h-5" />
                     <span className="font-semibold">Quay lại Dashboard</span>
                 </button>
@@ -582,8 +584,8 @@ export default function Goals({ onBack }: GoalsProps) {
                                                                     [q.key]: option
                                                                 })}
                                                                 className={`p-3 text-left rounded-lg border-2 transition-all duration-200 ${questionnaireData[q.key as keyof QuestionnaireData] === option
-                                                                        ? 'border-blue-500 bg-blue-50 text-blue-700'
-                                                                        : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                                                                    ? 'border-blue-500 bg-blue-50 text-blue-700'
+                                                                    : 'border-gray-200 hover:border-gray-300 text-gray-700'
                                                                     }`}
                                                             >
                                                                 {option}
