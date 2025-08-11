@@ -1,10 +1,13 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft, ChevronRight, Plus, Search,
   Tags, Clock, Target, Sparkles, Calendar as CalIcon
 } from 'lucide-react';
 import CreatePlanModal from './CreatePlanModal';
 import { useLocation, useNavigate } from 'react-router-dom';
+
+// 🔔 thêm: hook & banner từ hệ thống thông báo
+import { useNotify, AlertBanner } from './../../components/notifications/NotificationsProvider';
 
 type PlanType = 'Giảm cân' | 'Tăng cơ' | 'Giữ dáng' | 'Cải thiện sức khỏe';
 
@@ -17,6 +20,8 @@ interface PlanItem {
 }
 
 export default function PlansList() {
+  const notify = useNotify(); // 🔔
+
   // ===== Utils ngày =====
   const toYMD = (d: Date) => {
     const tz = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
@@ -31,34 +36,10 @@ export default function PlansList() {
   // ===== Dữ liệu mẫu theo ngày THỰC TẾ =====
   const today = new Date();
   const initialPlans: PlanItem[] = [
-    {
-      id: 'p1',
-      name: 'Kế hoạch giảm cân 4 tuần',
-      type: 'Giảm cân',
-      startDate: toYMD(today),
-      endDate: toYMD(addDays(today, 27)), // 28 ngày
-    },
-    {
-      id: 'p2',
-      name: 'Lean bulk 8 tuần',
-      type: 'Tăng cơ',
-      startDate: toYMD(today),
-      endDate: toYMD(addDays(today, 55)), // 56 ngày
-    },
-    {
-      id: 'p3',
-      name: 'Giữ dáng Eat Clean 1 tháng',
-      type: 'Giữ dáng',
-      startDate: toYMD(today),
-      endDate: toYMD(addDays(today, 29)), // 30 ngày
-    },
-    {
-      id: 'p4',
-      name: 'Địa Trung Hải cải thiện sức khỏe',
-      type: 'Cải thiện sức khỏe',
-      startDate: toYMD(today),
-      endDate: toYMD(addDays(today, 42)), // ~6 tuần
-    },
+    { id: 'p1', name: 'Kế hoạch giảm cân 4 tuần', type: 'Giảm cân', startDate: toYMD(today), endDate: toYMD(addDays(today, 27)) },
+    { id: 'p2', name: 'Lean bulk 8 tuần',        type: 'Tăng cơ',   startDate: toYMD(today), endDate: toYMD(addDays(today, 55)) },
+    { id: 'p3', name: 'Giữ dáng Eat Clean 1 tháng', type: 'Giữ dáng', startDate: toYMD(today), endDate: toYMD(addDays(today, 29)) },
+    { id: 'p4', name: 'Địa Trung Hải cải thiện sức khỏe', type: 'Cải thiện sức khỏe', startDate: toYMD(today), endDate: toYMD(addDays(today, 42)) },
   ];
 
   // ===== State =====
@@ -98,6 +79,15 @@ export default function PlansList() {
   }, [q, type, from, to, plans]);
 
   const goToPlan = (plan: PlanItem) => {
+    // 🔔 cảnh báo nếu đã kết thúc
+    const now = new Date();
+    const ended = now > new Date(plan.endDate);
+    if (ended) {
+      notify.warning('Lịch trình này đã kết thúc. Bạn có muốn tạo lịch mới?', {
+        title: 'Cảnh báo',
+        action: { label: 'Tạo lịch mới', onClick: () => setIsModalOpen(true) },
+      });
+    }
     navigate('/goals', { state: { from: '/plans', planMeta: plan } });
   };
 
@@ -107,6 +97,12 @@ export default function PlansList() {
     const planWithId: PlanItem = { ...newPlan, id };
     setPlans(prev => [planWithId, ...prev]);
     setIsModalOpen(false);
+
+    // 🔔 toast thành công
+    notify.success('Lịch trình đã được tạo và bắt đầu từ ngày ' +
+      new Date(planWithId.startDate).toLocaleDateString('vi-VN') + '.', {
+      title: 'Thành công',
+    });
   };
 
   const getPlanTypeIcon = (planType: PlanType) => {
@@ -133,6 +129,18 @@ export default function PlansList() {
         return { gradient: 'from-gray-400 to-gray-500', bg: 'bg-gray-50', border: 'border-gray-200', text: 'text-gray-700', glow: 'from-gray-400/30 to-gray-500/30' };
     }
   };
+
+  // 🔔 khi kết quả lọc trống -> toast 1 lần mỗi lần thay đổi điều kiện
+  const toastShownRef = useRef<string>('');
+  useEffect(() => {
+    const key = JSON.stringify({ q, type, from, to });
+    if (filtered.length === 0 && toastShownRef.current !== key) {
+      notify.info('Không tìm thấy lịch trình phù hợp. Thử điều chỉnh bộ lọc hoặc từ khóa khác.', {
+        title: 'Thông tin',
+      });
+      toastShownRef.current = key;
+    }
+  }, [filtered.length, q, type, from, to, notify]);
 
   return (
     <main className="relative z-20 w-full px-4 pt-[10px]">
@@ -178,7 +186,7 @@ export default function PlansList() {
         <p className="text-gray-600 text-lg">Quản lý và theo dõi các lịch trình dinh dưỡng của bạn</p>
       </div>
 
-      {/* ===== Search + Add (đã BỎ nút Lọc) ===== */}
+      {/* ===== Search + Add ===== */}
       <div className="flex flex-col md:flex-row md:items-center gap-4 mb-8">
         <div className="flex-1 relative">
           <div className="absolute -inset-1 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-2xl opacity-20 blur"></div>
@@ -202,7 +210,7 @@ export default function PlansList() {
         </button>
       </div>
 
-      {/* ===== Bộ lọc chi tiết (loại + thời gian) — GIỮ, nhưng không có nút Lọc ===== */}
+      {/* ===== Bộ lọc chi tiết ===== */}
       <div className="relative mb-8">
         <div className="absolute -inset-1 bg-gradient-to-r from-blue-400/20 via-cyan-400/30 to-blue-400/20 rounded-3xl blur-xl"></div>
         <div className="relative bg-white/90 backdrop-blur-sm rounded-3xl border border-blue-200 p-6 shadow-xl">
