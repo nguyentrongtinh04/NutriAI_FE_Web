@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { User, Lock, Eye, EyeOff, Sparkles, LogIn, UserPlus, ArrowRight } from "lucide-react";
+import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { auth } from "../firebase";
 
 export default function Login() {
     const [username, setUsername] = useState("");
@@ -24,6 +26,16 @@ export default function Login() {
             navigate("/home");
         }
     };
+
+    const handleGoogleLogin = async () => {
+        try {
+          const provider = new GoogleAuthProvider();
+          await signInWithPopup(auth, provider);
+          navigate("/home"); // Đăng nhập thành công thì chuyển trang
+        } catch (error) {
+          console.error("Google login error:", error);
+        }
+      };
 
     return (
         <div className="min-h-screen w-full relative overflow-hidden bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 flex items-center justify-center">
@@ -212,6 +224,7 @@ export default function Login() {
                                     <div className="absolute -inset-1 bg-gradient-to-r from-gray-300 to-gray-400 rounded-xl blur opacity-25 group-hover:opacity-50 transition duration-300"></div>
                                     <button
                                         type="button"
+                                        onClick={handleGoogleLogin} 
                                         className="relative w-full bg-white/80 backdrop-blur-sm border-2 border-gray-300 text-gray-700 py-3 rounded-xl font-semibold shadow-lg hover:bg-white/90 hover:border-gray-400 transition-all duration-300 transform hover:scale-[1.02] group"
                                     >
                                         <span className="flex items-center justify-center gap-3">
