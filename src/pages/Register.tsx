@@ -1,11 +1,28 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { User, Phone, Lock, Eye, EyeOff, Sparkles, UserPlus, LogIn, ArrowRight, Mail, Users } from "lucide-react";
+import { User, Phone, Lock, Eye, EyeOff, Sparkles, UserPlus, ArrowRight, Mail, Users } from "lucide-react";
+import { auth } from "../firebase";
+import { updateProfile, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { http } from "../lib/http";
+import { saveTokens, AuthTokens } from "../lib/auth";
+import { RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
 
+declare global {
+    interface Window {
+      recaptchaVerifier: RecaptchaVerifier;
+    }
+  }
+  
 export default function Register() {
     const navigate = useNavigate();
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [errorMsg, setErrorMsg] = useState("");
+    const [phone, setPhone] = useState("");
+    const [phoneVerified, setPhoneVerified] = useState(false);
+    const [confirmation, setConfirmation] = useState<any>(null);
+    const [otp, setOtp] = useState("");
+    const [waitingForOtp, setWaitingForOtp] = useState(false);
 
     const [form, setForm] = useState({
         fullName: "",
@@ -25,20 +42,62 @@ export default function Register() {
         confirmPassword: "",
     });
 
+    const [submitting, setSubmitting] = useState(false);
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
-
-        // Prevent non-numeric input in phone field
         if (name === "phone" && /[^\d]/.test(value)) return;
-
         setForm({ ...form, [name]: value });
-        setErrors({ ...errors, [name]: "" }); // Reset error when user types again
+        setErrors({ ...errors, [name]: "" });
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    useEffect(() => {
+        if (window.google) {
+            window.google.accounts.id.initialize({
+                client_id: "383034214927-55h5bb1vgl90rmvacbqjerdd42598rf8.apps.googleusercontent.com",
+                callback: handleGoogleResponse,
+            });
+        }
+    }, []);
+
+    const handleGoogleResponse = async (response: any) => {
+        try {
+            const googleIdToken = response.credential;
+            const { data } = await http.post<AuthTokens>("/google", { id_token: googleIdToken });
+            saveTokens(data);
+            navigate("/home");
+        } catch (err: any) {
+            const msg = err?.response?.data?.message || err?.message || "Google login failed";
+            setErrorMsg(msg);
+        }
+    };
+
+    // thêm ngay dưới handleGoogleResponse
+    const handleGoogleLogin = () => {
+        if (window.google) {
+            window.google.accounts.id.prompt();
+        } else {
+            setErrorMsg("Google SDK chưa sẵn sàng.");
+        }
+    };
+    const generateRecaptcha = async () => {
+        if (window.recaptchaVerifier) {
+          window.recaptchaVerifier.clear(); // clear nếu đã tồn tại
+        }
+      
+        window.recaptchaVerifier = new RecaptchaVerifier(
+          auth,                   // ✅ auth phải đứng đầu
+          "recaptcha-container",  // id div
+          { size: "invisible" }   // options
+        );
+      
+        await window.recaptchaVerifier.render(); // render bắt buộc
+      };
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        const newErrors: typeof errors = {
+        const newErrors = {
             fullName: "",
             email: "",
             phone: "",
@@ -46,51 +105,74 @@ export default function Register() {
             password: "",
             confirmPassword: "",
         };
-
         let isValid = true;
 
-        if (!form.fullName.trim()) {
-            newErrors.fullName = "Full name is required";
+        if (!form.fullName.trim()) { newErrors.fullName = "Full name is required"; isValid = false; }
+        if (!form.email.trim()) { newErrors.email = "Email is required"; isValid = false; }
+        else if (!/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/.test(form.email)) { newErrors.email = "Invalid email address"; isValid = false; }
+        if (!form.phone.trim()) { newErrors.phone = "Phone number is required"; isValid = false; }
+        else if (!/^0\d{9,}$/.test(form.phone)) {  // ✅ phải bắt đầu bằng 0 và có 10 số trở lên
+            newErrors.phone = "Phone must start with 0 and be at least 10 digits";
             isValid = false;
         }
-
-        if (!form.email.trim()) {
-            newErrors.email = "Email is required";
-            isValid = false;
-        } else if (!/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/.test(form.email)) {
-            newErrors.email = "Invalid email address";
-            isValid = false;
-        }
-
-        if (!form.phone.trim()) {
-            newErrors.phone = "Phone number is required";
-            isValid = false;
-        } else if (!/^\d{10,}$/.test(form.phone)) {
-            newErrors.phone = "Phone must be at least 10 digits";
-            isValid = false;
-        }
-
-        if (!form.gender) {
-            newErrors.gender = "Please select your gender";
-            isValid = false;
-        }
-
-        if (form.password.length < 6) {
-            newErrors.password = "Password must be at least 6 characters";
-            isValid = false;
-        }
-
-        if (form.password !== form.confirmPassword) {
-            newErrors.confirmPassword = "Passwords do not match";
-            isValid = false;
-        }
+        if (!form.gender) { newErrors.gender = "Please select your gender"; isValid = false; }
+        if (form.password.length < 6) { newErrors.password = "Password must be at least 6 characters"; isValid = false; }
+        if (form.password !== form.confirmPassword) { newErrors.confirmPassword = "Passwords do not match"; isValid = false; }
 
         setErrors(newErrors);
-
         if (!isValid) return;
 
-        alert("✅ Registration successful!");
-        // TODO: Submit form to backend
+        try {
+            setSubmitting(true);
+        
+            // Khởi tạo recaptcha
+            await generateRecaptcha();
+            const appVerifier = window.recaptchaVerifier;
+        
+            // Chuyển số điện thoại sang E.164 (+84...)
+            const formattedPhone = form.phone.startsWith("+")
+              ? form.phone
+              : "+84" + form.phone.substring(1);
+        
+            console.log("Formatted phone:", formattedPhone);
+        
+            // Gửi OTP
+            const result = await signInWithPhoneNumber(auth, formattedPhone, appVerifier);
+            setConfirmation(result);
+            setWaitingForOtp(true);
+        
+            alert("📲 OTP đã gửi về " + formattedPhone);
+          } catch (err: any) {
+            console.error("🔥 Firebase OTP Error:", err);
+            alert("❌ Gửi OTP thất bại: " + err.message);
+          } finally {
+            setSubmitting(false);
+          }
+        };
+
+    const verifyOtp = async () => {
+        try {
+            const userCredential = await confirmation.confirm(otp);
+            const phoneNumber = userCredential.user.phoneNumber;
+
+            // Gọi backend để lưu user
+            const { data } = await http.post<AuthTokens>("/register", {
+                phone: phoneNumber,
+                email: form.email,
+                password: form.password,
+            });
+
+            saveTokens(data);
+
+            if (auth.currentUser && form.fullName) {
+                await updateProfile(auth.currentUser, { displayName: form.fullName });
+            }
+
+            alert("✅ Đăng ký thành công!");
+            navigate("/home");
+        } catch (err: any) {
+            alert("❌ OTP không hợp lệ: " + err.message);
+        }
     };
 
     return (
@@ -110,7 +192,7 @@ export default function Register() {
                     <div className="absolute bottom-1/4 left-1/3 w-72 h-72 bg-gradient-to-r from-sky-400/55 via-blue-400/65 to-cyan-500/55 rounded-full blur-3xl animate-bounce delay-2000"></div>
                     <div className="absolute top-3/4 right-1/3 w-64 h-64 bg-gradient-to-r from-blue-300/45 via-cyan-400/55 to-blue-500/45 rounded-full blur-3xl animate-bounce delay-3000"></div>
                 </div>
-                
+
                 {/* Animated Light Rays */}
                 <div className="absolute inset-0">
                     <div className="absolute top-0 left-1/4 w-2 h-full bg-gradient-to-b from-cyan-400/60 via-transparent to-blue-500/60 transform rotate-12 animate-pulse"></div>
@@ -153,25 +235,25 @@ export default function Register() {
 
             {/* Main Container */}
             <div className="relative z-10 w-full max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-center justify-center gap-12">
-                
+
                 {/* Left Side Registration Form */}
                 <div className="w-full lg:w-2/3 max-w-4xl">
                     {/* Enhanced Glowing Border */}
                     <div className="absolute -inset-3 bg-gradient-to-r from-cyan-400 via-blue-500 to-cyan-400 rounded-3xl blur-xl opacity-60 animate-pulse"></div>
                     <div className="absolute -inset-2 bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-500 rounded-3xl blur-lg opacity-40 animate-pulse delay-500"></div>
-                    
+
                     {/* Main Card with Enhanced Glass Effect */}
                     <div className="relative bg-white/90 backdrop-blur-3xl rounded-3xl p-8 shadow-2xl border border-blue-200/60 shadow-cyan-500/20">
-                        
+
                         {/* Enhanced Header with Logo */}
                         <div className="flex items-center gap-4 mb-8">
                             <div className="relative">
                                 <div className="absolute -inset-2 bg-gradient-to-r from-blue-400/40 via-cyan-300/50 to-blue-500/40 rounded-full blur-xl animate-pulse"></div>
                                 <div className="absolute -inset-1 bg-white/30 rounded-full blur-lg animate-pulse delay-500"></div>
-                                <img 
-                                     src="/src/assets/logo.png" 
-                                    alt="NutriAI Logo" 
-                                    className="relative w-25 h-20 object-contain rounded-full drop-shadow-2xl filter brightness-110 contrast-110 saturate-110" 
+                                <img
+                                    src="/src/assets/logo.png"
+                                    alt="NutriAI Logo"
+                                    className="relative w-25 h-20 object-contain rounded-full drop-shadow-2xl filter brightness-110 contrast-110 saturate-110"
                                 />
                             </div>
                             <div>
@@ -409,12 +491,32 @@ export default function Register() {
                                         <div className="absolute inset-0 bg-white/20 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
                                     </button>
                                 </div>
+                                {waitingForOtp && (
+                                    <div className="mt-4 space-y-2">
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="text"
+                                                value={otp}
+                                                onChange={(e) => setOtp(e.target.value)}
+                                                placeholder="Enter OTP"
+                                                className="flex-1 border rounded-lg px-3 py-2"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={verifyOtp}
+                                                className="px-4 bg-green-500 text-white rounded-lg hover:bg-green-600"
+                                            >
+                                                Verify OTP
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* Google Register Button */}
                                 <div className="relative">
                                     <div className="absolute -inset-1 bg-gradient-to-r from-gray-300 to-gray-400 rounded-xl blur opacity-25 group-hover:opacity-50 transition duration-300"></div>
                                     <button
-                                        type="button"
+                                        type="button" onClick={handleGoogleLogin}
                                         className="relative w-full bg-white/80 backdrop-blur-sm border-2 border-gray-300 text-gray-700 py-3 rounded-xl font-semibold shadow-lg hover:bg-white/90 hover:border-gray-400 transition-all duration-300 transform hover:scale-[1.02] group"
                                     >
                                         <span className="flex items-center justify-center gap-3">
@@ -464,6 +566,7 @@ export default function Register() {
             <div className="absolute bottom-10 left-10 w-48 h-48 bg-gradient-to-r from-cyan-400/35 to-blue-500/35 rounded-full blur-2xl animate-bounce delay-1000"></div>
             <div className="absolute top-1/2 left-5 w-32 h-32 bg-gradient-to-r from-blue-300/50 to-sky-400/50 rounded-full blur-xl animate-bounce delay-2000"></div>
             <div className="absolute bottom-1/4 right-5 w-36 h-36 bg-gradient-to-r from-cyan-300/45 to-blue-400/45 rounded-full blur-xl animate-bounce delay-500"></div>
+            <div id="recaptcha-container" className="hidden"></div>
         </div>
     );
 }
