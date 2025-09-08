@@ -1,179 +1,176 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { User, Phone, Lock, Eye, EyeOff, Sparkles, UserPlus, ArrowRight, Mail, Users } from "lucide-react";
+import { updateProfile, RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
 import { auth } from "../firebase";
-import { updateProfile, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
-import { http } from "../lib/http";
-import { saveTokens, AuthTokens } from "../lib/auth";
-import { RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatch, RootState } from "../redux/store";
+import { registerUser, loginWithGoogle } from "../redux/slices/authSlice";
 
 declare global {
-    interface Window {
-      recaptchaVerifier: RecaptchaVerifier;
-    }
+  interface Window {
+    recaptchaVerifier: RecaptchaVerifier;
+    google: any;
   }
-  
+}
+
 export default function Register() {
-    const navigate = useNavigate();
-    const [showPassword, setShowPassword] = useState(false);
-    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const [errorMsg, setErrorMsg] = useState("");
-    const [phone, setPhone] = useState("");
-    const [phoneVerified, setPhoneVerified] = useState(false);
-    const [confirmation, setConfirmation] = useState<any>(null);
-    const [otp, setOtp] = useState("");
-    const [waitingForOtp, setWaitingForOtp] = useState(false);
+  const navigate = useNavigate();
+  const dispatch = useDispatch<AppDispatch>();
+  const { loading, error } = useSelector((state: RootState) => state.auth);
 
-    const [form, setForm] = useState({
-        fullName: "",
-        email: "",
-        phone: "",
-        gender: "",
-        password: "",
-        confirmPassword: "",
-    });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+  const [confirmation, setConfirmation] = useState<any>(null);
+  const [otp, setOtp] = useState("");
+  const [waitingForOtp, setWaitingForOtp] = useState(false);
 
-    const [errors, setErrors] = useState({
-        fullName: "",
-        email: "",
-        phone: "",
-        gender: "",
-        password: "",
-        confirmPassword: "",
-    });
+  const [form, setForm] = useState({
+    fullName: "",
+    email: "",
+    phone: "",
+    gender: "",
+    password: "",
+    confirmPassword: "",
+  });
 
-    const [submitting, setSubmitting] = useState(false);
+  const [errors, setErrors] = useState({
+    fullName: "",
+    email: "",
+    phone: "",
+    gender: "",
+    password: "",
+    confirmPassword: "",
+  });
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        const { name, value } = e.target;
-        if (name === "phone" && /[^\d]/.test(value)) return;
-        setForm({ ...form, [name]: value });
-        setErrors({ ...errors, [name]: "" });
+  const [submitting, setSubmitting] = useState(false);
+
+  // ===== Google One Tap SDK =====
+  useEffect(() => {
+    if (window.google) {
+      window.google.accounts.id.initialize({
+        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+        callback: handleGoogleResponse,
+      });
+    }
+  }, []);
+
+  const handleGoogleResponse = async (response: any) => {
+    try {
+      const googleIdToken = response.credential;
+      await dispatch(loginWithGoogle(googleIdToken)).unwrap();
+      navigate("/home");
+    } catch (err: any) {
+      setErrorMsg(err);
+    }
+  };
+
+  const handleGoogleLogin = () => {
+    if (window.google) {
+      window.google.accounts.id.prompt();
+    } else {
+      setErrorMsg("Google SDK chưa sẵn sàng.");
+    }
+  };
+
+  // ===== OTP Firebase =====
+  useEffect(() => {
+    if (!window.recaptchaVerifier) {
+      window.recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
+        size: "invisible",
+        callback: (response: any) => {
+          console.log("reCAPTCHA solved:", response);
+        },
+      });
+      window.recaptchaVerifier.render().then((widgetId: any) => {
+        console.log("reCAPTCHA ready, widgetId:", widgetId);
+      });
+    }
+  }, []);
+
+  // ===== Handle input =====
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    if (name === "phone" && /[^\d]/.test(value)) return;
+    setForm({ ...form, [name]: value });
+    setErrors({ ...errors, [name]: "" });
+  };
+
+  // ===== Submit Register =====
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const newErrors = {
+      fullName: "",
+      email: "",
+      phone: "",
+      gender: "",
+      password: "",
+      confirmPassword: "",
     };
+    let isValid = true;
 
-    useEffect(() => {
-        if (window.google) {
-            window.google.accounts.id.initialize({
-                client_id: "383034214927-55h5bb1vgl90rmvacbqjerdd42598rf8.apps.googleusercontent.com",
-                callback: handleGoogleResponse,
-            });
-        }
-    }, []);
+    if (!form.fullName.trim()) { newErrors.fullName = "Full name is required"; isValid = false; }
+    if (!form.email.trim()) { newErrors.email = "Email is required"; isValid = false; }
+    else if (!/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/.test(form.email)) { newErrors.email = "Invalid email address"; isValid = false; }
+    if (!form.phone.trim()) { newErrors.phone = "Phone number is required"; isValid = false; }
+    else if (!/^0\d{9,}$/.test(form.phone)) {  
+      newErrors.phone = "Phone must start with 0 and be at least 10 digits";
+      isValid = false;
+    }
+    if (!form.gender) { newErrors.gender = "Please select your gender"; isValid = false; }
+    if (form.password.length < 6) { newErrors.password = "Password must be at least 6 characters"; isValid = false; }
+    if (form.password !== form.confirmPassword) { newErrors.confirmPassword = "Passwords do not match"; isValid = false; }
 
-    const handleGoogleResponse = async (response: any) => {
-        try {
-            const googleIdToken = response.credential;
-            const { data } = await http.post<AuthTokens>("/google", { id_token: googleIdToken });
-            saveTokens(data);
-            navigate("/home");
-        } catch (err: any) {
-            const msg = err?.response?.data?.message || err?.message || "Google login failed";
-            setErrorMsg(msg);
-        }
-    };
+    setErrors(newErrors);
+    if (!isValid) return;
 
-    // thêm ngay dưới handleGoogleResponse
-    const handleGoogleLogin = () => {
-        if (window.google) {
-            window.google.accounts.id.prompt();
-        } else {
-            setErrorMsg("Google SDK chưa sẵn sàng.");
-        }
-    };
-    const generateRecaptcha = async () => {
-        if (window.recaptchaVerifier) {
-          window.recaptchaVerifier.clear(); // clear nếu đã tồn tại
-        }
-      
-        window.recaptchaVerifier = new RecaptchaVerifier(
-          auth,                   // ✅ auth phải đứng đầu
-          "recaptcha-container",  // id div
-          { size: "invisible" }   // options
-        );
-      
-        await window.recaptchaVerifier.render(); // render bắt buộc
-      };
+    try {
+      setSubmitting(true);
+      const appVerifier = window.recaptchaVerifier;
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+      const formattedPhone = form.phone.startsWith("+")
+        ? form.phone
+        : "+84" + form.phone.substring(1);
 
-        const newErrors = {
-            fullName: "",
-            email: "",
-            phone: "",
-            gender: "",
-            password: "",
-            confirmPassword: "",
-        };
-        let isValid = true;
+      const result = await signInWithPhoneNumber(auth, formattedPhone, appVerifier);
+      setConfirmation(result);
+      setWaitingForOtp(true);
 
-        if (!form.fullName.trim()) { newErrors.fullName = "Full name is required"; isValid = false; }
-        if (!form.email.trim()) { newErrors.email = "Email is required"; isValid = false; }
-        else if (!/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/.test(form.email)) { newErrors.email = "Invalid email address"; isValid = false; }
-        if (!form.phone.trim()) { newErrors.phone = "Phone number is required"; isValid = false; }
-        else if (!/^0\d{9,}$/.test(form.phone)) {  // ✅ phải bắt đầu bằng 0 và có 10 số trở lên
-            newErrors.phone = "Phone must start with 0 and be at least 10 digits";
-            isValid = false;
-        }
-        if (!form.gender) { newErrors.gender = "Please select your gender"; isValid = false; }
-        if (form.password.length < 6) { newErrors.password = "Password must be at least 6 characters"; isValid = false; }
-        if (form.password !== form.confirmPassword) { newErrors.confirmPassword = "Passwords do not match"; isValid = false; }
+      alert("📲 OTP đã gửi về " + formattedPhone);
+    } catch (err: any) {
+      console.error("🔥 Firebase OTP Error:", err);
+      alert("❌ Gửi OTP thất bại: " + err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
-        setErrors(newErrors);
-        if (!isValid) return;
+  // ===== Verify OTP & Register BE =====
+  const verifyOtp = async () => {
+    try {
+      const userCredential = await confirmation.confirm(otp);
+      const phoneNumber = userCredential.user.phoneNumber;
+      const localPhone = phoneNumber?.replace("+84", "0");
 
-        try {
-            setSubmitting(true);
-        
-            // Khởi tạo recaptcha
-            await generateRecaptcha();
-            const appVerifier = window.recaptchaVerifier;
-        
-            // Chuyển số điện thoại sang E.164 (+84...)
-            const formattedPhone = form.phone.startsWith("+")
-              ? form.phone
-              : "+84" + form.phone.substring(1);
-        
-            console.log("Formatted phone:", formattedPhone);
-        
-            // Gửi OTP
-            const result = await signInWithPhoneNumber(auth, formattedPhone, appVerifier);
-            setConfirmation(result);
-            setWaitingForOtp(true);
-        
-            alert("📲 OTP đã gửi về " + formattedPhone);
-          } catch (err: any) {
-            console.error("🔥 Firebase OTP Error:", err);
-            alert("❌ Gửi OTP thất bại: " + err.message);
-          } finally {
-            setSubmitting(false);
-          }
-        };
+      await dispatch(registerUser({
+        phone: localPhone!,
+        email: form.email,
+        password: form.password,
+        fullName: form.fullName,
+      })).unwrap();
 
-    const verifyOtp = async () => {
-        try {
-            const userCredential = await confirmation.confirm(otp);
-            const phoneNumber = userCredential.user.phoneNumber;
+      if (auth.currentUser && form.fullName) {
+        await updateProfile(auth.currentUser, { displayName: form.fullName });
+      }
 
-            // Gọi backend để lưu user
-            const { data } = await http.post<AuthTokens>("/register", {
-                phone: phoneNumber,
-                email: form.email,
-                password: form.password,
-            });
-
-            saveTokens(data);
-
-            if (auth.currentUser && form.fullName) {
-                await updateProfile(auth.currentUser, { displayName: form.fullName });
-            }
-
-            alert("✅ Đăng ký thành công!");
-            navigate("/home");
-        } catch (err: any) {
-            alert("❌ OTP không hợp lệ: " + err.message);
-        }
-    };
+      alert("✅ Đăng ký thành công!");
+      navigate("/home");
+    } catch (err: any) {
+      alert("❌ OTP không hợp lệ: " + err.message);
+    }
+  };        
 
     return (
         <div className="min-h-screen w-full relative overflow-hidden bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 flex items-center justify-center">
@@ -566,7 +563,6 @@ export default function Register() {
             <div className="absolute bottom-10 left-10 w-48 h-48 bg-gradient-to-r from-cyan-400/35 to-blue-500/35 rounded-full blur-2xl animate-bounce delay-1000"></div>
             <div className="absolute top-1/2 left-5 w-32 h-32 bg-gradient-to-r from-blue-300/50 to-sky-400/50 rounded-full blur-xl animate-bounce delay-2000"></div>
             <div className="absolute bottom-1/4 right-5 w-36 h-36 bg-gradient-to-r from-cyan-300/45 to-blue-400/45 rounded-full blur-xl animate-bounce delay-500"></div>
-            <div id="recaptcha-container" className="hidden"></div>
         </div>
     );
 }

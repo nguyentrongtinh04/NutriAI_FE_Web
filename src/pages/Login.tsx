@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { User, Lock, Eye, EyeOff, Sparkles, LogIn, UserPlus, ArrowRight } from "lucide-react";
-import { http } from "../lib/http";
-import { saveTokens, type AuthTokens } from "../lib/auth";
-import { sendOtp } from "../utils/phoneAuths";
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatch, RootState } from "../redux/store";
+import { loginUser, loginWithGoogle } from "../redux/slices/authSlice";
 import { useNotify } from "../components/notifications/NotificationsProvider";
+
 declare global {
   interface Window {
     google: any;
@@ -17,14 +18,17 @@ export default function Login() {
   const [errorMsg, setErrorMsg] = useState("");
   const [showUserDetail, setShowUserDetail] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
   const navigate = useNavigate();
-  const notify = useNotify(); // khởi tạo
+  const notify = useNotify();
+  const dispatch = useDispatch<AppDispatch>();
+  const { loading, error } = useSelector((state: RootState) => state.auth);
 
   // ===== Google Identity Services (GIS) =====
   useEffect(() => {
     if (window.google) {
       window.google.accounts.id.initialize({
-        client_id: "383034214927-55h5bb1vgl90rmvacbqjerdd42598rf8.apps.googleusercontent.com",
+        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
         callback: handleGoogleResponse,
       });
     }
@@ -33,19 +37,17 @@ export default function Login() {
   const handleGoogleResponse = async (response: any) => {
     try {
       const googleIdToken = response.credential;
-      const { data } = await http.post<AuthTokens>("/google", { id_token: googleIdToken });
-      saveTokens(data);
+      await dispatch(loginWithGoogle(googleIdToken)).unwrap();
 
       notify.success("🎉 Google login successful!");
       navigate("/home");
     } catch (err: any) {
-      const msg = err?.response?.data?.message || err?.message || "Google login failed";
+      const msg = err?.message || "Google login failed";
       setErrorMsg(msg);
       notify.error(`❌ Google login failed: ${msg}`);
     }
   };
 
-  // thêm ngay dưới handleGoogleResponse
   const handleGoogleLogin = () => {
     if (window.google) {
       window.google.accounts.id.prompt();
@@ -62,44 +64,22 @@ export default function Login() {
     if (!u || !password) {
       const msg = !u ? "Username is required." : "Password is required.";
       setErrorMsg(msg);
-      notify.error(msg); // 🔔 báo lỗi luôn
+      notify.error(msg);
       return;
     }
     setErrorMsg("");
 
     try {
-      const { data } = await http.post<AuthTokens>("/login", {
-        phoneOrEmail: u,
-        password,
-      });
-      saveTokens(data);
+      await dispatch(loginUser({ phoneOrEmail: u, password })).unwrap();
 
-      notify.success("✅ Login successful! Welcome back 👋"); // 🔔 thành công
+      notify.success("✅ Login successful! Welcome back 👋");
       navigate("/home");
     } catch (err: any) {
-      const msg = err?.response?.data?.message || err?.message || "Login failed";
+      const msg = err?.message || "Login failed";
       setErrorMsg(msg);
-      notify.error(`❌ Login failed: ${msg}`); // 🔔 báo lỗi kèm lý do
+      notify.error(`❌ Login failed: ${msg}`);
     }
   };
-
-  // ===== Phone OTP (FE only) =====
-  // const handlePhoneOtp = async () => {
-  //   try {
-  //     const looksLikePhone = /^\d{10,}$/.test(username.trim());
-  //     if (!looksLikePhone) {
-  //       setErrorMsg("Nhập số điện thoại (>=10 chữ số) để dùng OTP.");
-  //       return;
-  //     }
-  //     const confirmation = await sendOtp(auth, username.trim());
-  //     const code = window.prompt("Nhập mã OTP đã gửi tới số điện thoại:");
-  //     if (!code) return;
-  //     await confirmation.confirm(code);
-  //     navigate("/home");
-  //   } catch (e: any) {
-  //     setErrorMsg(e?.message || "Không gửi/xác thực được OTP.");
-  //   }
-  // };
 
   return (
     <div className="min-h-screen w-full relative overflow-hidden bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 flex items-center justify-center">
