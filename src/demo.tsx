@@ -1,49 +1,29 @@
-import React, { useEffect } from "react";
-import { http } from "./lib/http";
-import { saveTokens, type AuthTokens } from "./lib/auth";
-import { useNavigate } from "react-router-dom";
+import React from "react";
+import { useSelector } from "react-redux";
+import { RootState } from ".././src/redux/store";
 
-declare global {
-  interface Window {
-    google: any;
-  }
-}
-
-export default function Login() {
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (window.google) {
-      window.google.accounts.id.initialize({
-        client_id: "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com",
-        callback: handleCredentialResponse,
-      });
-
-      window.google.accounts.id.renderButton(
-        document.getElementById("googleBtn"),
-        { theme: "outline", size: "large" }
-      );
-    }
-  }, []);
-
-  const handleCredentialResponse = async (response: any) => {
-    try {
-      const googleIdToken = response.credential;
-      const { data } = await http.post<AuthTokens>("/google", {
-        id_token: googleIdToken,
-      });
-      saveTokens(data);
-      navigate("/home");
-    } catch (err: any) {
-      console.error("Google login failed:", err);
-      alert("❌ Đăng nhập Google thất bại");
-    }
-  };
+const ProfilePage: React.FC = () => {
+  const authState = useSelector((state: RootState) => state.auth);
+const userState = useSelector((state: RootState) => state.user);
 
   return (
-    <div>
-      <h2>Login</h2>
-      <div id="googleBtn"></div>
+    <div style={{ padding: "20px" }}>
+      <h1>📦 Dữ liệu Redux sau khi đăng nhập</h1>
+
+      <pre
+        style={{
+          background: "#f9f9f9",
+          padding: "15px",
+          borderRadius: "8px",
+          overflowX: "auto",
+          fontSize: "14px",
+        }}
+      >
+        {JSON.stringify(authState, null, 2)}
+        {JSON.stringify(userState, null, 2)}
+      </pre>
     </div>
   );
-}
+};
+
+export default ProfilePage;

@@ -18,6 +18,7 @@ import { NotificationsProvider } from "./components/notifications/NotificationsP
 import { AuthProvider } from "./contexts/Authcontext";
 import PrivateRoute from "./components/PrivateRoute";
 
+import ProfilePage from ".././src/demo";
 function App() {
   return (
     <AuthProvider>
@@ -40,6 +41,7 @@ function App() {
             <Route path="/reports" element={<PrivateRoute><Reports /></PrivateRoute>} />
             <Route path="/plans" element={<PrivateRoute><Plans /></PrivateRoute>} />
             <Route path="/notificationpages" element={<PrivateRoute><NotificationsPage /></PrivateRoute>} />
+            <Route path="/demo" element={<ProfilePage />} />
           </Routes>
       </NotificationsProvider>
     </AuthProvider>

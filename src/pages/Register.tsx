@@ -1,176 +1,187 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { User, Phone, Lock, Eye, EyeOff, Sparkles, UserPlus, ArrowRight, Mail, Users } from "lucide-react";
-import { updateProfile, RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
-import { auth } from "../firebase";
+import { User, Phone, Lock, Eye, EyeOff, Sparkles, UserPlus, ArrowRight, Mail, Users } from "lucide-react";;
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "../redux/store";
-import { registerUser, loginWithGoogle } from "../redux/slices/authSlice";
+import { authService } from "../services/authService";
+import { GoogleLogin } from "@react-oauth/google";
+import { useNotify } from "../components/notifications/NotificationsProvider";
+import { RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
+import { auth } from "../firebase"; // file config firebase
 
 declare global {
-  interface Window {
-    recaptchaVerifier: RecaptchaVerifier;
-    google: any;
-  }
+    interface Window {
+        recaptchaVerifier: any;
+        google: any;
+    }
 }
 
 export default function Register() {
-  const navigate = useNavigate();
-  const dispatch = useDispatch<AppDispatch>();
-  const { loading, error } = useSelector((state: RootState) => state.auth);
+    const navigate = useNavigate();
+    const dispatch = useDispatch<AppDispatch>();
+    const notify = useNotify();
 
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [errorMsg, setErrorMsg] = useState("");
-  const [confirmation, setConfirmation] = useState<any>(null);
-  const [otp, setOtp] = useState("");
-  const [waitingForOtp, setWaitingForOtp] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [errorMsg, setErrorMsg] = useState("");
+    const [confirmation, setConfirmation] = useState<any>(null);
+    const [otp, setOtp] = useState("");
+    const [waitingForOtp, setWaitingForOtp] = useState(false);
 
-  const [form, setForm] = useState({
-    fullName: "",
-    email: "",
-    phone: "",
-    gender: "",
-    password: "",
-    confirmPassword: "",
-  });
+    const [form, setForm] = useState({
+        fullName: "",
+        email: "",
+        phone: "",
+        gender: "",
+        password: "",
+        confirmPassword: "",
+    });
 
-  const [errors, setErrors] = useState({
-    fullName: "",
-    email: "",
-    phone: "",
-    gender: "",
-    password: "",
-    confirmPassword: "",
-  });
+    const [errors, setErrors] = useState({
+        fullName: "",
+        email: "",
+        phone: "",
+        gender: "",
+        password: "",
+        confirmPassword: "",
+    });
 
-  const [submitting, setSubmitting] = useState(false);
-
-  // ===== Google One Tap SDK =====
-  useEffect(() => {
-    if (window.google) {
-      window.google.accounts.id.initialize({
-        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
-        callback: handleGoogleResponse,
-      });
-    }
-  }, []);
-
-  const handleGoogleResponse = async (response: any) => {
-    try {
-      const googleIdToken = response.credential;
-      await dispatch(loginWithGoogle(googleIdToken)).unwrap();
-      navigate("/home");
-    } catch (err: any) {
-      setErrorMsg(err);
-    }
-  };
-
-  const handleGoogleLogin = () => {
-    if (window.google) {
-      window.google.accounts.id.prompt();
-    } else {
-      setErrorMsg("Google SDK chưa sẵn sàng.");
-    }
-  };
-
-  // ===== OTP Firebase =====
-  useEffect(() => {
-    if (!window.recaptchaVerifier) {
-      window.recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
-        size: "invisible",
-        callback: (response: any) => {
-          console.log("reCAPTCHA solved:", response);
-        },
-      });
-      window.recaptchaVerifier.render().then((widgetId: any) => {
-        console.log("reCAPTCHA ready, widgetId:", widgetId);
-      });
-    }
-  }, []);
-
-  // ===== Handle input =====
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    if (name === "phone" && /[^\d]/.test(value)) return;
-    setForm({ ...form, [name]: value });
-    setErrors({ ...errors, [name]: "" });
-  };
-
-  // ===== Submit Register =====
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    const newErrors = {
-      fullName: "",
-      email: "",
-      phone: "",
-      gender: "",
-      password: "",
-      confirmPassword: "",
+    const [submitting, setSubmitting] = useState(false);
+    // Khởi tạo Recaptcha (ẩn)
+    const setupRecaptcha = () => {
+        if (!window.recaptchaVerifier) {
+            window.recaptchaVerifier = new RecaptchaVerifier(
+                auth,
+                "recaptcha-container",   // 👈 id div trong index.html
+                {
+                    size: "invisible",      // hoặc "normal" để test UI
+                    callback: (response: any) => {
+                        console.log("Recaptcha resolved", response);
+                    },
+                }
+            );
+            // render để gắn reCAPTCHA vào div
+            window.recaptchaVerifier.render().then((widgetId: any) => {
+                console.log("reCAPTCHA ready, widgetId:", widgetId);
+            });
+        }
     };
-    let isValid = true;
 
-    if (!form.fullName.trim()) { newErrors.fullName = "Full name is required"; isValid = false; }
-    if (!form.email.trim()) { newErrors.email = "Email is required"; isValid = false; }
-    else if (!/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/.test(form.email)) { newErrors.email = "Invalid email address"; isValid = false; }
-    if (!form.phone.trim()) { newErrors.phone = "Phone number is required"; isValid = false; }
-    else if (!/^0\d{9,}$/.test(form.phone)) {  
-      newErrors.phone = "Phone must start with 0 and be at least 10 digits";
-      isValid = false;
-    }
-    if (!form.gender) { newErrors.gender = "Please select your gender"; isValid = false; }
-    if (form.password.length < 6) { newErrors.password = "Password must be at least 6 characters"; isValid = false; }
-    if (form.password !== form.confirmPassword) { newErrors.confirmPassword = "Passwords do not match"; isValid = false; }
+    // Gửi OTP
+    const sendOtpFirebase = async (phone: string) => {
+        try {
+            setupRecaptcha();
+            const appVerifier = window.recaptchaVerifier;
+            console.log("DEBUG sending OTP to:", phone);
 
-    setErrors(newErrors);
-    if (!isValid) return;
+            const confirmation = await signInWithPhoneNumber(auth, phone, appVerifier);
+            setConfirmation(confirmation);
 
-    try {
-      setSubmitting(true);
-      const appVerifier = window.recaptchaVerifier;
+            notify.success("📩 OTP đã được gửi!");
+        } catch (err: any) {
+            console.error("sendOtpFirebase error:", err);
+            notify.error("❌ Lỗi Firebase OTP: " + (err.message || "Unknown error"));
+        }
+    };
 
-      const formattedPhone = form.phone.startsWith("+")
-        ? form.phone
-        : "+84" + form.phone.substring(1);
+    // Xác minh OTP
+    const verifyOtpFirebase = async (otp: string) => {
+        if (!confirmation) return;
+        try {
+            await confirmation.confirm(otp);
+            notify.success("✅ OTP hợp lệ!");
+            // 👉 tại đây gọi API /register backend
+        } catch (err) {
+            console.error("verifyOtpFirebase error:", err);
+            notify.error("❌ OTP không đúng");
+        }
+    };
 
-      const result = await signInWithPhoneNumber(auth, formattedPhone, appVerifier);
-      setConfirmation(result);
-      setWaitingForOtp(true);
+    // ===== Handle input =====
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+        const { name, value } = e.target;
+        if (name === "phone" && /[^\d]/.test(value)) return;
+        setForm({ ...form, [name]: value });
+        setErrors({ ...errors, [name]: "" });
+    };
 
-      alert("📲 OTP đã gửi về " + formattedPhone);
-    } catch (err: any) {
-      console.error("🔥 Firebase OTP Error:", err);
-      alert("❌ Gửi OTP thất bại: " + err.message);
-    } finally {
-      setSubmitting(false);
-    }
-  };
+    const normalizePhone = (phone: string) => {
+        // Xóa khoảng trắng
+        let p = phone.trim();
 
-  // ===== Verify OTP & Register BE =====
-  const verifyOtp = async () => {
-    try {
-      const userCredential = await confirmation.confirm(otp);
-      const phoneNumber = userCredential.user.phoneNumber;
-      const localPhone = phoneNumber?.replace("+84", "0");
+        // Nếu nhập 0xxxxxxxxx → đổi thành +84xxxxxxxxx
+        if (p.startsWith("0")) {
+            p = "+84" + p.slice(1);
+        }
 
-      await dispatch(registerUser({
-        phone: localPhone!,
-        email: form.email,
-        password: form.password,
-        fullName: form.fullName,
-      })).unwrap();
+        // Nếu user nhập +84 rồi thì giữ nguyên
+        return p;
+    };
 
-      if (auth.currentUser && form.fullName) {
-        await updateProfile(auth.currentUser, { displayName: form.fullName });
-      }
+    // ===== Submit Register =====
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
 
-      alert("✅ Đăng ký thành công!");
-      navigate("/home");
-    } catch (err: any) {
-      alert("❌ OTP không hợp lệ: " + err.message);
-    }
-  };        
+        // Validate như bạn đang làm
+        const newErrors = { fullName: "", email: "", phone: "", gender: "", password: "", confirmPassword: "" };
+        let isValid = true;
+
+        if (!form.fullName.trim()) { newErrors.fullName = "Full name is required"; isValid = false; }
+        if (!form.email.trim()) { newErrors.email = "Email is required"; isValid = false; }
+        else if (!/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/.test(form.email)) { newErrors.email = "Invalid email address"; isValid = false; }
+        if (!form.phone.trim()) { newErrors.phone = "Phone number is required"; isValid = false; }
+        else if (!/^0\d{9,}$/.test(form.phone)) { newErrors.phone = "Phone must start with 0 and be at least 10 digits"; isValid = false; }
+        if (!form.gender) { newErrors.gender = "Please select your gender"; isValid = false; }
+        if (form.password.length < 6) { newErrors.password = "Password must be at least 6 characters"; isValid = false; }
+        if (form.password !== form.confirmPassword) { newErrors.confirmPassword = "Passwords do not match"; isValid = false; }
+
+        setErrors(newErrors);
+        if (!isValid) {
+            const firstError = Object.values(newErrors).find(err => err);
+            if (firstError) notify.error(`❌ ${firstError}`);
+            return;
+        }
+
+        try {
+            const normalizedPhone = normalizePhone(form.phone);
+
+            await sendOtpFirebase(normalizedPhone);
+            console.log("Sending OTP to:", normalizedPhone);
+
+            setWaitingForOtp(true);
+        } catch (err: any) {
+            notify.error("❌ Gửi OTP thất bại");
+        }
+    };
+
+    const handleVerifyOtp = async () => {
+        try {
+            await verifyOtpFirebase(otp); // dùng confirmation.confirm(otp)
+
+            // OTP hợp lệ → gọi API BE /register
+            const { phone, email, password, fullName, gender } = form;
+            const date = new Date();
+
+            await authService.register(
+                {
+                    phone,
+                    email,
+                    password,
+                    fullname: fullName,
+                    DOB: date.toISOString().split("T")[0],
+                    gender: gender.toUpperCase() as "MALE" | "FEMALE" | "OTHER",
+                    height: "170",
+                    weight: "70",
+                },
+                dispatch,
+                navigate
+            );
+
+            notify.success("🎉 Tạo tài khoản thành công!");
+        } catch (err: any) {
+            notify.error("❌ OTP không hợp lệ hoặc đăng ký thất bại");
+        }
+    };
 
     return (
         <div className="min-h-screen w-full relative overflow-hidden bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 flex items-center justify-center">
@@ -500,7 +511,7 @@ export default function Register() {
                                             />
                                             <button
                                                 type="button"
-                                                onClick={verifyOtp}
+                                                onClick={handleVerifyOtp}
                                                 className="px-4 bg-green-500 text-white rounded-lg hover:bg-green-600"
                                             >
                                                 Verify OTP
@@ -509,23 +520,29 @@ export default function Register() {
                                     </div>
                                 )}
 
-                                {/* Google Register Button */}
+                                {/* Google Login Button */}
                                 <div className="relative">
                                     <div className="absolute -inset-1 bg-gradient-to-r from-gray-300 to-gray-400 rounded-xl blur opacity-25 group-hover:opacity-50 transition duration-300"></div>
-                                    <button
-                                        type="button" onClick={handleGoogleLogin}
-                                        className="relative w-full bg-white/80 backdrop-blur-sm border-2 border-gray-300 text-gray-700 py-3 rounded-xl font-semibold shadow-lg hover:bg-white/90 hover:border-gray-400 transition-all duration-300 transform hover:scale-[1.02] group"
-                                    >
-                                        <span className="flex items-center justify-center gap-3">
-                                            <svg className="w-5 h-5" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-                                                <path fill="#fbc02d" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.5-5.9 8-11.3 8a12 12 0 1 1 0-24c3 0 5.8 1.1 7.9 3l6-6A20 20 0 1 0 44 24c0-1.2-.1-2.1-.4-3.5z" />
-                                                <path fill="#e53935" d="M6.3 14.6 13 19.2c1.7-3.4 5.1-6.2 11-6.2 3 0 5.8 1.1 7.9 3l6-6C33.8 5.6 29.2 4 24 4c-7.6 0-14.1 4.3-17.7 10.6z" />
-                                                <path fill="#4caf50" d="M24 44c5.9 0 10.9-1.9 14.5-5.2l-6.7-5.5c-2 1.3-4.6 2.1-7.8 2.1a12 12 0 0 1-11.3-8l-6.7 5.1C9.9 39.7 16.5 44 24 44z" />
-                                                <path fill="#1565c0" d="M43.6 20.5H42V20H24v8h11.3c-0.8 2.4-2.3 4.5-4.5 6l0.1-0.1 6.7 5.5c-0.5.5 7.4-5.4 7.4-15.9 0-1.2-.1-2.1-.4-3.5z" />
-                                            </svg>
-                                            Sign Up with Google
-                                        </span>
-                                    </button>
+
+                                    <GoogleLogin
+                                        onSuccess={async (credentialResponse) => {
+                                            console.log("Google credentialResponse:", credentialResponse);
+                                            const idToken = credentialResponse.credential;
+                                            if (!idToken) {
+                                                notify.error("Không lấy được Google ID token");
+                                                return;
+                                            }
+
+                                            try {
+                                                await authService.loginWithGoogle(idToken, dispatch, navigate);
+                                                notify.success("🎉 Google login successful!");
+                                            } catch (err: any) {
+                                                notify.error("❌ Google login failed");
+                                            }
+                                        }}
+                                        onError={() => notify.error("❌ Google login failed")}
+                                        useOneTap={false} // buộc hiển thị popup chọn tài khoản
+                                    />
                                 </div>
                             </div>
 

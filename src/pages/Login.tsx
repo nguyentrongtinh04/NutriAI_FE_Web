@@ -3,8 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { User, Lock, Eye, EyeOff, Sparkles, LogIn, UserPlus, ArrowRight } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "../redux/store";
-import { loginUser, loginWithGoogle } from "../redux/slices/authSlice";
 import { useNotify } from "../components/notifications/NotificationsProvider";
+import { authService } from "../services/authService";
+import { GoogleLogin } from "@react-oauth/google";
 
 declare global {
   interface Window {
@@ -13,8 +14,8 @@ declare global {
 }
 
 export default function Login() {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
+  const [username, setUsername] = useState("0388654153");
+  const [password, setPassword] = useState("gacon001");
   const [errorMsg, setErrorMsg] = useState("");
   const [showUserDetail, setShowUserDetail] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -22,62 +23,37 @@ export default function Login() {
   const navigate = useNavigate();
   const notify = useNotify();
   const dispatch = useDispatch<AppDispatch>();
-  const { loading, error } = useSelector((state: RootState) => state.auth);
-
-  // ===== Google Identity Services (GIS) =====
-  useEffect(() => {
-    if (window.google) {
-      window.google.accounts.id.initialize({
-        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
-        callback: handleGoogleResponse,
-      });
-    }
-  }, []);
-
-  const handleGoogleResponse = async (response: any) => {
-    try {
-      const googleIdToken = response.credential;
-      await dispatch(loginWithGoogle(googleIdToken)).unwrap();
-
-      notify.success("🎉 Google login successful!");
-      navigate("/home");
-    } catch (err: any) {
-      const msg = err?.message || "Google login failed";
-      setErrorMsg(msg);
-      notify.error(`❌ Google login failed: ${msg}`);
-    }
-  };
-
-  const handleGoogleLogin = () => {
-    if (window.google) {
-      window.google.accounts.id.prompt();
-    } else {
-      setErrorMsg("Google SDK chưa sẵn sàng.");
-    }
-  };
 
   // ===== Normal login =====
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const u = username.trim();
-
-    if (!u || !password) {
-      const msg = !u ? "Username is required." : "Password is required.";
-      setErrorMsg(msg);
-      notify.error(msg);
-      return;
-    }
-    setErrorMsg("");
-
     try {
-      await dispatch(loginUser({ phoneOrEmail: u, password })).unwrap();
+      if (!username || !password) {
+        const msg = "❌ Username và Password không được để trống.";
+        setErrorMsg(msg);
+        notify.error(msg);
+        return;
+      }
 
-      notify.success("✅ Login successful! Welcome back 👋");
-      navigate("/home");
-    } catch (err: any) {
-      const msg = err?.message || "Login failed";
-      setErrorMsg(msg);
-      notify.error(`❌ Login failed: ${msg}`);
+      await authService.loginWithPassword(username, password, dispatch, navigate);
+
+      // Nếu login thành công
+      notify.success("🎉 Đăng nhập thành công!");
+      setErrorMsg(""); // clear lỗi
+    } catch (e: any) {
+      const status = e.response?.status;
+      const message = e.response?.data?.message || e.message;
+
+      if (status === 404) {
+        setErrorMsg("❌ Username không tồn tại.");
+        notify.error("❌ Username không tồn tại.");
+      } else if (status === 401) {
+        setErrorMsg("❌ Sai mật khẩu.");
+        notify.error("❌ Sai mật khẩu.");
+      } else {
+        setErrorMsg(`❌ Đăng nhập thất bại: ${message}`);
+        notify.error(`❌ Đăng nhập thất bại: ${message}`);
+      }
     }
   };
 
@@ -266,22 +242,28 @@ export default function Login() {
                 {/* Google Login Button */}
                 <div className="relative">
                   <div className="absolute -inset-1 bg-gradient-to-r from-gray-300 to-gray-400 rounded-xl blur opacity-25 group-hover:opacity-50 transition duration-300"></div>
-                  <button
-                    type="button"
-                    onClick={handleGoogleLogin}
-                    className="relative w-full bg-white/80 backdrop-blur-sm border-2 border-gray-300 text-gray-700 py-3 rounded-xl font-semibold shadow-lg hover:bg-white/90 hover:border-gray-400 transition-all duration-300 transform hover:scale-[1.02] group"
-                  >
-                    <span className="flex items-center justify-center gap-3">
-                      <svg className="w-5 h-5" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-                        <path fill="#fbc02d" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.5-5.9 8-11.3 8a12 12 0 1 1 0-24c3 0 5.8 1.1 7.9 3l6-6A20 20 0 1 0 44 24c0-1.2-.1-2.1-.4-3.5z" />
-                        <path fill="#e53935" d="M6.3 14.6 13 19.2c1.7-3.4 5.1-6.2 11-6.2 3 0 5.8 1.1 7.9 3l6-6C33.8 5.6 29.2 4 24 4c-7.6 0-14.1 4.3-17.7 10.6z" />
-                        <path fill="#4caf50" d="M24 44c5.9 0 10.9-1.9 14.5-5.2l-6.7-5.5c-2 1.3-4.6 2.1-7.8 2.1a12 12 0 0 1-11.3-8l-6.7 5.1C9.9 39.7 16.5 44 24 44z" />
-                        <path fill="#1565c0" d="M43.6 20.5H42V20H24v8h11.3c-0.8 2.4-2.3 4.5-4.5 6l0.1-0.1 6.7 5.5c-0.5.5 7.4-5.4 7.4-15.9 0-1.2-.1-2.1-.4-3.5z" />
-                      </svg>
-                      Google Sign In
-                    </span>
-                  </button>
+
+                  <GoogleLogin
+                    onSuccess={async (credentialResponse) => {
+                      console.log("Google credentialResponse:", credentialResponse);
+                      const idToken = credentialResponse.credential;
+                      if (!idToken) {
+                        notify.error("Không lấy được Google ID token");
+                        return;
+                      }
+
+                      try {
+                        await authService.loginWithGoogle(idToken, dispatch, navigate);
+                        notify.success("🎉 Google login successful!");
+                      } catch (err: any) {
+                        notify.error("❌ Google login failed");
+                      }
+                    }}
+                    onError={() => notify.error("❌ Google login failed")}
+                    useOneTap={false} // buộc hiển thị popup chọn tài khoản
+                  />
                 </div>
+
               </div>
 
               {/* Forgot Password Link */}
@@ -344,3 +326,15 @@ export default function Login() {
     </div>
   );
 }
+
+function loginWithGoogleThunk(googleIdToken: any): any {
+  throw new Error("Function not implemented.");
+}
+function fetchAuthMe(access_token: any): any {
+  throw new Error("Function not implemented.");
+}
+
+function fetchUserMe(access_token: any): any {
+  throw new Error("Function not implemented.");
+}
+

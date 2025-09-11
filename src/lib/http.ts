@@ -2,7 +2,7 @@ import axios from "axios";
 import { saveTokens, clearTokens, getTokens } from "./auth";
 
 const AUTH_SERVICES = import.meta.env.VITE_AUTH_SERVICES || "http://localhost:5005";
-const USER_SERVICES = import.meta.env.VITE_USER_SERVICES || "http://localhost:5006";
+const USER_SERVICES = import.meta.env.VITE_USER_SERVICES || "http://localhost:5001";
 
 // 👉 Auth service: BE mount /auth/*
 export const authApi = axios.create({
