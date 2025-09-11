@@ -5,6 +5,13 @@ const userApi = axios.create({
   baseURL: IP_USER,
   timeout: 10000,
 });
+userApi.interceptors.request.use((config) => {
+  const token = localStorage.getItem("accessToken");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
 
 export const userService = {
   // Lấy thông tin user hiện tại

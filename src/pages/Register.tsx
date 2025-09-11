@@ -6,8 +6,8 @@ import { AppDispatch, RootState } from "../redux/store";
 import { authService } from "../services/authService";
 import { GoogleLogin } from "@react-oauth/google";
 import { useNotify } from "../components/notifications/NotificationsProvider";
-import { RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
-import { auth } from "../firebase"; // file config firebase
+import "firebase/compat/auth";
+import firebase, { auth } from "../firebase";
 
 declare global {
     interface Window {
@@ -47,40 +47,43 @@ export default function Register() {
     });
 
     const [submitting, setSubmitting] = useState(false);
-    // Khởi tạo Recaptcha (ẩn)
-    const setupRecaptcha = () => {
-        if (!window.recaptchaVerifier) {
-            window.recaptchaVerifier = new RecaptchaVerifier(
-                auth,
-                "recaptcha-container",   // 👈 id div trong index.html
-                {
-                    size: "invisible",      // hoặc "normal" để test UI
-                    callback: (response: any) => {
-                        console.log("Recaptcha resolved", response);
-                    },
-                }
-            );
-            // render để gắn reCAPTCHA vào div
-            window.recaptchaVerifier.render().then((widgetId: any) => {
-                console.log("reCAPTCHA ready, widgetId:", widgetId);
-            });
+    // Hàm reset container
+    const resetRecaptchaContainer = () => {
+        const oldContainer = document.getElementById("recaptcha-container");
+        if (oldContainer) {
+            oldContainer.remove(); // xoá hẳn
         }
+        const newContainer = document.createElement("div");
+        newContainer.id = "recaptcha-container";
+        document.body.appendChild(newContainer); // gắn lại vào DOM
     };
 
-    // Gửi OTP
+    // Hàm init recaptcha
+    const initRecaptcha = async () => {
+        resetRecaptchaContainer();
+
+        window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier("recaptcha-container", {
+            size: "invisible",
+            callback: (response: any) => {
+                console.log("✅ reCAPTCHA solved:", response);
+            },
+        });
+
+        await window.recaptchaVerifier.render();
+        return window.recaptchaVerifier;
+    };
+
+    // Hàm gửi OTP
     const sendOtpFirebase = async (phone: string) => {
         try {
-            setupRecaptcha();
-            const appVerifier = window.recaptchaVerifier;
-            console.log("DEBUG sending OTP to:", phone);
+            const appVerifier = await initRecaptcha(); // mỗi lần đều có container mới
+            const confirmationResult = await firebase.auth().signInWithPhoneNumber(phone, appVerifier);
 
-            const confirmation = await signInWithPhoneNumber(auth, phone, appVerifier);
-            setConfirmation(confirmation);
-
+            setConfirmation(confirmationResult);
             notify.success("📩 OTP đã được gửi!");
-        } catch (err: any) {
+        } catch (err) {
             console.error("sendOtpFirebase error:", err);
-            notify.error("❌ Lỗi Firebase OTP: " + (err.message || "Unknown error"));
+            notify.error("❌ Gửi OTP thất bại");
         }
     };
 
@@ -104,19 +107,14 @@ export default function Register() {
         setForm({ ...form, [name]: value });
         setErrors({ ...errors, [name]: "" });
     };
-
     const normalizePhone = (phone: string) => {
-        // Xóa khoảng trắng
         let p = phone.trim();
-
-        // Nếu nhập 0xxxxxxxxx → đổi thành +84xxxxxxxxx
         if (p.startsWith("0")) {
             p = "+84" + p.slice(1);
         }
-
-        // Nếu user nhập +84 rồi thì giữ nguyên
         return p;
     };
+
 
     // ===== Submit Register =====
     const handleSubmit = async (e: React.FormEvent) => {
@@ -143,10 +141,10 @@ export default function Register() {
         }
 
         try {
-            const normalizedPhone = normalizePhone(form.phone);
+            const normalizedPhone = normalizePhone(form.phone); // ✅ convert sang +84
+            console.log("Sending OTP to:", normalizedPhone);
 
             await sendOtpFirebase(normalizedPhone);
-            console.log("Sending OTP to:", normalizedPhone);
 
             setWaitingForOtp(true);
         } catch (err: any) {

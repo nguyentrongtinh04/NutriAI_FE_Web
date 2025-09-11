@@ -1,163 +1,186 @@
-import React, { useState, useRef } from 'react';
-import { ArrowLeft, User, Edit, Camera, Settings, Mail, Phone, Calendar, Save, X, Upload, Check, Heart, Activity, Weight, Ruler, Target, Apple, Droplets, Moon, FileText, AlertTriangle, Pill, Clock } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import React, { useState, useRef, useEffect } from "react";
+import {
+  ArrowLeft, User, Edit, Camera, Settings, Phone, Calendar, Save, X, Upload, Check,
+  Heart, Activity, Weight, Ruler, Target, Droplets, FileText, AlertTriangle, Pill, Clock
+} from "lucide-react";
+import { Link } from "react-router-dom";
+import { useSelector, useDispatch } from "react-redux";
+import { fetchMe, updateProfile, updateAvatar } from "../../.././redux/slices/userSlice";
 
 export default function HealthInformation() {
-  const [userData, setUserData] = useState({
-    name: 'Admin User',
-    email: 'admin@nutriai.com',
-    phone: '+1 234 567 8900',
-    gender: 'Male',
-    birthDate: '1990-01-15',
-    avatar: '/src/assets/default-avatar.jpg'
-  });
+  const dispatch = useDispatch();
+  const { profile } = useSelector((state: any) => state.user);
 
-  const [healthData, setHealthData] = useState({
-    height: '175', // cm
-    weight: '70',  // kg
-    medicalHistory: 'No significant medical history',
-    currentMedications: 'None',
-    allergies: 'No known allergies',
-    chronicConditions: 'None',
-    emergencyContact: 'John Doe - +1 234 567 8901',
-    pastSurgeries: 'None',
-    familyHistory: 'No significant family medical history',
-    immunizations: 'Up to date with standard vaccinations',
-    previousHospitalizations: 'None'
-  });
-
-  const [activeTab, setActiveTab] = useState('information-your');
+  const [activeTab, setActiveTab] = useState("information-your");
   const [isEditing, setIsEditing] = useState(false);
-  const [editedUserData, setEditedUserData] = useState(userData);
-  const [editedHealthData, setEditedHealthData] = useState(healthData);
   const [showAvatarModal, setShowAvatarModal] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleEdit = () => {
-    setIsEditing(true);
-    setEditedUserData(userData);
-    setEditedHealthData(healthData);
-  };
+  // Lấy dữ liệu user khi vào trang
+  useEffect(() => {
+    dispatch(fetchMe() as any);
+  }, [dispatch]);
+
+  // Map profile từ Redux sang state local
+  // Khởi tạo local state rỗng, tránh null
+const [editedUserData, setEditedUserData] = useState<any>({
+  name: "",
+  email: "",
+  phone: "",
+  gender: "",
+  birthDate: "",
+  avatar: "/src/assets/default-avatar.jpg"
+});
+
+const [editedHealthData, setEditedHealthData] = useState<any>({
+  height: "",
+  weight: "",
+  medicalHistory: "",
+  currentMedications: "",
+  allergies: "",
+  chronicConditions: "",
+  emergencyContact: "",
+  pastSurgeries: "",
+  familyHistory: "",
+  immunizations: "",
+  previousHospitalizations: ""
+});
+
+// Khi profile từ Redux thay đổi → copy sang local state
+useEffect(() => {
+  if (profile) {
+    setEditedUserData({
+      name: profile.fullname || "",
+      email: profile.email || "",
+      phone: profile.phone || "",
+      gender: profile.gender || "",
+      birthDate: profile.DOB || "",
+      avatar: profile.avt || "/src/assets/default-avatar.jpg",
+    });
+
+    setEditedHealthData({
+      height: profile.height || "",
+      weight: profile.weight || "",
+      medicalHistory: profile.medicalHistory || "",
+      currentMedications: profile.currentMedications || "",
+      allergies: profile.allergies || "",
+      chronicConditions: profile.chronicConditions || "",
+      emergencyContact: profile.emergencyContact || "",
+      pastSurgeries: profile.pastSurgeries || "",
+      familyHistory: profile.familyHistory || "",
+      immunizations: profile.immunizations || "",
+      previousHospitalizations: profile.previousHospitalizations || "",
+    });
+  }
+}, [profile]);
+
+  console.log("Profile from Redux:", profile);
 
   const handleSave = () => {
-    setUserData(editedUserData);
-    setHealthData(editedHealthData);
+    dispatch(updateProfile({
+      fullname: editedUserData.name,
+      DOB: editedUserData.birthDate,
+      gender: editedUserData.gender,
+      height: editedHealthData.height,
+      weight: editedHealthData.weight,
+      BMI: calculateBMI(editedHealthData.weight, editedHealthData.height),
+      activityLevel: profile?.activityLevel,
+    }) as any);
     setIsEditing(false);
-  };
+  };  
 
   const handleCancel = () => {
-    setEditedUserData(userData);
-    setEditedHealthData(healthData);
     setIsEditing(false);
   };
 
+  // Input change
   const handleUserInputChange = (field: string, value: string) => {
-    setEditedUserData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    setEditedUserData((prev: any) => ({ ...prev, [field]: value }));
   };
-
   const handleHealthInputChange = (field: string, value: string) => {
-    setEditedHealthData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    setEditedHealthData((prev: any) => ({ ...prev, [field]: value }));
   };
 
-  // Calculate BMI
+  // BMI
   const calculateBMI = (weight: string, height: string) => {
-    const weightNum = parseFloat(weight);
-    const heightNum = parseFloat(height);
-    if (weightNum > 0 && heightNum > 0) {
-      const heightInMeters = heightNum / 100;
-      const bmi = weightNum / (heightInMeters * heightInMeters);
-      return bmi.toFixed(1);
+    const w = parseFloat(weight);
+    const h = parseFloat(height);
+    if (w > 0 && h > 0) {
+      const hM = h / 100;
+      return (w / (hM * hM)).toFixed(1);
     }
-    return '0.0';
+    return "0.0";
   };
-
   const getBMICategory = (bmi: string) => {
-    const bmiNum = parseFloat(bmi);
-    if (bmiNum < 18.5) return { category: 'Underweight', color: 'text-blue-600', bgColor: 'bg-blue-100' };
-    if (bmiNum < 25) return { category: 'Normal', color: 'text-green-600', bgColor: 'bg-green-100' };
-    if (bmiNum < 30) return { category: 'Overweight', color: 'text-yellow-600', bgColor: 'bg-yellow-100' };
-    return { category: 'Obese', color: 'text-red-600', bgColor: 'bg-red-100' };
+    const n = parseFloat(bmi);
+    if (n < 18.5) return { category: "Underweight", color: "text-blue-600", bgColor: "bg-blue-100" };
+    if (n < 25) return { category: "Normal", color: "text-green-600", bgColor: "bg-green-100" };
+    if (n < 30) return { category: "Overweight", color: "text-yellow-600", bgColor: "bg-yellow-100" };
+    return { category: "Obese", color: "text-red-600", bgColor: "bg-red-100" };
   };
 
-  // Avatar Modal Functions
+  // Avatar
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
+    const f = e.target.files?.[0];
+    if (f) {
       const reader = new FileReader();
-      reader.onload = (e) => {
-        setSelectedImage(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
+      reader.onload = (ev) => setSelectedImage(ev.target?.result as string);
+      reader.readAsDataURL(f);
     }
   };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    const file = e.dataTransfer.files[0];
-    if (file && file.type.startsWith('image/')) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setSelectedImage(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-  };
-
   const handleSaveAvatar = async () => {
     if (!selectedImage) return;
-
     setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    setUserData(prev => ({ ...prev, avatar: selectedImage }));
+    await dispatch(updateAvatar(selectedImage) as any);
     setIsLoading(false);
     setShowAvatarModal(false);
     setSelectedImage(null);
   };
 
-  const resetImage = () => {
-    setSelectedImage(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
+  const handleEdit = () => setIsEditing(true);
 
   const closeModal = () => {
     setShowAvatarModal(false);
     setSelectedImage(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const resetImage = () => {
+    setSelectedImage(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith("image/")) {
+      const reader = new FileReader();
+      reader.onload = (ev) => setSelectedImage(ev.target?.result as string);
+      reader.readAsDataURL(file);
     }
   };
 
+  const handleDragOver = (e: React.DragEvent) => e.preventDefault();
+
+  // ✅ Tabs (cũng bị thiếu trong code bạn gửi)
   const tabs = [
     {
-      id: 'information-your',
-      name: 'Information Your',
+      id: "information-your",
+      name: "Information Your",
       icon: User,
-      color: 'from-blue-500 to-cyan-500',
-      bgColor: 'from-blue-50 to-cyan-50',
-      borderColor: 'border-blue-200/50'
+      color: "from-blue-500 to-cyan-500",
+      bgColor: "from-blue-50 to-cyan-50",
+      borderColor: "border-blue-200/50",
     },
     {
-      id: 'medical-history',
-      name: 'Medical History',
+      id: "medical-history",
+      name: "Medical History",
       icon: FileText,
-      color: 'from-green-500 to-emerald-500',
-      bgColor: 'from-green-50 to-emerald-50',
-      borderColor: 'border-green-200/50'
+      color: "from-green-500 to-emerald-500",
+      bgColor: "from-green-50 to-emerald-50",
+      borderColor: "border-green-200/50",
     },
   ];
 
@@ -196,10 +219,10 @@ export default function HealthInformation() {
 
       {/* Header */}
       <div className="relative z-20 p-6">
-        <Link 
-                  to="/home" 
-                  className="inline-flex items-center gap-3 text-white hover:text-cyan-300 transition-all duration-300 group"
-                >
+        <Link
+          to="/home"
+          className="inline-flex items-center gap-3 text-white hover:text-cyan-300 transition-all duration-300 group"
+        >
           <div className="relative">
             <div className="absolute -inset-3 bg-gradient-to-r from-blue-400/40 via-cyan-400/50 to-blue-500/40 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-all duration-500 animate-pulse"></div>
             <div className="absolute -inset-2 bg-gradient-to-r from-cyan-400/30 via-blue-400/40 to-cyan-500/30 rounded-2xl blur-lg opacity-0 group-hover:opacity-100 transition-all duration-300"></div>
@@ -338,8 +361,8 @@ export default function HealthInformation() {
                   <div className="relative inline-block">
                     <div className="absolute -inset-2 bg-gradient-to-r from-blue-400/50 to-cyan-400/50 rounded-full blur-lg animate-pulse"></div>
                     <div className="relative w-24 h-24 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center overflow-hidden">
-                      {userData.avatar && userData.avatar !== '/src/assets/default-avatar.jpg' ? (
-                        <img src={userData.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                      {editedUserData?.avatar ? (
+                        <img src={editedUserData.avatar} alt="Avatar" />
                       ) : (
                         <User className="w-12 h-12 text-white" />
                       )}
@@ -351,8 +374,8 @@ export default function HealthInformation() {
                       <Camera className="w-4 h-4" />
                     </button>
                   </div>
-                  <h2 className="text-xl font-bold text-gray-800 mt-3">{userData.name}</h2>
-                  <p className="text-blue-600 font-medium text-sm">{userData.email}</p>
+                  <h2 className="text-xl font-bold text-gray-800 mt-3">{editedUserData.name}</h2>
+                  <p className="text-blue-600 font-medium text-sm">{editedUserData.email}</p>
                 </div>
 
                 {/* Navigation Tabs */}
@@ -360,16 +383,15 @@ export default function HealthInformation() {
                   {tabs.map((tab) => {
                     const IconComponent = tab.icon;
                     const isActive = activeTab === tab.id;
-                    
+
                     return (
                       <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
-                        className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all duration-300 transform hover:scale-105 ${
-                          isActive
+                        className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all duration-300 transform hover:scale-105 ${isActive
                             ? `bg-gradient-to-r ${tab.bgColor} ${tab.borderColor} border-2 shadow-lg`
                             : 'bg-white/50 border-gray-200/50 hover:bg-white/70'
-                        }`}
+                          }`}
                       >
                         <div className={`w-8 h-8 bg-gradient-to-r ${tab.color} rounded-lg flex items-center justify-center`}>
                           <IconComponent className="w-4 h-4 text-white" />
@@ -454,7 +476,7 @@ export default function HealthInformation() {
                             placeholder="Enter your full name"
                           />
                         ) : (
-                          <p className="text-gray-800 ml-8">{userData.name}</p>
+                          <p className="text-gray-800 ml-8">{editedUserData.name}</p>
                         )}
                       </div>
 
@@ -474,7 +496,7 @@ export default function HealthInformation() {
                             <option value="Other">Other</option>
                           </select>
                         ) : (
-                          <p className="text-gray-800 ml-8">{userData.gender}</p>
+                          <p className="text-gray-800 ml-8">{editedUserData.gender}</p>
                         )}
                       </div>
                     </div>
@@ -494,7 +516,7 @@ export default function HealthInformation() {
                             placeholder="Enter your phone"
                           />
                         ) : (
-                          <p className="text-gray-800 ml-8">{userData.phone}</p>
+                          <p className="text-gray-800 ml-8">{editedUserData.phone}</p>
                         )}
                       </div>
 
@@ -511,7 +533,7 @@ export default function HealthInformation() {
                             className="w-full bg-white/70 border border-orange-200/50 rounded-lg px-4 py-3 text-gray-800 outline-none focus:ring-2 focus:ring-orange-300"
                           />
                         ) : (
-                          <p className="text-gray-800 ml-8">{new Date(userData.birthDate).toLocaleDateString()}</p>
+                          <p className="text-gray-800 ml-8">{new Date(editedUserData.birthDate).toLocaleDateString()}</p>
                         )}
                       </div>
                     </div>
@@ -542,7 +564,7 @@ export default function HealthInformation() {
                               placeholder="Enter your height"
                             />
                           ) : (
-                            <p className="text-gray-800 ml-8">{healthData.height} cm</p>
+                            <p className="text-gray-800 ml-8">{editedHealthData.height} cm</p>
                           )}
                         </div>
 
@@ -561,7 +583,7 @@ export default function HealthInformation() {
                               placeholder="Enter your weight"
                             />
                           ) : (
-                            <p className="text-gray-800 ml-8">{healthData.weight} kg</p>
+                            <p className="text-gray-800 ml-8">{editedHealthData.weight} kg</p>
                           )}
                         </div>
 
@@ -573,10 +595,10 @@ export default function HealthInformation() {
                           </div>
                           <div className="ml-8">
                             <p className="text-2xl font-bold text-gray-800">
-                              {calculateBMI(isEditing ? editedHealthData.weight : healthData.weight, isEditing ? editedHealthData.height : healthData.height)}
+                              {calculateBMI(isEditing ? editedHealthData.weight : editedHealthData.weight, isEditing ? editedHealthData.height : editedHealthData.height)}
                             </p>
-                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getBMICategory(calculateBMI(isEditing ? editedHealthData.weight : healthData.weight, isEditing ? editedHealthData.height : healthData.height)).bgColor} ${getBMICategory(calculateBMI(isEditing ? editedHealthData.weight : healthData.weight, isEditing ? editedHealthData.height : healthData.height)).color}`}>
-                              {getBMICategory(calculateBMI(isEditing ? editedHealthData.weight : healthData.weight, isEditing ? editedHealthData.height : healthData.height)).category}
+                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getBMICategory(calculateBMI(isEditing ? editedHealthData.weight : editedHealthData.weight, isEditing ? editedHealthData.height : editedHealthData.height)).bgColor} ${getBMICategory(calculateBMI(isEditing ? editedHealthData.weight : editedHealthData.weight, isEditing ? editedHealthData.height : editedHealthData.height)).color}`}>
+                              {getBMICategory(calculateBMI(isEditing ? editedHealthData.weight : editedHealthData.weight, isEditing ? editedHealthData.height : editedHealthData.height)).category}
                             </span>
                           </div>
                         </div>
@@ -605,7 +627,7 @@ export default function HealthInformation() {
                                 placeholder="Enter your medical history"
                               />
                             ) : (
-                              <p className="text-gray-800 ml-8">{healthData.medicalHistory}</p>
+                              <p className="text-gray-800 ml-8">{editedHealthData.medicalHistory}</p>
                             )}
                           </div>
 
@@ -623,7 +645,7 @@ export default function HealthInformation() {
                                 placeholder="List any allergies"
                               />
                             ) : (
-                              <p className="text-gray-800 ml-8">{healthData.allergies}</p>
+                              <p className="text-gray-800 ml-8">{editedHealthData.allergies}</p>
                             )}
                           </div>
 
@@ -641,7 +663,7 @@ export default function HealthInformation() {
                                 placeholder="List any past surgeries"
                               />
                             ) : (
-                              <p className="text-gray-800 ml-8">{healthData.pastSurgeries}</p>
+                              <p className="text-gray-800 ml-8">{editedHealthData.pastSurgeries}</p>
                             )}
                           </div>
                         </div>
@@ -661,7 +683,7 @@ export default function HealthInformation() {
                                 placeholder="List current medications"
                               />
                             ) : (
-                              <p className="text-gray-800 ml-8">{healthData.currentMedications}</p>
+                              <p className="text-gray-800 ml-8">{editedHealthData.currentMedications}</p>
                             )}
                           </div>
 
@@ -679,7 +701,7 @@ export default function HealthInformation() {
                                 placeholder="List any chronic conditions"
                               />
                             ) : (
-                              <p className="text-gray-800 ml-8">{healthData.chronicConditions}</p>
+                              <p className="text-gray-800 ml-8">{editedHealthData.chronicConditions}</p>
                             )}
                           </div>
 
@@ -697,7 +719,7 @@ export default function HealthInformation() {
                                 placeholder="List immunization history"
                               />
                             ) : (
-                              <p className="text-gray-800 ml-8">{healthData.immunizations}</p>
+                              <p className="text-gray-800 ml-8">{editedHealthData.immunizations}</p>
                             )}
                           </div>
                         </div>
@@ -725,7 +747,7 @@ export default function HealthInformation() {
                               placeholder="Enter family medical history"
                             />
                           ) : (
-                            <p className="text-gray-800 ml-8">{healthData.familyHistory}</p>
+                            <p className="text-gray-800 ml-8">{editedHealthData.familyHistory}</p>
                           )}
                         </div>
 
@@ -743,13 +765,13 @@ export default function HealthInformation() {
                               placeholder="List any previous hospitalizations"
                             />
                           ) : (
-                            <p className="text-gray-800 ml-8">{healthData.previousHospitalizations}</p>
+                            <p className="text-gray-800 ml-8">{editedHealthData.previousHospitalizations}</p>
                           )}
                         </div>
                       </div>
                     </div>
                   </div>
-                )}     
+                )}
               </div>
             </div>
           </div>

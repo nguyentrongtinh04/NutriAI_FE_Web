@@ -1,12 +1,19 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Bell, Settings, User, LogOut, ChevronDown, MessageCircle, HelpCircle, BellRing } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import ChatBot from './ChatBot';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchMe } from '../redux/slices/userSlice';
 
 export default function Header() {
   const navigate = useNavigate();
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
   const [showChatBot, setShowChatBot] = useState(false);
+  const dispatch = useDispatch();
+  const { profile } = useSelector((state: any) => state.user);
+  useEffect(() => {
+    dispatch(fetchMe() as any);
+  }, [dispatch]);
 
   const handleSignOut = () => {
     localStorage.removeItem('accessToken');
@@ -82,8 +89,8 @@ export default function Header() {
             <div className="relative group">
               {/* Animated Glow Effect */}
               <div className="absolute -inset-2 bg-gradient-to-r from-blue-400/20 via-cyan-400/30 to-blue-500/20 rounded-full blur-lg opacity-0 group-hover:opacity-100 transition-all duration-500 animate-pulse"></div>
-              
-              <div 
+
+              <div
                 className="relative p-2 rounded-full cursor-pointer transition-all duration-300 transform hover:scale-110 hover:bg-blue-50"
                 onClick={handleNotificationClick}
               >
@@ -100,7 +107,7 @@ export default function Header() {
                 </div>
               </div>
             </div>
-            
+
             {/* Settings Menu */}
             <div className="relative">
               {/* Settings Button with Special Effects */}
@@ -112,37 +119,35 @@ export default function Header() {
                     <div className="absolute -inset-2 bg-gradient-to-r from-cyan-400/30 via-blue-400/40 to-cyan-500/30 rounded-full blur-md animate-spin"></div>
                   </>
                 )}
-                
-                <div 
-                  className={`relative p-2 rounded-full cursor-pointer transition-all duration-500 transform ${
-                    showSettingsMenu 
-                      ? 'bg-gradient-to-r from-blue-100 to-cyan-100 scale-110 rotate-180 shadow-lg' 
+
+                <div
+                  className={`relative p-2 rounded-full cursor-pointer transition-all duration-500 transform ${showSettingsMenu
+                      ? 'bg-gradient-to-r from-blue-100 to-cyan-100 scale-110 rotate-180 shadow-lg'
                       : 'hover:bg-blue-50 hover:scale-105'
-                  }`}
+                    }`}
                   onClick={() => setShowSettingsMenu(!showSettingsMenu)}
                 >
-                  <Settings 
-                    className={`w-6 h-6 transition-all duration-500 ${
-                      showSettingsMenu 
-                        ? 'text-blue-700 animate-pulse' 
+                  <Settings
+                    className={`w-6 h-6 transition-all duration-500 ${showSettingsMenu
+                        ? 'text-blue-700 animate-pulse'
                         : 'text-blue-600 hover:text-blue-800'
-                    }`}
+                      }`}
                   />
                 </div>
               </div>
-              
+
               {/* Settings Dropdown Menu */}
               {showSettingsMenu && (
                 <div className="absolute right-0 top-full mt-2 w-64 origin-top-right z-50">
                   {/* Enhanced Glowing Border */}
                   <div className="absolute -inset-2 bg-gradient-to-r from-blue-400/30 via-cyan-400/40 to-blue-500/30 rounded-2xl blur-lg animate-pulse"></div>
                   <div className="absolute -inset-1 bg-gradient-to-r from-cyan-400/20 via-blue-400/30 to-cyan-500/20 rounded-2xl blur-md animate-pulse delay-300"></div>
-                  
+
                   <div className="relative bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-blue-200/60 overflow-hidden transform animate-in slide-in-from-top-2 duration-500 scale-in-95">
                     {/* Menu Items */}
                     <div className="p-2">
                       {/* Profile Info */}
-                      <Link 
+                      <Link
                         to="/profile"
                         className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-blue-50 rounded-xl transition-all duration-300 group transform hover:scale-[1.02]"
                         onClick={() => setShowSettingsMenu(false)}
@@ -162,7 +167,7 @@ export default function Header() {
                       </button>
 
                       {/* Notification Settings */}
-                      <button 
+                      <button
                         className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-blue-50 rounded-xl transition-all duration-300 group transform hover:scale-[1.02]"
                         onClick={handleNotificationSettingsClick}
                       >
@@ -173,7 +178,7 @@ export default function Header() {
                       </button>
 
                       {/* AI Chat */}
-                      <button 
+                      <button
                         className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-blue-50 rounded-xl transition-all duration-300 group transform hover:scale-[1.02]"
                         onClick={handleAIChatClick}
                       >
@@ -184,7 +189,7 @@ export default function Header() {
                       </button>
 
                       {/* User Support */}
-                      <button 
+                      <button
                         className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-blue-50 rounded-xl transition-all duration-300 group transform hover:scale-[1.02]"
                         onClick={handleSupportClick}
                       >
@@ -198,7 +203,7 @@ export default function Header() {
                       <div className="my-2 border-t border-blue-100/50"></div>
 
                       {/* Sign Out Button */}
-                      <button 
+                      <button
                         onClick={handleSignOut}
                         className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-red-50 rounded-xl transition-all duration-300 group transform hover:scale-[1.02]"
                       >
@@ -220,27 +225,27 @@ export default function Header() {
 
               {/* Click Outside Overlay for Settings */}
               {showSettingsMenu && (
-                <div 
-                  className="fixed inset-0 z-40" 
+                <div
+                  className="fixed inset-0 z-40"
                   onClick={() => setShowSettingsMenu(!showSettingsMenu)}
                 ></div>
               )}
             </div>
-            
+
             {/* User Info - Direct Profile Link */}
-            <div 
+            <div
               className="flex items-center gap-2 bg-blue-50 rounded-full px-3 py-2 cursor-pointer hover:bg-blue-100 transition-all duration-300 transform hover:scale-105 group"
               onClick={handleProfileClick}
             >
               <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center group-hover:animate-pulse">
                 <User className="w-4 h-4 text-white" />
               </div>
-              <span className="text-blue-800 font-medium">ADMIN</span>
+              <span className="text-blue-800 font-medium">  {profile?.fullname || profile?.email }</span>
             </div>
           </div>
         </div>
       </header>
-      
+
       {/* ChatBot Component */}
       <ChatBot isOpen={showChatBot} onClose={() => setShowChatBot(false)} />
     </>

@@ -1,15 +1,21 @@
-import { initializeApp, getApps, getApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider } from "firebase/auth";
+// src/firebase.ts
+import firebase from "firebase/compat/app";
+import "firebase/compat/auth";
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET, // ✅ .appspot.com
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  apiKey: "AIzaSyDKM_BJp7DUKHFtW1tBBS8CnGd08pdHnFA",
+  authDomain: "kltn-67a14.firebaseapp.com",
+  projectId: "kltn-67a14",
+  storageBucket: "kltn-67a14.appspot.com",
+  messagingSenderId: "383034214927",
+  appId: "1:383034214927:web:7b42ce7d4653c4da88f17a",
+  measurementId: "G-DT8VKFP07G"
 };
-const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 
-export const auth = getAuth(app);
-export const provider = new GoogleAuthProvider();
+// ✅ Khởi tạo app nếu chưa có
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+}
+
+export const auth = firebase.auth();
+export default firebase;
