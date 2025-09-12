@@ -4,11 +4,11 @@ import { User, Phone, Lock, Eye, EyeOff, Sparkles, UserPlus, ArrowRight, Mail, U
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "../redux/store";
 import { authService } from "../services/authService";
-import { GoogleLogin } from "@react-oauth/google";
 import { useNotify } from "../components/notifications/NotificationsProvider";
 import "firebase/compat/auth";
 import firebase, { auth } from "../firebase";
-
+import { Ruler, Weight } from "lucide-react";
+import { GoogleLogin } from "@react-oauth/google";
 declare global {
     interface Window {
         recaptchaVerifier: any;
@@ -28,23 +28,39 @@ export default function Register() {
     const [otp, setOtp] = useState("");
     const [waitingForOtp, setWaitingForOtp] = useState(false);
 
-    const [form, setForm] = useState({
+    type FormFields = {
+        fullName: string;
+        email: string;
+        phone: string;
+        gender: string;
+        password: string;
+        confirmPassword: string;
+        height: string;
+        weight: string;
+    };
+
+    const [form, setForm] = useState<FormFields>({
         fullName: "",
         email: "",
         phone: "",
         gender: "",
         password: "",
         confirmPassword: "",
+        height: "",
+        weight: ""
     });
 
-    const [errors, setErrors] = useState({
+    const [errors, setErrors] = useState<FormFields>({
         fullName: "",
         email: "",
         phone: "",
         gender: "",
         password: "",
         confirmPassword: "",
+        height: "",
+        weight: ""
     });
+
 
     const [submitting, setSubmitting] = useState(false);
     // Hàm reset container
@@ -120,8 +136,17 @@ export default function Register() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Validate như bạn đang làm
-        const newErrors = { fullName: "", email: "", phone: "", gender: "", password: "", confirmPassword: "" };
+        const newErrors: FormFields = {
+            fullName: "",
+            email: "",
+            phone: "",
+            gender: "",
+            password: "",
+            confirmPassword: "",
+            height: "",
+            weight: ""
+        };
+
         let isValid = true;
 
         if (!form.fullName.trim()) { newErrors.fullName = "Full name is required"; isValid = false; }
@@ -132,8 +157,13 @@ export default function Register() {
         if (!form.gender) { newErrors.gender = "Please select your gender"; isValid = false; }
         if (form.password.length < 6) { newErrors.password = "Password must be at least 6 characters"; isValid = false; }
         if (form.password !== form.confirmPassword) { newErrors.confirmPassword = "Passwords do not match"; isValid = false; }
+        if (!form.height.trim()) { newErrors.height = "Height is required"; isValid = false; }
+        else if (isNaN(Number(form.height)) || Number(form.height) <= 0) { newErrors.height = "Height must be a positive number"; isValid = false; }
+        if (!form.weight.trim()) { newErrors.weight = "Weight is required"; isValid = false; }
+        else if (isNaN(Number(form.weight)) || Number(form.weight) <= 0) { newErrors.weight = "Weight must be a positive number"; isValid = false; }
 
         setErrors(newErrors);
+
         if (!isValid) {
             const firstError = Object.values(newErrors).find(err => err);
             if (firstError) notify.error(`❌ ${firstError}`);
@@ -141,11 +171,10 @@ export default function Register() {
         }
 
         try {
-            const normalizedPhone = normalizePhone(form.phone); // ✅ convert sang +84
+            const normalizedPhone = normalizePhone(form.phone);
             console.log("Sending OTP to:", normalizedPhone);
 
             await sendOtpFirebase(normalizedPhone);
-
             setWaitingForOtp(true);
         } catch (err: any) {
             notify.error("❌ Gửi OTP thất bại");
@@ -168,8 +197,8 @@ export default function Register() {
                     fullname: fullName,
                     DOB: date.toISOString().split("T")[0],
                     gender: gender.toUpperCase() as "MALE" | "FEMALE" | "OTHER",
-                    height: "170",
-                    weight: "70",
+                    height: form.height,
+                    weight: form.weight,
                 },
                 dispatch,
                 navigate
@@ -364,10 +393,6 @@ export default function Register() {
                                             )}
                                         </div>
                                     </div>
-                                </div>
-
-                                {/* Right Column: Gender, Password, Confirm Password */}
-                                <div className="space-y-6">
                                     {/* Enhanced Gender Field */}
                                     <div className="relative group">
                                         <div className="absolute -inset-1 bg-gradient-to-r from-cyan-400 to-blue-400 rounded-xl blur opacity-25 group-focus-within:opacity-50 transition duration-300"></div>
@@ -405,7 +430,10 @@ export default function Register() {
                                             )}
                                         </div>
                                     </div>
+                                </div>
 
+                                {/* Right Column: Gender, Password, Confirm Password */}
+                                <div className="space-y-6">
                                     {/* Enhanced Password Field */}
                                     <div className="relative group">
                                         <div className="absolute -inset-1 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-xl blur opacity-25 group-focus-within:opacity-50 transition duration-300"></div>
@@ -477,6 +505,58 @@ export default function Register() {
                                             )}
                                         </div>
                                     </div>
+
+                                    {/* Height Field */}
+                                    <div className="relative group">
+                                        <div className="absolute -inset-1 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-xl blur opacity-25 group-focus-within:opacity-50 transition duration-300"></div>
+                                        <div className="relative">
+                                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                                <Ruler className="h-5 w-5 text-blue-500 group-focus-within:text-cyan-500 transition-colors animate-pulse" />
+                                            </div>
+                                            <input
+                                                type="number"
+                                                name="height"
+                                                placeholder="Height (cm)"
+                                                value={form.height}
+                                                onChange={handleChange}
+                                                className={`w-full pl-12 pr-4 py-4 bg-blue-50/70 border-2 ${errors.height ? 'border-red-400' : 'border-blue-200'} rounded-xl text-blue-900 placeholder-blue-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-400 focus:bg-white/90 transition-all duration-300 backdrop-blur-sm`}
+                                            />
+                                            {errors.height && (
+                                                <div className="absolute -top-2 right-4 z-10">
+                                                    <div className="bg-red-500 text-white text-xs px-3 py-2 rounded-lg shadow-lg animate-pulse">
+                                                        {errors.height}
+                                                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-red-500"></div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Weight Field */}
+                                    <div className="relative group">
+                                        <div className="absolute -inset-1 bg-gradient-to-r from-cyan-400 to-blue-400 rounded-xl blur opacity-25 group-focus-within:opacity-50 transition duration-300"></div>
+                                        <div className="relative">
+                                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                                <Weight className="h-5 w-5 text-blue-500 group-focus-within:text-cyan-500 transition-colors animate-pulse" />
+                                            </div>
+                                            <input
+                                                type="number"
+                                                name="weight"
+                                                placeholder="Weight (kg)"
+                                                value={form.weight}
+                                                onChange={handleChange}
+                                                className={`w-full pl-12 pr-4 py-4 bg-blue-50/70 border-2 ${errors.weight ? 'border-red-400' : 'border-blue-200'} rounded-xl text-blue-900 placeholder-blue-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-400 focus:bg-white/90 transition-all duration-300 backdrop-blur-sm`}
+                                            />
+                                            {errors.weight && (
+                                                <div className="absolute -top-2 right-4 z-10">
+                                                    <div className="bg-red-500 text-white text-xs px-3 py-2 rounded-lg shadow-lg animate-pulse">
+                                                        {errors.weight}
+                                                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-red-500"></div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
@@ -517,29 +597,26 @@ export default function Register() {
                                         </div>
                                     </div>
                                 )}
-
-                                {/* Google Login Button */}
-                                <div className="relative">
-                                    <div className="absolute -inset-1 bg-gradient-to-r from-gray-300 to-gray-400 rounded-xl blur opacity-25 group-hover:opacity-50 transition duration-300"></div>
-
+                                {/* Google Sign-In Button */}
+                                <div
+                                    className="w-full flex items-center justify-center gap-3 py-4 px-6 bg-white border border-gray-300 rounded-xl shadow-md hover:shadow-lg hover:bg-gray-50 transition-all duration-300 transform hover:scale-[1.02] active:scale-95 cursor-pointer"
+                                >
                                     <GoogleLogin
                                         onSuccess={async (credentialResponse) => {
-                                            console.log("Google credentialResponse:", credentialResponse);
-                                            const idToken = credentialResponse.credential;
+                                            const idToken = credentialResponse.credential; // ✅ ID Token
                                             if (!idToken) {
                                                 notify.error("Không lấy được Google ID token");
                                                 return;
                                             }
-
                                             try {
-                                                await authService.loginWithGoogle(idToken, dispatch, navigate);
+                                                await authService.loginWithGoogle(idToken, dispatch, navigate); // ✅ Gửi idToken sang BE
                                                 notify.success("🎉 Google login successful!");
                                             } catch (err: any) {
                                                 notify.error("❌ Google login failed");
                                             }
                                         }}
                                         onError={() => notify.error("❌ Google login failed")}
-                                        useOneTap={false} // buộc hiển thị popup chọn tài khoản
+                                        useOneTap={false} // tránh hiện popup một chạm
                                     />
                                 </div>
                             </div>

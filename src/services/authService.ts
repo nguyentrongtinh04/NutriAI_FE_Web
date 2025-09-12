@@ -33,6 +33,9 @@ export const authService = {
       const { access_token, refresh_token } = res.data;
 
       dispatch(setAuth({ accessToken: access_token, refreshToken: refresh_token }));
+      // 🔥 Lưu vào localStorage
+      localStorage.setItem("accessToken", access_token);
+      localStorage.setItem("refreshToken", refresh_token);
 
       const [profileRes, authRes] = await Promise.all([
         userApi.get("/me", { headers: { Authorization: `Bearer ${access_token}` } }),
@@ -69,6 +72,9 @@ export const authService = {
       const { access_token, refresh_token } = res.data;
 
       dispatch(setAuth({ accessToken: access_token, refreshToken: refresh_token }));
+      // 🔥 Lưu vào localStorage
+      localStorage.setItem("accessToken", access_token);
+      localStorage.setItem("refreshToken", refresh_token);
 
       const [profileRes, authRes] = await Promise.all([
         userApi.get("/me", { headers: { Authorization: `Bearer ${access_token}` } }),
@@ -102,7 +108,9 @@ export const authService = {
       dispatch(clearAuth());
       dispatch(clearUser());
       localStorage.removeItem("persist:root");
-
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+      
       navigate("/signin");
     } catch (err: any) {
       console.log("Logout error:", err.response?.data || err.message);

@@ -5,12 +5,13 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
-import { fetchMe, updateProfile, updateAvatar } from "../../.././redux/slices/userSlice";
+import { fetchMe, updateInfo, updateHealth, uploadAndUpdateAvatar } from "../../../redux/slices/userSlice";
+import { useNotify } from "../../../components/notifications/NotificationsProvider";
 
 export default function HealthInformation() {
   const dispatch = useDispatch();
   const { profile } = useSelector((state: any) => state.user);
-
+  const notify = useNotify();
   const [activeTab, setActiveTab] = useState("information-your");
   const [isEditing, setIsEditing] = useState(false);
   const [showAvatarModal, setShowAvatarModal] = useState(false);
@@ -23,73 +24,109 @@ export default function HealthInformation() {
     dispatch(fetchMe() as any);
   }, [dispatch]);
 
-  // Map profile từ Redux sang state local
   // Khởi tạo local state rỗng, tránh null
-const [editedUserData, setEditedUserData] = useState<any>({
-  name: "",
-  email: "",
-  phone: "",
-  gender: "",
-  birthDate: "",
-  avatar: "/src/assets/default-avatar.jpg"
-});
+  const [editedUserData, setEditedUserData] = useState<any>({
+    name: "",
+    email: "",
+    phone: "",
+    gender: "",
+    birthDate: "",
+    avatar: "/src/assets/default-avatar.jpg"
+  });
 
-const [editedHealthData, setEditedHealthData] = useState<any>({
-  height: "",
-  weight: "",
-  medicalHistory: "",
-  currentMedications: "",
-  allergies: "",
-  chronicConditions: "",
-  emergencyContact: "",
-  pastSurgeries: "",
-  familyHistory: "",
-  immunizations: "",
-  previousHospitalizations: ""
-});
+  const [editedHealthData, setEditedHealthData] = useState<any>({
+    height: "",
+    weight: "",
+    medicalHistory: "",
+    currentMedications: "",
+    allergies: "",
+    chronicConditions: "",
+    emergencyContact: "",
+    pastSurgeries: "",
+    familyHistory: "",
+    immunizations: "",
+    previousHospitalizations: ""
+  });
 
-// Khi profile từ Redux thay đổi → copy sang local state
-useEffect(() => {
-  if (profile) {
-    setEditedUserData({
-      name: profile.fullname || "",
-      email: profile.email || "",
-      phone: profile.phone || "",
-      gender: profile.gender || "",
-      birthDate: profile.DOB || "",
-      avatar: profile.avt || "/src/assets/default-avatar.jpg",
-    });
+  // Khi profile từ Redux thay đổi → copy sang local state
+  useEffect(() => {
+    if (profile) {
+      setEditedUserData({
+        name: profile.fullname || "",
+        email: profile.email || "",
+        phone: profile.phone || "",
+        gender: profile.gender || "",
+        birthDate: profile.DOB || "",
+        avatar: profile.avt || "/src/assets/default-avatar.jpg",
+      });
 
-    setEditedHealthData({
-      height: profile.height || "",
-      weight: profile.weight || "",
-      medicalHistory: profile.medicalHistory || "",
-      currentMedications: profile.currentMedications || "",
-      allergies: profile.allergies || "",
-      chronicConditions: profile.chronicConditions || "",
-      emergencyContact: profile.emergencyContact || "",
-      pastSurgeries: profile.pastSurgeries || "",
-      familyHistory: profile.familyHistory || "",
-      immunizations: profile.immunizations || "",
-      previousHospitalizations: profile.previousHospitalizations || "",
-    });
-  }
-}, [profile]);
+      setEditedHealthData({
+        height: profile.height || "",
+        weight: profile.weight || "",
+        medicalHistory: profile.medicalHistory || "",
+        currentMedications: profile.currentMedications || "",
+        allergies: profile.allergies || "",
+        chronicConditions: profile.chronicConditions || "",
+        emergencyContact: profile.emergencyContact || "",
+        pastSurgeries: profile.pastSurgeries || "",
+        familyHistory: profile.familyHistory || "",
+        immunizations: profile.immunizations || "",
+        previousHospitalizations: profile.previousHospitalizations || "",
+      });
+    }
+  }, [profile]);
+  useEffect(() => {
+    console.log("Profile updated:", profile);
+  }, [profile]);
 
-  console.log("Profile from Redux:", profile);
+  const handleSaveInfo = async () => {
+    try {
+      await dispatch(updateInfo({
+        fullname: editedUserData.name,
+        DOB: editedUserData.birthDate,
+        gender: editedUserData.gender,
+      }) as any).unwrap();
 
-  const handleSave = () => {
-    dispatch(updateProfile({
-      fullname: editedUserData.name,
-      DOB: editedUserData.birthDate,
-      gender: editedUserData.gender,
-      height: editedHealthData.height,
-      weight: editedHealthData.weight,
-      BMI: calculateBMI(editedHealthData.weight, editedHealthData.height),
-      activityLevel: profile?.activityLevel,
-    }) as any);
-    setIsEditing(false);
-  };  
+      notify.success("🎉 Cập nhật thông tin cá nhân thành công!");
+      setIsEditing(false);
+    } catch (err: any) {
+      notify.error(`❌ Cập nhật thất bại: ${err.message || "Unknown error"}`);
+    }
+  };
+
+  // Lưu thông tin sức khỏe
+  const handleSaveHealth = async () => {
+    try {
+      await dispatch(updateHealth({
+        height: editedHealthData.height,
+        weight: editedHealthData.weight,
+      }) as any).unwrap();
+
+      notify.success("🎉 Cập nhật thông tin sức khỏe thành công!");
+      setIsEditing(false);
+    } catch (err: any) {
+      notify.error(`❌ Cập nhật thất bại: ${err.message || "Unknown error"}`);
+    }
+  };
+
+  // Lưu avatar
+  const handleSaveAvatar = async () => {
+    if (!selectedImage || !fileInputRef.current?.files?.[0]) return;
+
+    const file = fileInputRef.current.files[0];
+    setIsLoading(true);
+    try {
+      await dispatch(uploadAndUpdateAvatar(file) as any).unwrap();
+      notify.success("🎉 Avatar đã được cập nhật!");
+      setShowAvatarModal(false);
+      setSelectedImage(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    } catch (err: any) {
+      notify.error(`❌ Upload avatar thất bại: ${err.message || "Unknown error"}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleCancel = () => {
     setIsEditing(false);
@@ -129,14 +166,6 @@ useEffect(() => {
       reader.onload = (ev) => setSelectedImage(ev.target?.result as string);
       reader.readAsDataURL(f);
     }
-  };
-  const handleSaveAvatar = async () => {
-    if (!selectedImage) return;
-    setIsLoading(true);
-    await dispatch(updateAvatar(selectedImage) as any);
-    setIsLoading(false);
-    setShowAvatarModal(false);
-    setSelectedImage(null);
   };
 
   const handleEdit = () => setIsEditing(true);
@@ -389,8 +418,8 @@ useEffect(() => {
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
                         className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all duration-300 transform hover:scale-105 ${isActive
-                            ? `bg-gradient-to-r ${tab.bgColor} ${tab.borderColor} border-2 shadow-lg`
-                            : 'bg-white/50 border-gray-200/50 hover:bg-white/70'
+                          ? `bg-gradient-to-r ${tab.bgColor} ${tab.borderColor} border-2 shadow-lg`
+                          : 'bg-white/50 border-gray-200/50 hover:bg-white/70'
                           }`}
                       >
                         <div className={`w-8 h-8 bg-gradient-to-r ${tab.color} rounded-lg flex items-center justify-center`}>
@@ -439,7 +468,7 @@ useEffect(() => {
                           Cancel
                         </button>
                         <button
-                          onClick={handleSave}
+                          onClick={activeTab === "information-your" ? handleSaveInfo : handleSaveHealth}
                           className="flex items-center gap-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-4 py-2 rounded-xl hover:scale-105 transition-transform duration-300"
                         >
                           <Check className="w-4 h-4" />
@@ -499,27 +528,6 @@ useEffect(() => {
                           <p className="text-gray-800 ml-8">{editedUserData.gender}</p>
                         )}
                       </div>
-                    </div>
-
-                    <div className="space-y-6">
-                      <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200/50">
-                        <div className="flex items-center gap-3 mb-2">
-                          <Phone className="w-5 h-5 text-green-500" />
-                          <span className="font-semibold text-gray-700">Phone</span>
-                        </div>
-                        {isEditing ? (
-                          <input
-                            type="tel"
-                            value={editedUserData.phone}
-                            onChange={(e) => handleUserInputChange('phone', e.target.value)}
-                            className="w-full bg-white/70 border border-green-200/50 rounded-lg px-4 py-3 text-gray-800 placeholder-gray-400 outline-none focus:ring-2 focus:ring-green-300"
-                            placeholder="Enter your phone"
-                          />
-                        ) : (
-                          <p className="text-gray-800 ml-8">{editedUserData.phone}</p>
-                        )}
-                      </div>
-
                       <div className="p-4 bg-gradient-to-r from-orange-50 to-red-50 rounded-xl border border-orange-200/50">
                         <div className="flex items-center gap-3 mb-2">
                           <Calendar className="w-5 h-5 text-orange-500" />
@@ -534,6 +542,44 @@ useEffect(() => {
                           />
                         ) : (
                           <p className="text-gray-800 ml-8">{new Date(editedUserData.birthDate).toLocaleDateString()}</p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="space-y-6">
+                      {/* Phone */}
+                      <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200/50">
+                        <div className="flex items-center gap-3 mb-2">
+                          <Phone className="w-5 h-5 text-green-500" />
+                          <span className="font-semibold text-gray-700">Phone</span>
+                        </div>
+                        {isEditing ? (
+                          <input
+                            type="tel"
+                            value={editedUserData.phone}
+                            disabled // ✅ không cho sửa
+                            className="w-full bg-gray-100 border border-green-200/50 rounded-lg px-4 py-3 text-gray-500 cursor-not-allowed"
+                          />
+                        ) : (
+                          <p className="text-gray-800 ml-8">{editedUserData.phone}</p>
+                        )}
+                      </div>
+
+                      {/* Email */}
+                      <div className="p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl border border-indigo-200/50">
+                        <div className="flex items-center gap-3 mb-2">
+                          <User className="w-5 h-5 text-indigo-500" />
+                          <span className="font-semibold text-gray-700">Email</span>
+                        </div>
+                        {isEditing ? (
+                          <input
+                            type="email"
+                            value={editedUserData.email}
+                            disabled // ✅ không cho sửa
+                            className="w-full bg-gray-100 border border-indigo-200/50 rounded-lg px-4 py-3 text-gray-500 cursor-not-allowed"
+                          />
+                        ) : (
+                          <p className="text-gray-800 ml-8">{editedUserData.email}</p>
                         )}
                       </div>
                     </div>

@@ -31,45 +31,56 @@ const initialState: UserState = {
 // ====== Thunks ======
 export const fetchMe = createAsyncThunk("user/fetchMe", async (_, thunkAPI) => {
   try {
-    const data = await userService.getMe();
-    return data;
+    const [userRes, authRes] = await Promise.all([
+      userService.getMe(),
+      // gọi auth service để lấy email, phone, role
+      fetch("http://localhost:5005/auth/me", {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+        },
+      }).then((r) => r.json()),
+    ]);
+
+    return {
+      ...userRes,
+      email: authRes.email,
+      phone: authRes.phone,
+      role: authRes.role,
+    };
   } catch (err: any) {
     return thunkAPI.rejectWithValue(err.response?.data || err.message);
   }
 });
 
-export const updateProfile = createAsyncThunk(
-  "user/updateProfile",
-  async (
-    payload: {
-      fullname?: string;
-      DOB?: string;
-      gender?: "MALE" | "FEMALE" | "OTHER";
-      height?: string;
-      weight?: string;
-      BMI?: string;
-      activityLevel?: number;
-    },
-    thunkAPI
-  ) => {
-    try {
-      const data = await userService.updateProfile(payload);
-      return data;
-    } catch (err: any) {
-      return thunkAPI.rejectWithValue(err.response?.data || err.message);
-    }
+export const updateInfo = createAsyncThunk(
+  "user/updateInfo",
+  async (payload: { fullname?: string; DOB?: string; gender?: "MALE" | "FEMALE" | "OTHER" }) => {
+    const res = await userService.updateInfo(payload);
+    return res;
+  }
+);
+
+export const updateHealth = createAsyncThunk(
+  "user/updateHealth",
+  async (payload: { height?: string; weight?: string }) => {
+    const res = await userService.updateHealth(payload);
+    return res;
   }
 );
 
 export const updateAvatar = createAsyncThunk(
   "user/updateAvatar",
-  async (avatarUrl: string, thunkAPI) => {
-    try {
-      const data = await userService.updateAvatar(avatarUrl);
-      return data;
-    } catch (err: any) {
-      return thunkAPI.rejectWithValue(err.response?.data || err.message);
-    }
+  async (avatarUrl: string) => {
+    const res = await userService.updateAvatar(avatarUrl);
+    return res.user; // BE trả { message, user }
+  }
+);
+
+export const uploadAndUpdateAvatar = createAsyncThunk(
+  "user/uploadAndUpdateAvatar",
+  async (file: File) => {
+    const res = await userService.updateAndUploadAvatar(file);
+    return res.user; // BE trả { message, user }
   }
 );
 
@@ -99,26 +110,38 @@ const userSlice = createSlice({
       .addCase(fetchMe.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
-      });
-
-    // updateProfile
-    builder
-      .addCase(updateProfile.fulfilled, (state, action) => {
-        state.profile = { ...state.profile, ...action.payload };
       })
-      .addCase(updateProfile.rejected, (state, action) => {
-        state.error = action.payload as string;
-      });
 
-    // updateAvatar
-    builder
+      // Update Info
+      .addCase(updateInfo.fulfilled, (state, action) => {
+        state.profile = {
+          ...state.profile, // giữ lại email, phone, role...
+          ...action.payload,
+        };
+      })
+
+      // Update Health
+      .addCase(updateHealth.fulfilled, (state, action) => {
+        state.profile = {
+          ...state.profile,
+          ...action.payload,
+        };
+      })
+
+      // Update Avatar
       .addCase(updateAvatar.fulfilled, (state, action) => {
-        if (state.profile) {
-          state.profile.avt = action.payload.avt || action.payload.avatar || action.payload.url;
-        }
+        state.profile = {
+          ...state.profile,
+          ...action.payload,
+        };
       })
-      .addCase(updateAvatar.rejected, (state, action) => {
-        state.error = action.payload as string;
+
+      // Upload + Update Avatar
+      .addCase(uploadAndUpdateAvatar.fulfilled, (state, action) => {
+        state.profile = {
+          ...state.profile,
+          ...action.payload,
+        };
       });
   },
 });

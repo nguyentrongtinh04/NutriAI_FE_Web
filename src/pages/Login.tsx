@@ -23,7 +23,6 @@ export default function Login() {
   const navigate = useNavigate();
   const notify = useNotify();
   const dispatch = useDispatch<AppDispatch>();
-
   // ===== Normal login =====
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -238,32 +237,28 @@ export default function Login() {
                     </span>
                   </button>
                 </div>
-
-                {/* Google Login Button */}
-                <div className="relative">
-                  <div className="absolute -inset-1 bg-gradient-to-r from-gray-300 to-gray-400 rounded-xl blur opacity-25 group-hover:opacity-50 transition duration-300"></div>
-
+                {/* Google Login Button (Custom styled) */}
+                <div
+                  className="w-full flex items-center justify-center gap-3 py-4 px-6 bg-white border border-gray-300 rounded-xl shadow-md hover:shadow-lg hover:bg-gray-50 transition-all duration-300 transform hover:scale-[1.02] active:scale-95 cursor-pointer"
+                >
                   <GoogleLogin
                     onSuccess={async (credentialResponse) => {
-                      console.log("Google credentialResponse:", credentialResponse);
-                      const idToken = credentialResponse.credential;
+                      const idToken = credentialResponse.credential; // ✅ ID Token
                       if (!idToken) {
                         notify.error("Không lấy được Google ID token");
                         return;
                       }
-
                       try {
-                        await authService.loginWithGoogle(idToken, dispatch, navigate);
+                        await authService.loginWithGoogle(idToken, dispatch, navigate); // ✅ Gửi idToken sang BE
                         notify.success("🎉 Google login successful!");
                       } catch (err: any) {
                         notify.error("❌ Google login failed");
                       }
                     }}
                     onError={() => notify.error("❌ Google login failed")}
-                    useOneTap={false} // buộc hiển thị popup chọn tài khoản
+                    useOneTap={false} // tránh hiện popup một chạm
                   />
                 </div>
-
               </div>
 
               {/* Forgot Password Link */}
