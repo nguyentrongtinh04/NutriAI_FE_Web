@@ -321,15 +321,3 @@ export default function Login() {
     </div>
   );
 }
-
-function loginWithGoogleThunk(googleIdToken: any): any {
-  throw new Error("Function not implemented.");
-}
-function fetchAuthMe(access_token: any): any {
-  throw new Error("Function not implemented.");
-}
-
-function fetchUserMe(access_token: any): any {
-  throw new Error("Function not implemented.");
-}
-

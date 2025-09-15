@@ -64,44 +64,31 @@ export default function Register() {
 
     const [submitting, setSubmitting] = useState(false);
     // Hàm reset container
-    const resetRecaptchaContainer = () => {
-        const oldContainer = document.getElementById("recaptcha-container");
-        if (oldContainer) {
-            oldContainer.remove(); // xoá hẳn
-        }
-        const newContainer = document.createElement("div");
-        newContainer.id = "recaptcha-container";
-        document.body.appendChild(newContainer); // gắn lại vào DOM
-    };
 
-    // Hàm init recaptcha
-    const initRecaptcha = async () => {
-        resetRecaptchaContainer();
-
-        window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier("recaptcha-container", {
+    useEffect(() => {
+        if (!window.recaptchaVerifier) {
+          window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier("recaptcha-container", {
             size: "invisible",
             callback: (response: any) => {
-                console.log("✅ reCAPTCHA solved:", response);
+              console.log("✅ reCAPTCHA solved:", response);
             },
-        });
-
-        await window.recaptchaVerifier.render();
-        return window.recaptchaVerifier;
-    };
-
+          });
+          window.recaptchaVerifier.render();
+        }
+      }, []);
+      
     // Hàm gửi OTP
     const sendOtpFirebase = async (phone: string) => {
         try {
-            const appVerifier = await initRecaptcha(); // mỗi lần đều có container mới
-            const confirmationResult = await firebase.auth().signInWithPhoneNumber(phone, appVerifier);
-
-            setConfirmation(confirmationResult);
-            notify.success("📩 OTP đã được gửi!");
+          const appVerifier = window.recaptchaVerifier;
+          const confirmationResult = await firebase.auth().signInWithPhoneNumber(phone, appVerifier);
+          setConfirmation(confirmationResult);
+          notify.success("📩 OTP đã được gửi!");
         } catch (err) {
-            console.error("sendOtpFirebase error:", err);
-            notify.error("❌ Gửi OTP thất bại");
+          console.error("sendOtpFirebase error:", err);
+          notify.error("❌ Gửi OTP thất bại");
         }
-    };
+      };      
 
     // Xác minh OTP
     const verifyOtpFirebase = async (otp: string) => {

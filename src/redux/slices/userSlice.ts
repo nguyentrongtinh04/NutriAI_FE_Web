@@ -14,6 +14,7 @@ export interface User {
   email?: string;
   phone?: string;
   avt?: string; // 👈 avatar
+  emailVerified?: boolean;
 }
 
 interface UserState {
@@ -46,6 +47,7 @@ export const fetchMe = createAsyncThunk("user/fetchMe", async (_, thunkAPI) => {
       email: authRes.email,
       phone: authRes.phone,
       role: authRes.role,
+      emailVerified: authRes.emailVerified,
     };
   } catch (err: any) {
     return thunkAPI.rejectWithValue(err.response?.data || err.message);

@@ -1,13 +1,20 @@
+// src/components/PrivateRoute.tsx
 import { Navigate } from "react-router-dom";
-import { useAuth } from "../contexts/Authcontext";
+import { useSelector } from "react-redux";
+import { RootState } from "../redux/store";
 import { JSX } from "react";
 
 const PrivateRoute = ({ children }: { children: JSX.Element }) => {
-  const { user, loading } = useAuth();
+  // Lấy token từ Redux
+  const accessToken = useSelector((state: RootState) => state.auth.accessToken);
+  // Nếu Redux chưa có thì fallback sang localStorage
+  const token = accessToken || localStorage.getItem("accessToken");
 
-  if (loading) return <div>Loading...</div>;
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
 
-  return user ? children : <Navigate to="/login" />;
+  return children;
 };
 
 export default PrivateRoute;

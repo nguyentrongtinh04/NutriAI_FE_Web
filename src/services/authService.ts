@@ -86,6 +86,7 @@ export const authService = {
         email: authRes.data.email,
         phone: authRes.data.phone,
         role: authRes.data.role,
+        emailVerified: authRes.data.emailVerified,
       };
 
       dispatch(setUser(mergedUser));
@@ -110,7 +111,7 @@ export const authService = {
       localStorage.removeItem("persist:root");
       localStorage.removeItem("accessToken");
       localStorage.removeItem("refreshToken");
-      
+
       navigate("/signin");
     } catch (err: any) {
       console.log("Logout error:", err.response?.data || err.message);
@@ -165,6 +166,7 @@ export const authService = {
         email: authRes.data.email,
         phone: authRes.data.phone,
         role: authRes.data.role,
+        emailVerified: authRes.data.emailVerified,
       };
 
       dispatch(setUser(mergedUser));
@@ -213,4 +215,49 @@ export const authService = {
       throw err;
     }
   },
+
+  // Gửi mã xác thực email
+  sendEmailVerification: async (email: string) => {
+    try {
+      const res = await authApi.post("/send-email-verification", { email });
+      return res.data;
+    } catch (err: any) {
+      console.log("Send Email Verification Error:", err.response?.data || err.message);
+      throw err;
+    }
+  },
+
+  // Xác minh email
+  verifyEmail: async (email: string, code: string) => {
+    try {
+      const res = await authApi.post("/verify-email", { email, code });
+      return res.data;
+    } catch (err: any) {
+      console.log("Verify Email Error:", err.response?.data || err.message);
+      throw err;
+    }
+  },
+
+  // gửi yêu cầu đổi email (gửi code về email cũ)
+  requestEmailChange: async (oldEmail: string, newEmail: string) => {
+    try {
+      const res = await authApi.post("/request-email-change", { oldEmail, newEmail });
+      return res.data;
+    } catch (err: any) {
+      console.log("Request Email Change Error:", err.response?.data || err.message);
+      throw err;
+    }
+  },
+
+  // xác nhận đổi email (nhập code từ email cũ)
+  confirmEmailChange: async (oldEmail: string, code: string) => {
+    try {
+      const res = await authApi.post("/confirm-email-change", { oldEmail, code });
+      return res.data;
+    } catch (err: any) {
+      console.log("Confirm Email Change Error:", err.response?.data || err.message);
+      throw err;
+    }
+  },
 };
+
