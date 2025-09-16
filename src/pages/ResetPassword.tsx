@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { Shield, Key, Eye, EyeOff, Sparkles, Lock, ArrowLeft } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import { authService } from "../services/authService";
+import { useNotify } from "../components/notifications/NotificationsProvider";
 
 export default function ResetPassword() {
     const [newPassword, setNewPassword] = useState("");
@@ -9,20 +11,49 @@ export default function ResetPassword() {
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const navigate = useNavigate();
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-
-        if (newPassword.length < 6) {
-            setError("Password must be at least 6 characters.");
-        } else if (newPassword !== confirmPassword) {
-            setError("Passwords do not match.");
+    const location = useLocation();
+    const notify = useNotify();
+  
+    const phone = location.state?.phone;
+    const email = location.state?.email;
+  
+    const handleSubmit = async (e: React.FormEvent) => {
+      e.preventDefault();
+  
+      if (newPassword.length < 6) {
+        const msg = "❌ Password must be at least 6 characters.";
+        setError(msg);
+        notify.error(msg);
+        return;
+      }
+      if (newPassword !== confirmPassword) {
+        const msg = "❌ Passwords do not match.";
+        setError(msg);
+        notify.error(msg);
+        return;
+      }
+  
+      try {
+        if (phone) {
+          await authService.resetPasswordByPhone(phone, newPassword);
+        } else if (email) {
+          await authService.resetPasswordByEmail(email, newPassword);
         } else {
-            setError("");
-            alert("✅ Password has been reset successfully!");
-            navigate("/login"); // Chuyển về login
+          const msg = "❌ No account info provided";
+          setError(msg);
+          notify.error(msg);
+          return;
         }
-    };
+  
+        setError("");
+        notify.success("✅ Password has been reset successfully!");
+        navigate("/login");
+      } catch (err: any) {
+        const msg = err.response?.data?.message || "❌ Failed to reset password";
+        setError(msg);
+        notify.error(msg);
+      }
+    };  
 
     return (
         <div className="min-h-screen w-full relative overflow-hidden bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 flex items-center justify-center px-4">

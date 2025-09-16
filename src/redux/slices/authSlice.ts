@@ -65,6 +65,30 @@ export const confirmEmailChange = createAsyncThunk(
   }
 );
 
+// check phone
+export const checkPhoneExists = createAsyncThunk(
+  "auth/checkPhoneExists",
+  async (phone: string, { rejectWithValue }) => {
+    try {
+      return await authService.checkPhoneExists(phone);
+    } catch (err: any) {
+      return rejectWithValue(err.response?.data || err.message);
+    }
+  }
+);
+
+// check email
+export const checkEmailExists = createAsyncThunk(
+  "auth/checkEmailExists",
+  async (email: string, { rejectWithValue }) => {
+    try {
+      return await authService.checkEmailExists(email);
+    } catch (err: any) {
+      return rejectWithValue(err.response?.data || err.message);
+    }
+  }
+);
+
 const authSlice = createSlice({
   name: "auth",
   initialState,
@@ -103,7 +127,7 @@ const authSlice = createSlice({
         state.status = "failed";
         state.error = action.payload as string;
       })
-  
+
       // 👉 update email
       .addCase(requestEmailChange.fulfilled, (state) => {
         state.status = "succeeded";
@@ -119,8 +143,26 @@ const authSlice = createSlice({
       .addCase(confirmEmailChange.rejected, (state, action) => {
         state.status = "failed";
         state.error = action.payload as string;
+      })
+      .addCase(checkPhoneExists.fulfilled, (state, action) => {
+        state.status = "succeeded";
+        state.error = null;
+        console.log("Phone exists:", action.payload.exists);
+      })
+      .addCase(checkPhoneExists.rejected, (state, action) => {
+        state.status = "failed";
+        state.error = action.payload as string;
+      })
+      .addCase(checkEmailExists.fulfilled, (state, action) => {
+        state.status = "succeeded";
+        state.error = null;
+        console.log("Email exists:", action.payload.exists);
+      })
+      .addCase(checkEmailExists.rejected, (state, action) => {
+        state.status = "failed";
+        state.error = action.payload as string;
       });
-  }  
+  }
 });
 
 export const { setAuth, clearAuth, updateAccessToken } = authSlice.actions;

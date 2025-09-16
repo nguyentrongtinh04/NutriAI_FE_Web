@@ -1,19 +1,15 @@
 import React, { useState } from 'react';
 import { ArrowLeft, Settings as SettingsIcon, Lock, Mail, Shield, User, Phone, Trash2, Plus, Edit3 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import ChangePassword from './ChangePassword';
 import EmailManagement from './EmailManagement';
+import { useNavigate } from "react-router-dom";
 
 export default function Settings() {
   const [activeSection, setActiveSection] = useState<'main' | 'changePassword' | 'emailManagement'>('main');
-
+  const navigate = useNavigate();
   const handleBackToSettings = () => {
     setActiveSection('main');
   };
-
-  if (activeSection === 'changePassword') {
-    return <ChangePassword onBack={handleBackToSettings} />;
-  }
 
   if (activeSection === 'emailManagement') {
     return <EmailManagement onBack={handleBackToSettings} />;
@@ -110,7 +106,7 @@ export default function Settings() {
 
               <div className="space-y-4">
                 <button
-                  onClick={() => setActiveSection('changePassword')}
+                  onClick={() =>navigate("/settings/change-password")}
                   className="w-full flex items-center gap-4 p-4 bg-red-50/80 hover:bg-red-100/80 border-2 border-red-200/50 hover:border-red-300 rounded-xl transition-all duration-300 group"
                 >
                   <div className="relative">

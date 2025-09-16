@@ -1,6 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Phone, Mail, Lock, ArrowLeft, Sparkles, Send, Shield, RotateCcw } from "lucide-react";
+import firebase from "../firebase"; // 👈 import firebase như Register.tsx
+import { useDispatch } from "react-redux";
+import { AppDispatch } from "../redux/store";
+import { checkPhoneExists, checkEmailExists, sendEmailVerification, verifyEmail } from "../redux/slices/authSlice";
+import { useNotify } from "../components/notifications/NotificationsProvider";
 
 export default function ForgotPassword() {
   const [method, setMethod] = useState<"phone" | "email">("phone");
@@ -11,53 +16,112 @@ export default function ForgotPassword() {
   const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
   const [timer, setTimer] = useState(60);
   const [canResend, setCanResend] = useState(false);
+  const [confirmation, setConfirmation] = useState<any>(null); // 👈 để lưu confirmationResult
+  const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
+  const notify = useNotify();
 
-  // Focus vào ô đầu tiên khi modal hiện
+  // reCAPTCHA setup (giống Register.tsx)
   useEffect(() => {
-    if (showOtpModal) {
-      inputRefs.current[0]?.focus();
+    if (!window.recaptchaVerifier) {
+      window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier("recaptcha-container", {
+        size: "invisible",
+        callback: (response: any) => console.log("✅ reCAPTCHA solved"),
+      });
+      window.recaptchaVerifier.render();
     }
-  }, [showOtpModal]);
+  }, []);
 
-  // Countdown OTP
-  useEffect(() => {
-    if (showOtpModal && timer > 0) {
-      const countdown = setInterval(() => {
-        setTimer((prev) => prev - 1);
-      }, 1000);
-      return () => clearInterval(countdown);
-    } else if (timer === 0) {
-      setCanResend(true);
+  const normalizePhone = (phone: string) => {
+    let p = phone.trim();
+    if (p.startsWith("0")) {
+      p = "+84" + p.slice(1);
     }
-  }, [showOtpModal, timer]);
+    return p;
+  };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // gửi OTP qua Firebase
+  const sendOtpFirebase = async (phone: string) => {
+    try {
+      const appVerifier = window.recaptchaVerifier;
+      const result = await firebase.auth().signInWithPhoneNumber(normalizePhone(phone), appVerifier);
+      setConfirmation(result);
+      setShowOtpModal(true);
+      setTimer(60);
+      setCanResend(false);
+      setOtp(["", "", "", "", "", ""]);
+    } catch (err) {
+      console.error("sendOtpFirebase error:", err);
+      setError("❌ Gửi OTP thất bại");
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!input.trim()) {
-      setError("Please enter your phone number or email.");
+      const msg = "❌ Please enter your phone number or email.";
+      setError(msg);
+      notify.error(msg);
       return;
     }
 
-    if (method === "phone" && !/^\d{10,}$/.test(input)) {
-      setError("Phone number must be at least 10 digits.");
+    if (method === "phone" && !/^0\d{9,}$/.test(input)) {
+      const msg = "❌ Phone number must start with 0 and be at least 10 digits.";
+      setError(msg);
+      notify.error(msg);
       return;
     }
 
-    if (
-      method === "email" &&
-      !/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/.test(input)
-    ) {
-      setError("Invalid email address.");
+    if (method === "email" && !/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/.test(input)) {
+      const msg = "❌ Invalid email address.";
+      setError(msg);
+      notify.error(msg);
       return;
     }
 
     setError("");
-    setShowOtpModal(true);
-    setTimer(60);
-    setCanResend(false);
-    setOtp(["", "", "", "", "", ""]);
+
+    if (method === "phone") {
+      try {
+        const res = await dispatch(checkPhoneExists(input)).unwrap();
+        if (!res.exists) {
+          const msg = "❌ Phone number not registered";
+          setError(msg);
+          notify.error(msg);
+          return;
+        }
+        await sendOtpFirebase(input);
+        notify.success("📲 OTP has been sent to your phone!");
+      } catch (err) {
+        console.error("checkPhoneExists error:", err);
+        const msg = "❌ Cannot verify phone number now";
+        setError(msg);
+        notify.error(msg);
+      }
+    } else {
+      try {
+        const res = await dispatch(checkEmailExists(input)).unwrap();
+        if (!res.exists) {
+          const msg = "❌ Email not registered";
+          setError(msg);
+          notify.error(msg);
+          return;
+        }
+
+        await dispatch(sendEmailVerification(input)).unwrap();
+        setShowOtpModal(true);
+        setTimer(60);
+        setCanResend(false);
+        setOtp(["", "", "", "", "", ""]);
+        notify.success("📩 Verification code sent to your email!");
+      } catch (err) {
+        console.error("sendEmailVerification error:", err);
+        const msg = "❌ Failed to send verification email";
+        setError(msg);
+        notify.error(msg);
+      }
+    }
   };
 
   const handleOtpChange = (value: string, index: number) => {
@@ -68,33 +132,72 @@ export default function ForgotPassword() {
     if (value && index < 5) inputRefs.current[index + 1]?.focus();
   };
 
-  const handleKeyDown = (
-    e: React.KeyboardEvent<HTMLInputElement>,
-    index: number
-  ) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
     if (e.key === "Backspace" && !otp[index] && index > 0) {
       inputRefs.current[index - 1]?.focus();
     }
   };
 
-  const handleVerifyOtp = () => {
+  const handleVerifyOtp = async () => {
     const code = otp.join("");
     if (code.length < 6) {
-      alert("❗ Please enter the full 6-digit code.");
+      const msg = "❗ Please enter the full 6-digit code.";
+      setError(msg);
+      notify.error(msg);
       return;
     }
 
-    alert("✅ OTP verified!");
-    navigate("/reset-password");
+    try {
+      if (method === "phone" && confirmation) {
+        await confirmation.confirm(code);
+        notify.success("✅ OTP verified!");
+        navigate("/reset-password", { state: { phone: input } });
+      } else {
+        await dispatch(verifyEmail({ email: input, code })).unwrap();
+        notify.success("✅ Email verified!");
+        navigate("/reset-password", { state: { email: input } });
+      }
+    } catch (err) {
+      console.error("verifyOtp error:", err);
+      notify.error("❌ OTP không đúng");
+    }
   };
 
   function handleResend() {
     if (!canResend) return;
-    alert("🔁 OTP resent!");
-    setOtp(["", "", "", "", "", ""]);
-    inputRefs.current[0]?.focus();
-    setTimer(60);
-    setCanResend(false);
+
+    if (method === "phone") {
+      sendOtpFirebase(input)
+        .then(() => {
+          notify.success("📲 OTP resent to your phone!");
+          setOtp(["", "", "", "", "", ""]);
+          inputRefs.current[0]?.focus();
+          setTimer(60);
+          setCanResend(false);
+        })
+        .catch((err) => {
+          console.error("resend phone OTP error:", err);
+          const msg = "❌ Failed to resend OTP to phone";
+          setError(msg);
+          notify.error(msg);
+        });
+    } else {
+      dispatch(sendEmailVerification(input))
+        .unwrap()
+        .then(() => {
+          notify.success("📩 Verification code resent to email!");
+          setOtp(["", "", "", "", "", ""]);
+          inputRefs.current[0]?.focus();
+          setTimer(60);
+          setCanResend(false);
+        })
+        .catch((err) => {
+          console.error("resend email OTP error:", err);
+          const msg = "❌ Failed to resend email code";
+          setError(msg);
+          notify.error(msg);
+        });
+    }
   }
 
   return (
@@ -114,7 +217,7 @@ export default function ForgotPassword() {
           <div className="absolute bottom-1/4 left-1/3 w-72 h-72 bg-gradient-to-r from-sky-400/55 via-blue-400/65 to-cyan-500/55 rounded-full blur-3xl animate-bounce delay-2000"></div>
           <div className="absolute top-3/4 right-1/3 w-64 h-64 bg-gradient-to-r from-blue-300/45 via-cyan-400/55 to-blue-500/45 rounded-full blur-3xl animate-bounce delay-3000"></div>
         </div>
-        
+
         {/* Animated Light Rays */}
         <div className="absolute inset-0">
           <div className="absolute top-0 left-1/4 w-2 h-full bg-gradient-to-b from-cyan-400/60 via-transparent to-blue-500/60 transform rotate-12 animate-pulse"></div>
@@ -157,25 +260,25 @@ export default function ForgotPassword() {
 
       {/* Main Container */}
       <div className="relative z-10 w-full max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-center justify-center gap-12">
-        
+
         {/* Left Side Forgot Password Form */}
         <div className="w-full md:w-1/2 max-w-md">
           {/* Enhanced Glowing Border */}
           <div className="absolute -inset-3 bg-gradient-to-r from-cyan-400 via-blue-500 to-cyan-400 rounded-3xl blur-xl opacity-60 animate-pulse"></div>
           <div className="absolute -inset-2 bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-500 rounded-3xl blur-lg opacity-40 animate-pulse delay-500"></div>
-          
+
           {/* Main Card with Enhanced Glass Effect */}
           <div className="relative bg-white/90 backdrop-blur-3xl rounded-3xl p-8 shadow-2xl border border-blue-200/60 shadow-cyan-500/20">
-            
+
             {/* Enhanced Header with Logo */}
             <div className="flex items-center gap-4 mb-8">
               <div className="relative">
                 <div className="absolute -inset-2 bg-gradient-to-r from-blue-400/40 via-cyan-300/50 to-blue-500/40 rounded-full blur-xl animate-pulse"></div>
                 <div className="absolute -inset-1 bg-white/30 rounded-full blur-lg animate-pulse delay-500"></div>
-                <img 
-                   src="/src/assets/logo.png"
-                  alt="NutriAI Logo" 
-                  className="relative w-25 h-20 object-contain rounded-full drop-shadow-2xl filter brightness-110 contrast-110 saturate-110" 
+                <img
+                  src="/src/assets/logo.png"
+                  alt="NutriAI Logo"
+                  className="relative w-25 h-20 object-contain rounded-full drop-shadow-2xl filter brightness-110 contrast-110 saturate-110"
                 />
               </div>
               <div>
@@ -207,10 +310,10 @@ export default function ForgotPassword() {
                   <p className="text-blue-700 font-semibold mb-3 text-center">Choose recovery method:</p>
                   <div className="flex items-center justify-center gap-6">
                     <label className="flex items-center gap-2 cursor-pointer group">
-                      <input 
-                        type="radio" 
-                        value="phone" 
-                        checked={method === "phone"} 
+                      <input
+                        type="radio"
+                        value="phone"
+                        checked={method === "phone"}
                         onChange={() => setMethod("phone")}
                         className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 focus:ring-2"
                       />
@@ -218,10 +321,10 @@ export default function ForgotPassword() {
                       <span className="text-blue-700 font-medium group-hover:text-cyan-600 transition-colors">Phone</span>
                     </label>
                     <label className="flex items-center gap-2 cursor-pointer group">
-                      <input 
-                        type="radio" 
-                        value="email" 
-                        checked={method === "email"} 
+                      <input
+                        type="radio"
+                        value="email"
+                        checked={method === "email"}
                         onChange={() => setMethod("email")}
                         className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 focus:ring-2"
                       />
@@ -320,9 +423,9 @@ export default function ForgotPassword() {
             {/* Enhanced Modal Glow */}
             <div className="absolute -inset-3 bg-gradient-to-r from-cyan-400 via-blue-500 to-cyan-400 rounded-3xl blur-xl opacity-60 animate-pulse"></div>
             <div className="absolute -inset-2 bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-500 rounded-3xl blur-lg opacity-40 animate-pulse delay-500"></div>
-            
+
             <div className="relative bg-white/95 backdrop-blur-3xl rounded-3xl shadow-2xl p-8 border border-blue-200/60 shadow-cyan-500/20 transform scale-100 hover:scale-[1.01] transition-transform duration-300">
-              
+
               {/* Enhanced Header */}
               <div className="text-center mb-6">
                 <div className="flex justify-center mb-4">
@@ -383,8 +486,8 @@ export default function ForgotPassword() {
                     <span className="text-sm">Resend in {timer}s</span>
                   </div>
                 ) : (
-                  <button 
-                    onClick={handleResend} 
+                  <button
+                    onClick={handleResend}
                     className="text-blue-500 hover:text-cyan-500 font-semibold transition-colors duration-300 underline decoration-blue-400 decoration-2 underline-offset-4 flex items-center justify-center gap-2 mx-auto group"
                   >
                     <RotateCcw className="w-4 h-4 group-hover:animate-spin" />

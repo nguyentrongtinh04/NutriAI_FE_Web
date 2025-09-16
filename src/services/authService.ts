@@ -215,6 +215,20 @@ export const authService = {
       throw err;
     }
   },
+  // reset password by email
+  resetPasswordByEmail: async (email: string, newPassword: string) => {
+    try {
+      const res = await authApi.post("/change-password-email", {
+        email,
+        newPassword,
+      });
+      return res.data;
+    } catch (err: any) {
+      console.log("Reset Password Email Error:", err.response?.data || err.message);
+      throw err;
+    }
+  },
+
 
   // Gửi mã xác thực email
   sendEmailVerification: async (email: string) => {
@@ -256,6 +270,28 @@ export const authService = {
       return res.data;
     } catch (err: any) {
       console.log("Confirm Email Change Error:", err.response?.data || err.message);
+      throw err;
+    }
+  },
+
+  // ✅ Check phone tồn tại
+  checkPhoneExists: async (phone: string) => {
+    try {
+      const res = await authApi.post("/check-phone", { phone });
+      return res.data; // { exists: true/false }
+    } catch (err: any) {
+      console.log("Check Phone Error:", err.response?.data || err.message);
+      throw err;
+    }
+  },
+
+  // ✅ Check email tồn tại
+  checkEmailExists: async (email: string) => {
+    try {
+      const res = await authApi.post("/check-email", { email });
+      return res.data; // { exists: true/false }
+    } catch (err: any) {
+      console.log("Check Email Error:", err.response?.data || err.message);
       throw err;
     }
   },

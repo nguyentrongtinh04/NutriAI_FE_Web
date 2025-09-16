@@ -14,6 +14,8 @@ import Reports from "./pages/Reports";
 import Plans from "./pages/Plans/Planslist";
 import NotificationsPage from "./components/NotificationsPage";
 import { NotificationsProvider } from "./components/notifications/NotificationsProvider";
+import ChangePassword from "./pages/Settings/Account/ChangePassword";
+
 
 import { AuthProvider } from "./contexts/Authcontext";
 import PrivateRoute from "./components/PrivateRoute";
@@ -30,7 +32,7 @@ function App() {
             <Route path="/register" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
-
+            <Route path="/settings/change-password" element={<ChangePassword />} />
             {/* Private routes */}
             <Route path="/home" element={<PrivateRoute><Home /></PrivateRoute>} />
             <Route path="/profile" element={<PrivateRoute><ProfileSettings /></PrivateRoute>} />
