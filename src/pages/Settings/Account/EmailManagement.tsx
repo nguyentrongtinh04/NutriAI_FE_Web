@@ -15,9 +15,12 @@ import {
   verifyEmail,
   requestEmailChange,
   confirmEmailChange,
+  linkGoogle,
+  linkPhone,
 } from "../../../redux/slices/authSlice";
 import { fetchMe } from "../../../redux/slices/userSlice";
 import { useNotify } from "../../../components/notifications/NotificationsProvider"; // 👈 thêm
+import { GoogleLogin } from "@react-oauth/google";
 
 export default function EmailManagement({ onBack }: { onBack: () => void }) {
   const { profile } = useSelector((state: RootState) => state.user);
@@ -36,49 +39,9 @@ export default function EmailManagement({ onBack }: { onBack: () => void }) {
 
   useEffect(() => {
     if (profile?.email) {
-      setEmails([
-        {
-          id: Date.now(),
-          email: profile.email,
-          isPrimary: true,
-          isVerified: profile.emailVerified ?? false,
-        },
-      ]);
+      setEmails([{ id: 1, email: profile.email }]);
     }
   }, [profile]);
-
-  // resend verification
-  const handleResendVerification = (id: number) => {
-    const emailToVerify = emails.find((e) => e.id === id)?.email;
-    if (!emailToVerify) return;
-
-    dispatch(sendEmailVerification(emailToVerify))
-      .unwrap()
-      .then(() => {
-        notify.success("📩 Verification code sent to your email.");
-        setShowOtpInput(true);
-      })
-      .catch(() => {
-        notify.error("❌ Failed to send verification code.");
-      });
-  };
-
-  const handleVerifyOtp = (id: number) => {
-    const emailToVerify = emails.find((e) => e.id === id)?.email;
-    if (!emailToVerify) return;
-
-    dispatch(verifyEmail({ email: emailToVerify, code: otp }))
-      .unwrap()
-      .then(() => {
-        notify.success("✅ Email verified successfully!");
-        dispatch(fetchMe());
-        setShowOtpInput(false);
-        setOtp("");
-      })
-      .catch(() => {
-        notify.error("❌ Invalid verification code.");
-      });
-  };
 
   // request change email
   const handleRequestEmailChange = (oldEmail: string) => {
@@ -135,26 +98,9 @@ export default function EmailManagement({ onBack }: { onBack: () => void }) {
                 <div className="flex items-center gap-4">
                   <Mail className="w-5 h-5 text-gray-600" />
                   <p className="font-semibold text-gray-800">{email.email}</p>
-                  {email.isVerified ? (
-                    <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
-                      <Check className="w-3 h-3" /> Verified
-                    </span>
-                  ) : (
-                    <span className="bg-orange-500 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
-                      <AlertCircle className="w-3 h-3" /> Unverified
-                    </span>
-                  )}
                 </div>
 
                 <div className="flex gap-2">
-                  {!email.isVerified && (
-                    <button
-                      onClick={() => handleResendVerification(email.id)}
-                      className="flex items-center gap-1 bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded-lg text-sm"
-                    >
-                      <Send className="w-3 h-3" /> Verify
-                    </button>
-                  )}
                   <button
                     onClick={() => setShowUpdateForm(!showUpdateForm)}
                     className="flex items-center gap-1 bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-lg text-sm"
@@ -163,25 +109,87 @@ export default function EmailManagement({ onBack }: { onBack: () => void }) {
                   </button>
                 </div>
               </div>
+              {/* Nếu chưa link thì hiển thị UI link account */}
+                <div className="mt-4 border-t pt-4">
+                  <h4 className="text-sm font-semibold text-gray-600 mb-2">
+                    Thêm phương thức đăng nhập
+                  </h4>
+                  {/* Trạng thái liên kết Google */}
+                  {profile?.providers?.some((p: any) => p.type === "google") ? (
+                    <p className="text-sm text-green-600 mb-2">
+                      ✅ Đã liên kết với Google
+                    </p>
+                  ) : (
+                    <p className="text-sm text-red-500 mb-2">
+                      ❌ Chưa liên kết với Google
+                    </p>
+                  )}
 
-              {/* OTP verify */}
-              {showOtpInput && !email.isVerified && (
-                <div className="mt-3 flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="Enter verification code"
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value)}
-                    className="border px-3 py-2 rounded-lg flex-1"
-                  />
-                  <button
-                    onClick={() => handleVerifyOtp(email.id)}
-                    className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg"
-                  >
-                    Submit
-                  </button>
+                  {/* Trạng thái liên kết Phone */}
+                  {profile?.providers?.some((p: any) => p.type === "local") ? (
+                    <p className="text-sm text-green-600 mb-2">
+                      ✅ Đã liên kết với SĐT / mật khẩu
+                    </p>
+                  ) : (
+                    <p className="text-sm text-red-500 mb-2">
+                      ❌ Chưa liên kết với SĐT / mật khẩu
+                    </p>
+                  )}
+
+                  {profile?.phone ? (
+                    // user đang dùng phone => cho link Google
+                    <GoogleLogin
+                      onSuccess={async (credentialResponse) => {
+                        const idToken = credentialResponse.credential;
+                        if (!idToken) {
+                          notify.error("Không lấy được Google ID token");
+                          return;
+                        }
+                        try {
+                          await dispatch(linkGoogle(idToken)).unwrap();
+                          notify.success("✅ Google account linked successfully!");
+                          dispatch(fetchMe());
+                        } catch {
+                          notify.error("❌ Tài khoản Google khác với tài khoản hiện tại.");
+                        }
+                      }}
+                      onError={() => notify.error("❌ Google login failed")}
+                      useOneTap={false}
+                    />
+                  ) : (
+                    // user đang dùng Google => cho link phone/password
+                    <div className="space-y-2">
+                      <input
+                        type="text"
+                        placeholder="Enter phone"
+                        value={newEmail}
+                        onChange={(e) => setNewEmail(e.target.value)}
+                        className="border px-3 py-2 rounded-lg w-full"
+                      />
+                      <input
+                        type="password"
+                        placeholder="Enter password"
+                        value={updateOtp}
+                        onChange={(e) => setUpdateOtp(e.target.value)}
+                        className="border px-3 py-2 rounded-lg w-full"
+                      />
+                      <button
+                        onClick={async () => {
+                          try {
+                            await dispatch(linkPhone({ phone: newEmail, password: updateOtp })).unwrap();
+                            notify.success("✅ Phone account linked successfully!");
+                            dispatch(fetchMe());
+                          } catch {
+                            notify.error("❌ Failed to link phone account.");
+                          }
+                        }}
+                        className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg w-full"
+                      >
+                        Link Phone Account
+                      </button>
+                    </div>
+                  )}
                 </div>
-              )}
 
               {/* update email */}
               {showUpdateForm && (

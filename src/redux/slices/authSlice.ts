@@ -4,7 +4,6 @@ import { authService } from "../../services/authService";
 interface AuthState {
   accessToken: string | null;
   refreshToken: string | null;
-  emailVerified?: boolean;   // 👈 thêm flag
   status?: string;
   error?: string | null;
 }
@@ -12,7 +11,6 @@ interface AuthState {
 const initialState: AuthState = {
   accessToken: null,
   refreshToken: null,
-  emailVerified: false,
   status: "idle",
   error: null,
 };
@@ -65,24 +63,36 @@ export const confirmEmailChange = createAsyncThunk(
   }
 );
 
-// check phone
-export const checkPhoneExists = createAsyncThunk(
-  "auth/checkPhoneExists",
-  async (phone: string, { rejectWithValue }) => {
+// check phone/email
+export const checkAvailability = createAsyncThunk(
+  "auth/checkAvailability",
+  async ({ phone, email }: { phone?: string; email?: string }, { rejectWithValue }) => {
     try {
-      return await authService.checkPhoneExists(phone);
+      return await authService.checkAvailability(phone, email);
     } catch (err: any) {
       return rejectWithValue(err.response?.data || err.message);
     }
   }
 );
 
-// check email
-export const checkEmailExists = createAsyncThunk(
-  "auth/checkEmailExists",
-  async (email: string, { rejectWithValue }) => {
+// link Google
+export const linkGoogle = createAsyncThunk(
+  "auth/linkGoogle",
+  async (idToken: string, { rejectWithValue }) => {
     try {
-      return await authService.checkEmailExists(email);
+      return await authService.linkGoogle(idToken);
+    } catch (err: any) {
+      return rejectWithValue(err.response?.data || err.message);
+    }
+  }
+);
+
+// link Phone
+export const linkPhone = createAsyncThunk(
+  "auth/linkPhone",
+  async ({ phone, password }: { phone: string; password: string }, { rejectWithValue }) => {
+    try {
+      return await authService.linkPhone(phone, password);
     } catch (err: any) {
       return rejectWithValue(err.response?.data || err.message);
     }
@@ -103,7 +113,6 @@ const authSlice = createSlice({
     clearAuth: (state) => {
       state.accessToken = null;
       state.refreshToken = null;
-      state.emailVerified = false;
     },
     updateAccessToken: (state, action: PayloadAction<string>) => {
       state.accessToken = action.payload;
@@ -121,7 +130,6 @@ const authSlice = createSlice({
       })
       .addCase(verifyEmail.fulfilled, (state) => {
         state.status = "succeeded";
-        state.emailVerified = true;
       })
       .addCase(verifyEmail.rejected, (state, action) => {
         state.status = "failed";
@@ -138,27 +146,8 @@ const authSlice = createSlice({
       })
       .addCase(confirmEmailChange.fulfilled, (state) => {
         state.status = "succeeded";
-        state.emailVerified = false; // ✅ vì email mới cần verify lại
       })
       .addCase(confirmEmailChange.rejected, (state, action) => {
-        state.status = "failed";
-        state.error = action.payload as string;
-      })
-      .addCase(checkPhoneExists.fulfilled, (state, action) => {
-        state.status = "succeeded";
-        state.error = null;
-        console.log("Phone exists:", action.payload.exists);
-      })
-      .addCase(checkPhoneExists.rejected, (state, action) => {
-        state.status = "failed";
-        state.error = action.payload as string;
-      })
-      .addCase(checkEmailExists.fulfilled, (state, action) => {
-        state.status = "succeeded";
-        state.error = null;
-        console.log("Email exists:", action.payload.exists);
-      })
-      .addCase(checkEmailExists.rejected, (state, action) => {
         state.status = "failed";
         state.error = action.payload as string;
       });

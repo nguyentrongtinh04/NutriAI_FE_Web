@@ -1,5 +1,10 @@
 import { createSlice, PayloadAction, createAsyncThunk } from "@reduxjs/toolkit";
 import { userService } from "../../services/userService";
+export interface Provider {
+  type: string;
+  providerId?: string;
+  passwordHash?: string;
+}
 
 export interface User {
   id?: string;
@@ -13,8 +18,8 @@ export interface User {
   activityLevel?: number;
   email?: string;
   phone?: string;
-  avt?: string; // 👈 avatar
-  emailVerified?: boolean;
+  avt?: string;
+  providers?: Provider[]; // 👈 đúng kiểu object
 }
 
 interface UserState {
@@ -47,7 +52,7 @@ export const fetchMe = createAsyncThunk("user/fetchMe", async (_, thunkAPI) => {
       email: authRes.email,
       phone: authRes.phone,
       role: authRes.role,
-      emailVerified: authRes.emailVerified,
+      providers: authRes.providers,
     };
   } catch (err: any) {
     return thunkAPI.rejectWithValue(err.response?.data || err.message);
@@ -119,6 +124,7 @@ const userSlice = createSlice({
         state.profile = {
           ...state.profile, // giữ lại email, phone, role...
           ...action.payload,
+          providers: state.profile?.providers,
         };
       })
 

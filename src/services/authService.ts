@@ -31,7 +31,9 @@ export const authService = {
     try {
       const res = await authApi.post("/google", { id_token: idToken });
       const { access_token, refresh_token } = res.data;
-
+      localStorage.removeItem("persist:root");
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
       dispatch(setAuth({ accessToken: access_token, refreshToken: refresh_token }));
       // 🔥 Lưu vào localStorage
       localStorage.setItem("accessToken", access_token);
@@ -47,6 +49,7 @@ export const authService = {
         email: authRes.data.email,
         phone: authRes.data.phone,
         role: authRes.data.role,
+        providers: authRes.data.providers || [],
       };
 
       dispatch(setUser(mergedUser));
@@ -70,7 +73,9 @@ export const authService = {
         password,
       });
       const { access_token, refresh_token } = res.data;
-
+      localStorage.removeItem("persist:root");
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
       dispatch(setAuth({ accessToken: access_token, refreshToken: refresh_token }));
       // 🔥 Lưu vào localStorage
       localStorage.setItem("accessToken", access_token);
@@ -86,11 +91,12 @@ export const authService = {
         email: authRes.data.email,
         phone: authRes.data.phone,
         role: authRes.data.role,
-        emailVerified: authRes.data.emailVerified,
+        providers: authRes.data.providers || [],
       };
 
       dispatch(setUser(mergedUser));
       navigate("/home");
+      return res.data;
     } catch (err: any) {
       console.log("Password Login Error:", err.response?.data || err.message);
       throw err;
@@ -166,7 +172,7 @@ export const authService = {
         email: authRes.data.email,
         phone: authRes.data.phone,
         role: authRes.data.role,
-        emailVerified: authRes.data.emailVerified,
+        providers: authRes.data.providers || [],
       };
 
       dispatch(setUser(mergedUser));
@@ -177,27 +183,40 @@ export const authService = {
     }
   },
 
-  // Gửi OTP
-  sendOTP: async (phone: string) => {
+  checkAvailability: async (phone?: string, email?: string) => {
+    const res = await authApi.post("/check-availability", { phone, email });
+    return res.data; // { available: true } hoặc { message: "...", 409 }
+  },
+  
+
+  // Link Google
+  linkGoogle: async (idToken: string) => {
     try {
-      const normalized = normalizeVNPhone(phone);
-      const res = await authApi.post("/send-otp", { phone: normalized });
+      const accessToken = localStorage.getItem("accessToken");
+      const res = await authApi.post(
+        "/link-google",
+        { id_token: idToken },
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
       return res.data;
     } catch (err: any) {
-      console.log("Send OTP Error:", err.response?.data || err.message);
+      console.log("Link Google Error:", err.response?.data || err.message);
       throw err;
     }
   },
 
-
-  // Xác minh OTP
-  verifyOTP: async (phone: string, code: string) => {
+  // Link Phone + Password
+  linkPhone: async (phone: string, password: string) => {
     try {
-      const normalized = normalizeVNPhone(phone);
-      const res = await authApi.post("/verify-otp", { phone: normalized, code });
+      const accessToken = localStorage.getItem("accessToken");
+      const res = await authApi.post(
+        "/link-phone",
+        { phone, password },
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
       return res.data;
     } catch (err: any) {
-      console.log("Verify OTP Error:", err.response?.data || err.message);
+      console.log("Link Phone Error:", err.response?.data || err.message);
       throw err;
     }
   },

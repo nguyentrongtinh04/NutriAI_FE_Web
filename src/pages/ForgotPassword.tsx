@@ -4,7 +4,7 @@ import { Phone, Mail, Lock, ArrowLeft, Sparkles, Send, Shield, RotateCcw } from 
 import firebase from "../firebase"; // 👈 import firebase như Register.tsx
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "../redux/store";
-import { checkPhoneExists, checkEmailExists, sendEmailVerification, verifyEmail } from "../redux/slices/authSlice";
+import { checkAvailability , sendEmailVerification, verifyEmail } from "../redux/slices/authSlice";
 import { useNotify } from "../components/notifications/NotificationsProvider";
 
 export default function ForgotPassword() {
@@ -84,44 +84,37 @@ export default function ForgotPassword() {
 
     if (method === "phone") {
       try {
-        const res = await dispatch(checkPhoneExists(input)).unwrap();
-        if (!res.exists) {
-          const msg = "❌ Phone number not registered";
-          setError(msg);
-          notify.error(msg);
-          return;
+        await dispatch(checkAvailability({ phone: input })).unwrap();
+        // nếu tới đây nghĩa là chưa tồn tại
+        notify.error("❌ Phone number not registered");
+      } catch (err: any) {
+        if (err.message === "Phone or Email already exists") {
+          // 👉 tức là có tài khoản, gửi OTP
+          await sendOtpFirebase(input);
+          notify.success("📲 OTP has been sent to your phone!");
+        } else {
+          notify.error("❌ Something went wrong");
         }
-        await sendOtpFirebase(input);
-        notify.success("📲 OTP has been sent to your phone!");
-      } catch (err) {
-        console.error("checkPhoneExists error:", err);
-        const msg = "❌ Cannot verify phone number now";
-        setError(msg);
-        notify.error(msg);
       }
     } else {
       try {
-        const res = await dispatch(checkEmailExists(input)).unwrap();
-        if (!res.exists) {
-          const msg = "❌ Email not registered";
-          setError(msg);
-          notify.error(msg);
-          return;
+        await dispatch(checkAvailability({ email: input })).unwrap();
+        notify.error("❌ Email not registered");
+      } catch (err: any) {
+        if (err.message === "Phone or Email already exists") {
+          await dispatch(sendEmailVerification(input)).unwrap();
+          notify.success("📩 Verification code sent to your email!");
+          // 👉 bật OTP modal luôn
+          setShowOtpModal(true);
+          setTimer(60);
+          setCanResend(false);
+          setOtp(["", "", "", "", "", ""]);
         }
-
-        await dispatch(sendEmailVerification(input)).unwrap();
-        setShowOtpModal(true);
-        setTimer(60);
-        setCanResend(false);
-        setOtp(["", "", "", "", "", ""]);
-        notify.success("📩 Verification code sent to your email!");
-      } catch (err) {
-        console.error("sendEmailVerification error:", err);
-        const msg = "❌ Failed to send verification email";
-        setError(msg);
-        notify.error(msg);
+         else {
+          notify.error("❌ Something went wrong");
+        }
       }
-    }
+    }     
   };
 
   const handleOtpChange = (value: string, index: number) => {
@@ -151,11 +144,11 @@ export default function ForgotPassword() {
       if (method === "phone" && confirmation) {
         await confirmation.confirm(code);
         notify.success("✅ OTP verified!");
-        navigate("/reset-password", { state: { phone: input } });
+        navigate("/reset-password", { state: { phone: input, from: "forgot" } });
       } else {
         await dispatch(verifyEmail({ email: input, code })).unwrap();
         notify.success("✅ Email verified!");
-        navigate("/reset-password", { state: { email: input } });
+        navigate("/reset-password", { state: { email: input, from: "forgot" } });
       }
     } catch (err) {
       console.error("verifyOtp error:", err);

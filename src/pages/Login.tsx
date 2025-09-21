@@ -15,7 +15,7 @@ declare global {
 
 export default function Login() {
   const [username, setUsername] = useState("0388654152");
-  const [password, setPassword] = useState("gacon0408");
+  const [password, setPassword] = useState("gacon001");
   const [errorMsg, setErrorMsg] = useState("");
   const [showUserDetail, setShowUserDetail] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -33,16 +33,22 @@ export default function Login() {
         notify.error(msg);
         return;
       }
-
-      await authService.loginWithPassword(username, password, dispatch, navigate);
-
+  
+      // Lấy dữ liệu trả về từ service
+      const res = await authService.loginWithPassword(username, password, dispatch, navigate);
+  
       // Nếu login thành công
       notify.success("🎉 Đăng nhập thành công!");
       setErrorMsg(""); // clear lỗi
+  
+      console.log("👉 Data sau khi login:", res); // in ra console
+      // Hoặc lưu vào state
+      // setUser(res.user);
+  
     } catch (e: any) {
       const status = e.response?.status;
       const message = e.response?.data?.message || e.message;
-
+  
       if (status === 404) {
         setErrorMsg("❌ Username không tồn tại.");
         notify.error("❌ Username không tồn tại.");
@@ -55,6 +61,7 @@ export default function Login() {
       }
     }
   };
+  
 
   return (
     <div className="min-h-screen w-full relative overflow-hidden bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 flex items-center justify-center">
@@ -244,6 +251,7 @@ export default function Login() {
                   <GoogleLogin
                     onSuccess={async (credentialResponse) => {
                       const idToken = credentialResponse.credential; // ✅ ID Token
+                      console.log("Google ID Token:", idToken);
                       if (!idToken) {
                         notify.error("Không lấy được Google ID token");
                         return;

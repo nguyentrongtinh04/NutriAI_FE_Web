@@ -13,47 +13,53 @@ export default function ResetPassword() {
     const navigate = useNavigate();
     const location = useLocation();
     const notify = useNotify();
-  
+
     const phone = location.state?.phone;
     const email = location.state?.email;
-  
+    const from = location.state?.from || "forgot"; // mặc định là forgot
+
     const handleSubmit = async (e: React.FormEvent) => {
-      e.preventDefault();
-  
-      if (newPassword.length < 6) {
-        const msg = "❌ Password must be at least 6 characters.";
-        setError(msg);
-        notify.error(msg);
-        return;
-      }
-      if (newPassword !== confirmPassword) {
-        const msg = "❌ Passwords do not match.";
-        setError(msg);
-        notify.error(msg);
-        return;
-      }
-  
-      try {
-        if (phone) {
-          await authService.resetPasswordByPhone(phone, newPassword);
-        } else if (email) {
-          await authService.resetPasswordByEmail(email, newPassword);
-        } else {
-          const msg = "❌ No account info provided";
-          setError(msg);
-          notify.error(msg);
-          return;
+        e.preventDefault();
+
+        if (newPassword.length < 6) {
+            const msg = "❌ Password must be at least 6 characters.";
+            setError(msg);
+            notify.error(msg);
+            return;
         }
-  
-        setError("");
-        notify.success("✅ Password has been reset successfully!");
-        navigate("/login");
-      } catch (err: any) {
-        const msg = err.response?.data?.message || "❌ Failed to reset password";
-        setError(msg);
-        notify.error(msg);
-      }
-    };  
+        if (newPassword !== confirmPassword) {
+            const msg = "❌ Passwords do not match.";
+            setError(msg);
+            notify.error(msg);
+            return;
+        }
+
+        try {
+            if (phone) {
+                await authService.resetPasswordByPhone(phone, newPassword);
+            } else if (email) {
+                await authService.resetPasswordByEmail(email, newPassword);
+            } else {
+                const msg = "❌ No account info provided";
+                setError(msg);
+                notify.error(msg);
+                return;
+            }
+
+            setError("");
+            notify.success("✅ Password has been reset successfully!");
+
+            if (from === "change") {
+                navigate("/home"); // 👉 về Home
+            } else {
+                navigate("/login"); // 👉 giữ logic cũ
+            }
+        } catch (err: any) {
+            const msg = err.response?.data?.message || "❌ Failed to reset password";
+            setError(msg);
+            notify.error(msg);
+        }
+    };
 
     return (
         <div className="min-h-screen w-full relative overflow-hidden bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 flex items-center justify-center px-4">
@@ -239,11 +245,17 @@ export default function ResetPassword() {
                         <div className="text-center pt-4">
                             <button
                                 type="button"
-                                onClick={() => navigate("/login")}
+                                onClick={() => {
+                                    if (from === "change") {
+                                        navigate("/settings");
+                                    } else {
+                                        navigate("/login");
+                                    }
+                                }}
                                 className="text-blue-500 hover:text-cyan-500 text-sm transition-colors duration-300 underline decoration-blue-400 decoration-2 underline-offset-4 flex items-center justify-center gap-2 mx-auto group"
                             >
                                 <ArrowLeft className="w-4 h-4 group-hover:animate-bounce" />
-                                Back to Sign In
+                                {from === "change" ? "Back to Settings" : "Back to Sign In"}
                             </button>
                         </div>
                     </form>
