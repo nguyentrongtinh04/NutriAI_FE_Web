@@ -314,5 +314,35 @@ export const authService = {
       throw err;
     }
   },
+  requestUnlink: async (type: "google" | "phone") => {
+    try {
+      const accessToken = localStorage.getItem("accessToken");
+      const res = await authApi.post(
+        "/request-unlink",
+        { type },
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
+      return res.data; // { success: true, message: "OTP sent ..." }
+    } catch (err: any) {
+      console.log("Request Unlink Error:", err.response?.data || err.message);
+      throw err;
+    }
+  },
+
+  // Xác nhận unlink (nhập code OTP)
+  confirmUnlink: async (type: "google" | "phone", code: string) => {
+    try {
+      const accessToken = localStorage.getItem("accessToken");
+      const res = await authApi.post(
+        "/confirm-unlink",
+        { type, code },
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
+      return res.data; // { success: true, message: "xxx unlinked successfully" }
+    } catch (err: any) {
+      console.log("Confirm Unlink Error:", err.response?.data || err.message);
+      throw err;
+    }
+  },
 };
 

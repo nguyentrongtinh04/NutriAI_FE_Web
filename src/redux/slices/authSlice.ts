@@ -99,6 +99,28 @@ export const linkPhone = createAsyncThunk(
   }
 );
 
+export const requestUnlink = createAsyncThunk(
+  "auth/requestUnlink",
+  async (type: "google" | "phone", { rejectWithValue }) => {
+    try {
+      return await authService.requestUnlink(type);
+    } catch (err: any) {
+      return rejectWithValue(err.response?.data || err.message);
+    }
+  }
+);
+
+export const confirmUnlink = createAsyncThunk(
+  "auth/confirmUnlink",
+  async ({ type, code }: { type: "google" | "phone"; code: string }, { rejectWithValue }) => {
+    try {
+      return await authService.confirmUnlink(type, code);
+    } catch (err: any) {
+      return rejectWithValue(err.response?.data || err.message);
+    }
+  }
+);
+
 const authSlice = createSlice({
   name: "auth",
   initialState,

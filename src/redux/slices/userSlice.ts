@@ -19,6 +19,7 @@ export interface User {
   email?: string;
   phone?: string;
   avt?: string;
+  emailVerified?: boolean;
   providers?: Provider[]; // 👈 đúng kiểu object
 }
 
@@ -53,6 +54,7 @@ export const fetchMe = createAsyncThunk("user/fetchMe", async (_, thunkAPI) => {
       phone: authRes.phone,
       role: authRes.role,
       providers: authRes.providers,
+      emailVerified: authRes.emailVerified,
     };
   } catch (err: any) {
     return thunkAPI.rejectWithValue(err.response?.data || err.message);
