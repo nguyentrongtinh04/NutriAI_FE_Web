@@ -30,7 +30,7 @@ export const authService = {
   loginWithGoogle: async (idToken: string, dispatch: any, navigate: any) => {
     try {
       const res = await authApi.post("/google", { id_token: idToken });
-      const { access_token, refresh_token } = res.data;
+      const { access_token, refresh_token, new_user } = res.data;
       localStorage.removeItem("persist:root");
       localStorage.removeItem("accessToken");
       localStorage.removeItem("refreshToken");
@@ -54,10 +54,35 @@ export const authService = {
 
       dispatch(setUser(mergedUser));
       navigate("/home");
+      return {new_user};
     } catch (err: any) {
-      console.log("Google Login Error:", err.response?.data || err.message);
-      throw err;
-    }
+      const status = err.response?.status;
+      const msg = err.response?.data?.message || err.message || "";
+    
+      // 🟥 Email chưa xác thực
+      if (status === 403 || msg.includes("not verified")) {
+        throw new Error("🚫 Email Google này đã tồn tại nhưng chưa được xác thực. Vui lòng xác thực email trước khi đăng nhập.");
+      }
+    
+      // 🟨 Gmail khác email đã đăng ký (trường hợp BE có check)
+      if (status === 400 && msg.includes("must match")) {
+        throw new Error("⚠️ Email Google bạn chọn không khớp với tài khoản hiện tại.");
+      }
+    
+      // 🟡 Token hoặc tài khoản chưa tồn tại
+      if (status === 401 || msg.includes("Invalid") || msg.includes("expired")) {
+        throw new Error("❌ Mã Google đăng nhập không hợp lệ hoặc đã hết hạn. Vui lòng thử lại.");
+      }
+    
+      // 🆕 (nếu BE sau này có trả not linked)
+      if (status === 404 || msg.includes("not linked")) {
+        throw new Error("⚠️ Gmail này chưa được liên kết với tài khoản nào. Vui lòng vào phần Email Management để liên kết trước khi đăng nhập bằng Google.");
+      }
+    
+      // 🔁 Lỗi khác
+      console.log("Google Login Error:", msg);
+      throw new Error("❌ Đăng nhập Google thất bại. Vui lòng thử lại.");
+    }    
   },
 
   // Đăng nhập bằng phone/email + password
@@ -187,9 +212,8 @@ export const authService = {
     const res = await authApi.post("/check-availability", { phone, email });
     return res.data; // { available: true } hoặc { message: "...", 409 }
   },
-  
 
-  // Link Google
+
   linkGoogle: async (idToken: string) => {
     try {
       const accessToken = localStorage.getItem("accessToken");
@@ -200,10 +224,24 @@ export const authService = {
       );
       return res.data;
     } catch (err: any) {
-      console.log("Link Google Error:", err.response?.data || err.message);
-      throw err;
+      const msg = err.response?.data?.message || err.message || "";
+  
+      if (msg.includes("Please verify your email")) {
+        throw new Error("🚫 Email bạn chọn chưa được xác thực. Vui lòng xác thực email trước khi liên kết.");
+      }
+  
+      if (msg.includes("must match your registered email")) {
+        throw new Error("⚠️ Email Google bạn chọn không khớp với email tài khoản hiện tại.");
+      }
+  
+      if (msg.includes("already linked")) {
+        throw new Error("ℹ️ Tài khoản Google này đã được liên kết trước đó.");
+      }
+  
+      console.log("Link Google Error:", msg);
+      throw new Error(msg || "❌ Liên kết Google thất bại. Vui lòng thử lại.");
     }
-  },
+  },  
 
   // Link Phone + Password
   linkPhone: async (phone: string, password: string) => {
@@ -247,7 +285,6 @@ export const authService = {
       throw err;
     }
   },
-
 
   // Gửi mã xác thực email
   sendEmailVerification: async (email: string) => {

@@ -4,7 +4,7 @@ import { Phone, Mail, Lock, ArrowLeft, Sparkles, Send, Shield, RotateCcw } from 
 import firebase from "../firebase"; // 👈 import firebase như Register.tsx
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "../redux/store";
-import { checkAvailability , sendEmailVerification, verifyEmail } from "../redux/slices/authSlice";
+import { checkAvailability, sendEmailVerification, verifyEmail } from "../redux/slices/authSlice";
 import { useNotify } from "../components/notifications/NotificationsProvider";
 
 export default function ForgotPassword() {
@@ -50,10 +50,13 @@ export default function ForgotPassword() {
       setTimer(60);
       setCanResend(false);
       setOtp(["", "", "", "", "", ""]);
+      notify.success("📲 Mã OTP đã được gửi đến số điện thoại của bạn!");
     } catch (err) {
       console.error("sendOtpFirebase error:", err);
-      setError("❌ Gửi OTP thất bại");
-    }
+      const msg = "⚠️ Gửi mã OTP thất bại. Vui lòng kiểm tra số điện thoại và thử lại.";
+      setError(msg);
+      notify.error(msg);
+    }    
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -82,39 +85,39 @@ export default function ForgotPassword() {
 
     setError("");
 
-    if (method === "phone") {
-      try {
-        await dispatch(checkAvailability({ phone: input })).unwrap();
-        // nếu tới đây nghĩa là chưa tồn tại
-        notify.error("❌ Phone number not registered");
-      } catch (err: any) {
-        if (err.message === "Phone or Email already exists") {
-          // 👉 tức là có tài khoản, gửi OTP
-          await sendOtpFirebase(input);
-          notify.success("📲 OTP has been sent to your phone!");
-        } else {
-          notify.error("❌ Something went wrong");
-        }
-      }
-    } else {
+    if (method === "email") {
       try {
         await dispatch(checkAvailability({ email: input })).unwrap();
-        notify.error("❌ Email not registered");
+        notify.error("❌ Email chưa được đăng ký");
       } catch (err: any) {
+        // Nếu BE báo "Phone or Email already exists" nghĩa là có tài khoản
         if (err.message === "Phone or Email already exists") {
-          await dispatch(sendEmailVerification(input)).unwrap();
-          notify.success("📩 Verification code sent to your email!");
-          // 👉 bật OTP modal luôn
-          setShowOtpModal(true);
-          setTimer(60);
-          setCanResend(false);
-          setOtp(["", "", "", "", "", ""]);
-        }
-         else {
-          notify.error("❌ Something went wrong");
+          try {
+            const res = await dispatch(sendEmailVerification(input)).unwrap();
+            notify.success(res.message); // ✅ Hiển thị đúng thông báo BE
+            // ✅ Chỉ bật modal nếu BE trả success thật
+            if (res.success) {
+              setShowOtpModal(true);
+              setTimer(60);
+              setCanResend(false);
+              setOtp(["", "", "", "", "", ""]);
+            }
+          } catch (err2: any) {
+            // ❌ Nếu gửi thất bại (email chưa verify, tài khoản google, v.v.)
+            const msg =
+              err2.response?.data?.message ||
+              err2.message ||
+              "⚠️ Gửi mã xác thực thất bại.";
+            setError(msg);
+            notify.error(msg);
+            // 🚫 Không mở modal ở đây!
+            setShowOtpModal(false);
+          }
+        } else {
+          notify.error("❌ Có lỗi không xác định khi kiểm tra email.");
         }
       }
-    }     
+    }    
   };
 
   const handleOtpChange = (value: string, index: number) => {
@@ -177,16 +180,15 @@ export default function ForgotPassword() {
     } else {
       dispatch(sendEmailVerification(input))
         .unwrap()
-        .then(() => {
-          notify.success("📩 Verification code resent to email!");
+        .then((res) => {
+          notify.success(res.message);
           setOtp(["", "", "", "", "", ""]);
           inputRefs.current[0]?.focus();
           setTimer(60);
           setCanResend(false);
         })
         .catch((err) => {
-          console.error("resend email OTP error:", err);
-          const msg = "❌ Failed to resend email code";
+          const msg = err?.response?.data?.message || err.message || "❌ Gửi lại mã xác thực thất bại.";
           setError(msg);
           notify.error(msg);
         });

@@ -4,10 +4,14 @@ import storage from "redux-persist/lib/storage"; // localStorage cho web
 import { combineReducers } from "redux";
 import userReducer from "../redux/slices/userSlice";
 import authReducer from "../redux/slices/authSlice";
+import mealReducer from "../redux/slices/mealSlice";
+import foodReducer from "./slices/foodSlice";
 
 const rootReducer = combineReducers({
   auth: authReducer,
   user: userReducer,
+  meal: mealReducer,
+  food: foodReducer,
 });
 
 const persistConfig = {
