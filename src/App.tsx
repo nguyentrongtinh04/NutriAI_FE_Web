@@ -19,7 +19,7 @@ import { AuthProvider } from "./contexts/Authcontext";
 import PrivateRoute from "./components/PrivateRoute";
 import SearchFoodPage from "./pages/SearchFoodPage";
 import ProfilePage from ".././src/demo";
-import ChangePassword from "./pages/Settings/Account/ChangePassWord";
+import ChangePassword from "./pages/Settings/Account/ChangePassWord";//sửa
 import ScanHistoryPage from "./pages/ScanMeals/ScanHistoryPage";
 
 function App() {
