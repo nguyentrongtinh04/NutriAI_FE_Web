@@ -11,7 +11,7 @@ import NotificationSettings from "./pages/Settings/Notifications/NotificationSet
 import UserSupport from "./pages/Settings/Support/UserSupport";
 import Goals from "./pages/Goals";
 import Reports from "./pages/Reports";
-import Plans from "./pages/Plans/Planslist";
+import Plans from "./pages/Plans/CreatePlanPage";
 import NotificationsPage from "./components/NotificationsPage";
 import { NotificationsProvider } from "./components/notifications/NotificationsProvider";
 import ScanMealPage from "./pages/ScanMeals/ScanMealPage";
@@ -21,6 +21,7 @@ import SearchFoodPage from "./pages/SearchFoodPage";
 import ProfilePage from ".././src/demo";
 import ChangePassword from "./pages/Settings/Account/ChangePassword";//sửa
 import ScanHistoryPage from "./pages/ScanMeals/ScanHistoryPage";
+import PlanResultPage from "./pages/Plans/PlanResultPage";
 
 function App() {
   return (
@@ -36,6 +37,7 @@ function App() {
           <Route path="/scan-meal" element={<ScanMealPage />} />
           <Route path="/search-food" element={<SearchFoodPage />} />
           <Route path="/scan-history" element={<ScanHistoryPage />} />
+          <Route path="/plan-result" element={<PlanResultPage />} />
           
           {/* Private routes */}
           <Route path="/settings/change-password" element={<PrivateRoute><ChangePassword /></PrivateRoute>} />

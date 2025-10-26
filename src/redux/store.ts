@@ -6,12 +6,14 @@ import userReducer from "../redux/slices/userSlice";
 import authReducer from "../redux/slices/authSlice";
 import mealReducer from "../redux/slices/mealSlice";
 import foodReducer from "./slices/foodSlice";
+import planReducer from "./slices/planSlice";
 
 const rootReducer = combineReducers({
   auth: authReducer,
   user: userReducer,
   meal: mealReducer,
   food: foodReducer,
+  plan: planReducer,
 });
 
 const persistConfig = {
