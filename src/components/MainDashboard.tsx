@@ -1,5 +1,5 @@
 import React from 'react';
-import { Camera, ChefHat, Target, BarChart3, Plus, Apple, Sparkles, Clock } from 'lucide-react';
+import { Camera, ChefHat, Target, BarChart3, Plus, Apple, Sparkles, Clock,Calendar } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export default function MainDashboard() {
@@ -48,14 +48,14 @@ export default function MainDashboard() {
             onClick: () => navigate('/plans', { state: { from: '/home' } })
         },
         {
-            id: 'reports',
-            title: 'Reports',
-            description: 'Xem tiến độ chi tiết',
-            icon: BarChart3,
-            gradient: 'from-purple-400/30 to-pink-400/30',
-            iconColor: 'text-purple-500',
-            onClick: () => navigate('/reports')
-        }
+            id: 'viewPlan',
+            title: 'My Plan',
+            description: 'Xem lịch ăn uống đã tạo',
+            icon: Calendar,
+            gradient: 'from-teal-400/30 to-green-400/30',
+            iconColor: 'text-teal-500',
+            onClick: () => navigate('/plan-result')
+        },
     ];
 
     const getIcon = (color: string) => {

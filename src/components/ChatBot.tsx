@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Send, Bot, User, Minimize2, Maximize2 } from 'lucide-react';
+import { sendMessageToBot } from "../services/chatBotService";
 
 interface Message {
   id: string;
@@ -44,42 +45,43 @@ export default function ChatBot({ isOpen, onClose }: ChatBotProps) {
 
   const handleSendMessage = async () => {
     if (!inputText.trim()) return;
-
+  
     const userMessage: Message = {
       id: Date.now().toString(),
       text: inputText,
-      sender: 'user',
-      timestamp: new Date()
+      sender: "user",
+      timestamp: new Date(),
     };
-
-    setMessages(prev => [...prev, userMessage]);
-    setInputText('');
+  
+    setMessages((prev) => [...prev, userMessage]);
+    setInputText("");
     setIsTyping(true);
-
-    // Simulate AI response
-    setTimeout(() => {
-      const botResponses = [
-        "That's a great question! Based on your nutrition goals, I'd recommend focusing on balanced meals with adequate protein.",
-        "I can help you track your daily nutrition intake. Would you like me to analyze your recent meals?",
-        "For optimal nutrition, try to include a variety of colorful vegetables in your diet. What's your favorite vegetable?",
-        "Remember to stay hydrated! Aim for at least 8 glasses of water per day. How's your water intake today?",
-        "I notice you're interested in meal planning. Would you like me to suggest some healthy recipes based on your preferences?"
-      ];
-
-      const randomResponse = botResponses[Math.floor(Math.random() * botResponses.length)];
-      
+  
+    try {
+      const reply = await sendMessageToBot(inputText);
+  
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
-        text: randomResponse,
-        sender: 'bot',
-        timestamp: new Date()
+        text: reply,
+        sender: "bot",
+        timestamp: new Date(),
       };
-
-      setMessages(prev => [...prev, botMessage]);
+  
+      setMessages((prev) => [...prev, botMessage]);
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: (Date.now() + 2).toString(),
+          text: "⚠️ Xin lỗi, tôi đang gặp sự cố khi phản hồi.",
+          sender: "bot",
+          timestamp: new Date(),
+        },
+      ]);
+    } finally {
       setIsTyping(false);
-    }, 1500);
+    }
   };
-
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();

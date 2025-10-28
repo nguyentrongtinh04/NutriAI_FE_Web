@@ -14,4 +14,17 @@ export const planService = {
       throw new Error(error.response?.data?.error || "Không thể tạo kế hoạch ăn uống");
     }
   },
+
+  async generateNutrition(userInfo: any) {
+    return axios.post(`${API_URL}/generate-nutrition`, userInfo, {
+      headers: { "Content-Type": "application/json" },
+    });
+  },
+
+  async generateMealPlan(userInfo: any, nutrition: any) {
+    return axios.post(`${API_URL}/generate-meal-plan`, { userInfo, nutrition }, {
+      headers: { "Content-Type": "application/json" },
+    });
+  },
 };
+
