@@ -19,9 +19,11 @@ interface MealState {
     example?: any;
   } | null;
   error: string | null;
+  recentMeals: any[];
 }
 
 const initialState: MealState = {
+  recentMeals: [],
   loading: false,
   result: null,
   error: null,
@@ -35,6 +37,19 @@ export const analyzeMeal = createAsyncThunk(
       return await mealService.analyzeMeal(file);
     } catch (err: any) {
       return rejectWithValue(err.response?.data || err.message);
+    }
+  }
+);
+
+// 🆕 Lấy 3 món scan gần nhất
+export const fetchRecentMealsThunk = createAsyncThunk(
+  "plan/fetchRecentMeals",
+  async (_, { rejectWithValue }) => {
+    try {
+      const data = await mealService.getRecentScannedMeals();
+      return data;
+    } catch (err: any) {
+      return rejectWithValue(err.message || "Lỗi khi tải danh sách món gần nhất");
     }
   }
 );
@@ -59,6 +74,17 @@ const mealSlice = createSlice({
         state.result = action.payload;
       })
       .addCase(analyzeMeal.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      .addCase(fetchRecentMealsThunk.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(fetchRecentMealsThunk.fulfilled, (state, action) => {
+        state.loading = false;
+        state.recentMeals = action.payload;
+      })
+      .addCase(fetchRecentMealsThunk.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });

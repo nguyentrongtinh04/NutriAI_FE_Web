@@ -20,9 +20,10 @@ import PrivateRoute from "./components/PrivateRoute";
 import SearchFoodPage from "./pages/SearchFoodPage";
 import ProfilePage from ".././src/demo";
 import ChangePassword from "./pages/Settings/Account/ChangePassword";//sửa
+import PlansPage from "./pages/Plans/PlansPage";
 import ScanHistoryPage from "./pages/ScanMeals/ScanHistoryPage";
 import PlanResultPage from "./pages/Plans/PlanResultPage";
-
+import ScheduleDetailPage from "./pages/Plans/ScheduleDetailPage";
 function App() {
   return (
     <AuthProvider>
@@ -36,8 +37,10 @@ function App() {
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/scan-meal" element={<ScanMealPage />} />
           <Route path="/search-food" element={<SearchFoodPage />} />
+          <Route path="/plans" element={<PlansPage />} />
           <Route path="/scan-history" element={<ScanHistoryPage />} />
           <Route path="/plan-result" element={<PlanResultPage />} />
+          <Route path="/plan/:id" element={<ScheduleDetailPage />} />
           
           {/* Private routes */}
           <Route path="/settings/change-password" element={<PrivateRoute><ChangePassword /></PrivateRoute>} />
@@ -48,7 +51,7 @@ function App() {
           <Route path="/support" element={<PrivateRoute><UserSupport /></PrivateRoute>} />
           <Route path="/goals" element={<PrivateRoute><Goals /></PrivateRoute>} />
           <Route path="/reports" element={<PrivateRoute><Reports /></PrivateRoute>} />
-          <Route path="/plans" element={<PrivateRoute><Plans /></PrivateRoute>} />
+          <Route path="/create-plan" element={<PrivateRoute><Plans /></PrivateRoute>} />
           <Route path="/notificationpages" element={<PrivateRoute><NotificationsPage /></PrivateRoute>} />
           <Route path="/demo" element={<ProfilePage />} />
         </Routes>

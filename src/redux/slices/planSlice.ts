@@ -1,14 +1,18 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import {planService} from "../../services/planService";
+import { planService } from "../../services/planService";
 
 interface PlanState {
   mealPlan: any | null;
+  schedules: any[];
+  nextMeal: any | null;
   loading: boolean;
   error: string | null;
 }
 
 const initialState: PlanState = {
   mealPlan: null,
+  schedules: [],
+  nextMeal: null,
   loading: false,
   error: null,
 };
@@ -19,7 +23,7 @@ export const generatePlanThunk = createAsyncThunk(
   async (userInfo: any, { rejectWithValue }) => {
     try {
       const res = await planService.generatePlan(userInfo);
-      return res.data?.mealPlan || res.mealPlan; 
+      return res.data?.mealPlan || res.mealPlan;
     } catch (err: any) {
       return rejectWithValue(err.message || "Lỗi khi tạo kế hoạch ăn uống");
     }
@@ -50,6 +54,44 @@ export const generateMealPlanThunk = createAsyncThunk(
   }
 );
 
+// 🧠 Lấy danh sách lịch trình người dùng
+export const fetchSchedulesThunk = createAsyncThunk(
+  "plan/fetchSchedules",
+  async (token: string, { rejectWithValue }) => {
+    try {
+      const data = await planService.getUserSchedules(token);
+      return data.schedules;
+    } catch (err: any) {
+      return rejectWithValue(err.message || "Lỗi khi tải danh sách lịch trình");
+    }
+  }
+);
+
+// 🧠 Tạo lịch trình ăn uống và lưu vào DB
+export const createScheduleThunk = createAsyncThunk(
+  "plan/createSchedule",
+  async ({ scheduleData, token }: { scheduleData: any; token: string }, { rejectWithValue }) => {
+    try {
+      const data = await planService.createFullSchedule(scheduleData, token);
+      return data.schedule; // trả về lịch vừa tạo
+    } catch (err: any) {
+      return rejectWithValue(err.message || "Lỗi khi tạo lịch trình");
+    }
+  }
+);
+
+// 🕒 Lấy bữa ăn kế tiếp trong lịch trình hiện tại
+export const fetchNextMealThunk = createAsyncThunk(
+  "plan/fetchNextMeal",
+  async (token: string, { rejectWithValue }) => {
+    try {
+      const data = await planService.getNextMeal(token);
+      return data; // trả full dữ liệu từ BE
+    } catch (err: any) {
+      return rejectWithValue(err.message || "Lỗi khi lấy bữa ăn kế tiếp");
+    }
+  }
+);
 
 const planSlice = createSlice({
   name: "plan",
@@ -84,6 +126,43 @@ const planSlice = createSlice({
         state.mealPlan = action.payload; // ✅ lưu mealPlan vào Redux
       })
       .addCase(generateMealPlanThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      .addCase(fetchSchedulesThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchSchedulesThunk.fulfilled, (state, action) => {
+        state.loading = false;
+        state.schedules = action.payload;
+      })
+      .addCase(fetchSchedulesThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      .addCase(createScheduleThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(createScheduleThunk.fulfilled, (state, action) => {
+        state.loading = false;
+        // ✅ Thêm lịch mới vào đầu danh sách
+        state.schedules = [action.payload, ...state.schedules];
+      })
+      .addCase(createScheduleThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      .addCase(fetchNextMealThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchNextMealThunk.fulfilled, (state, action) => {
+        state.loading = false;
+        state.nextMeal = action.payload;
+      })
+      .addCase(fetchNextMealThunk.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });

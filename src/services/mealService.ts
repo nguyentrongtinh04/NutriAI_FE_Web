@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const MEAL_API = "http://localhost:5007/meals";
+const MEAL_API = "http://localhost:5002/meals-scand";
 
 export const mealService = {
   // Gửi ảnh lên BE để AI phân tích
@@ -24,6 +24,16 @@ export const mealService = {
   getScannedHistory: async () => {
     const res = await axios.get(`${MEAL_API}/history`);
     return res.data;
+  },
+
+  async getRecentScannedMeals() {
+    try {
+      const res = await axios.get(`${MEAL_API}/recent`);
+      return res.data.meals; // [{ name, time, nutrition }]
+    } catch (error: any) {
+      console.error("❌ planService.getRecentScannedMeals error:", error);
+      throw new Error(error.response?.data?.message || "Không thể lấy danh sách món ăn gần nhất");
+    }
   },
   
 };

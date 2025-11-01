@@ -11,15 +11,23 @@ import {
   ArrowLeft,
   CheckCircle2,
   Info,
+  CalendarPlus,
 } from "lucide-react";
 import { useSelector } from "react-redux";
 import type { RootState } from "../../redux/store";
+import { useDispatch } from "react-redux";
+import { AppDispatch } from "../../redux/store";
+import { createScheduleThunk } from "../../redux/slices/planSlice";
+import { useNavigate } from "react-router-dom";
 
 export default function PlanResultPage() {
   const [selectedDay, setSelectedDay] = useState<number>(0);
   const [flippedMeals, setFlippedMeals] = useState<Set<number>>(new Set());
   const { mealPlan, loading, error } = useSelector((state: RootState) => state.plan);
   const currentDay = mealPlan.schedule[selectedDay];
+  const dispatch = useDispatch<AppDispatch>();
+  const navigate = useNavigate();
+  const token = useSelector((state: RootState) => state.auth.accessToken) || localStorage.getItem("accessToken");
 
   const toggleMealFlip = (mealIndex: number) => {
     setFlippedMeals((prev) => {
@@ -47,6 +55,7 @@ export default function PlanResultPage() {
           <p className="text-red-600 text-lg font-semibold mb-2">Lỗi khi tải kế hoạch</p>
           <p className="text-gray-600 mb-6">{error}</p>
           <button
+           onClick={() => navigate("/create-plan")}
             className="bg-gradient-to-r from-blue-500 to-cyan-600 text-white px-6 py-3 rounded-xl hover:shadow-lg transition-all"
           >
             Quay lại tạo kế hoạch
@@ -129,12 +138,66 @@ export default function PlanResultPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-500 via-cyan-500 to-teal-400 py-8 px-4">
       <div className="max-w-6xl mx-auto">
-        <button
-          className="mb-6 flex items-center gap-2 text-white hover:text-blue-100 transition-colors"
-        >
-          <ArrowLeft className="w-5 h-5" />
-          <span>Quay lại</span>
-        </button>
+        <div className="mb-6 flex items-center justify-between">
+          <button
+            className="flex items-center gap-2 text-white hover:text-blue-100 transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            <span>Quay lại</span>
+          </button>
+          <button
+            onClick={async () => {
+              if (!token) {
+                alert("Bạn cần đăng nhập để tạo lịch!");
+                return;
+              }
+
+              const scheduleData = {
+                height: mealPlan.userInfo?.height || 170,
+                weight: mealPlan.userInfo?.weight || 65,
+                gender: mealPlan.userInfo?.gender || "male",
+                age: mealPlan.userInfo?.age || 25,
+                goal: mealPlan.userInfo?.goal || "Giảm cân",
+                kgGoal: mealPlan.userInfo?.kgGoal || 2,
+                duration: (mealPlan.userInfo?.duration || mealPlan.schedule.length) * 7,
+                startDate: new Date().toISOString(),
+                schedule: mealPlan.schedule,
+                nameSchedule: `Kế hoạch ${mealPlan.userInfo?.goal || "Cá nhân"}`,
+              };
+
+              try {
+                const formattedSchedule = scheduleData.schedule.map((day: any) => ({
+                  ...day,
+                  meals: day.meals.map((m: any) => ({
+                    ...m,
+                    mealName: m.nameMeals, // ✅ đổi key
+                    nameMeals: undefined,  // ❌ bỏ key cũ (optional)
+                  })),
+                }));
+                const genderMap: Record<string, string> = {
+                  male: "nam",
+                  female: "nữ",
+                  other: "khác",
+                };                
+                const finalData= {
+                  ...scheduleData,
+                  schedule: formattedSchedule,
+                  gender: genderMap[scheduleData.gender] || scheduleData.gender,
+                };
+
+                await dispatch(createScheduleThunk({ scheduleData: finalData, token }));
+                alert("✅ Tạo lịch thành công!");
+                navigate("/plans");
+              } catch (err: any) {
+                alert("❌ Lỗi khi lưu lịch: " + err);
+              }
+            }}
+            className="flex items-center gap-2 bg-white/90 backdrop-blur-sm text-blue-600 px-6 py-3 rounded-xl font-semibold hover:bg-white hover:shadow-xl transition-all duration-300 border-2 border-white/50 hover:scale-105"
+          >
+            <CalendarPlus className="w-5 h-5" />
+            <span>Tạo lịch</span>
+          </button>
+        </div>
 
         <div className="text-center mb-10">
           <h1 className="text-4xl font-bold text-white mb-2 flex justify-center items-center gap-3">
@@ -263,16 +326,12 @@ export default function PlanResultPage() {
                           <Icon className="w-8 h-8 text-white" />
                         </div>
 
-                        {/* 👉 Mô tả cùng hàng với tên & giờ ăn */}
                         <div className="flex-1">
                           <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-2 flex-wrap">
                               <h3 className="text-xl font-bold text-gray-800">
                                 {meal.nameMeals}
                               </h3>
-                              <span className="text-sm text-gray-600">
-                                ({meal.description})
-                              </span>
                             </div>
                             <div className="flex items-center gap-2 text-gray-600">
                               <Clock className="w-4 h-4" />
@@ -291,13 +350,12 @@ export default function PlanResultPage() {
 
                     {/* Mặt sau */}
                     <div
-                      className={`absolute inset-0 bg-white/90 rounded-2xl p-6 border-2 ${mealInfo.border} shadow-lg`}
+                      className={`absolute inset-0 bg-white/25 rounded-2xl p-6 border-2 ${mealInfo.border} shadow-lg`}
                       style={{
                         backfaceVisibility: 'hidden',
                         transform: 'rotateY(180deg)',
                       }}
                     >
-                      {/* ❌ Bỏ scroll, chỉ hiển thị vừa khung */}
                       <div className="h-full overflow-hidden">
                         <div className="flex items-center gap-3 mb-3">
                           <div
@@ -305,45 +363,39 @@ export default function PlanResultPage() {
                           >
                             <Icon className="w-6 h-6 text-white" />
                           </div>
-                          <div>
-                            <h3 className="text-lg font-bold text-gray-800">
-                              {meal.nameMeals}
-                            </h3>
-                            <span className="text-sm text-gray-600">{meal.mealTime}</span>
-                          </div>
-                          <p className="text-gray-600 text-sm mb-4">{meal.description}</p>
+                          <p className="text-gray-600 text-lg mb-4 font-bold">{meal.description}</p>
                         </div>
 
                         <div className="grid grid-cols-4 gap-2">
                           <div className={`${mealInfo.bg} rounded-lg p-2 text-center`}>
                             <Flame className={`w-4 h-4 mx-auto mb-1 ${mealInfo.text}`} />
-                            <div className={`text-base font-bold ${mealInfo.text}`}>
-                              {meal.CPFCa?.[0]}
+                            <div className={`flex items-baseline justify-center gap-1 text-base font-bold ${mealInfo.text}`}>
+                              <span>{meal.CPFCa?.[0]}</span>
+                              <span className="text-xs text-gray-600 font-normal">kcal</span>
                             </div>
-                            <div className="text-xs text-gray-600">kcal</div>
                           </div>
                           <div className={`${mealInfo.bg} rounded-lg p-2 text-center`}>
                             <Drumstick
                               className={`w-4 h-4 mx-auto mb-1 ${mealInfo.text}`}
                             />
-                            <div className={`text-base font-bold ${mealInfo.text}`}>
-                              {meal.CPFCa?.[1]}g
+                            <div className={`flex items-baseline justify-center gap-1 text-base font-bold ${mealInfo.text}`}>
+                              <span>{meal.CPFCa?.[1]}</span>
+                              <span className="text-xs text-gray-600 font-normal">protein</span>
                             </div>
-                            <div className="text-xs text-gray-600">Protein</div>
                           </div>
                           <div className={`${mealInfo.bg} rounded-lg p-2 text-center`}>
                             <Droplet className={`w-4 h-4 mx-auto mb-1 ${mealInfo.text}`} />
-                            <div className={`text-base font-bold ${mealInfo.text}`}>
-                              {meal.CPFCa?.[2]}g
+                            <div className={`flex items-baseline justify-center gap-1 text-base font-bold ${mealInfo.text}`}>
+                              <span>{meal.CPFCa?.[2]}</span>
+                              <span className="text-xs text-gray-600 font-normal">fat</span>
                             </div>
-                            <div className="text-xs text-gray-600">Fat</div>
                           </div>
                           <div className={`${mealInfo.bg} rounded-lg p-2 text-center`}>
                             <Wheat className={`w-4 h-4 mx-auto mb-1 ${mealInfo.text}`} />
-                            <div className={`text-base font-bold ${mealInfo.text}`}>
-                              {meal.CPFCa?.[3]}g
+                            <div className={`flex items-baseline justify-center gap-1 text-base font-bold ${mealInfo.text}`}>
+                              <span>{meal.CPFCa?.[3]}</span>
+                              <span className="text-xs text-gray-600 font-normal">carbs</span>
                             </div>
-                            <div className="text-xs text-gray-600">Carbs</div>
                           </div>
                         </div>
                       </div>

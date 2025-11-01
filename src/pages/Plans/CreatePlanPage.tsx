@@ -12,6 +12,7 @@ import {
     DollarSign,
     FileText,
     Loader2,
+    ArrowLeft,
 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../redux/store';
@@ -159,70 +160,67 @@ export default function CreatePlanPage() {
 
     const handleGenerateNutrition = async () => {
         try {
-          // 🧩 Xây dựng userInfo chuẩn cho BE
-          const baseInfo = buildUserInfo();
-      
-          // Nếu người dùng có chọn giảm/tăng cân, thêm mô tả cụ thể
-          const detailedGoal =
-            goals.goal === "lose"
-              ? `giảm ${goals.change || 0} kg`
-              : goals.goal === "gain"
-              ? `tăng ${goals.change || 0} kg`
-              : goals.goal === "maintain"
-              ? "duy trì"
-              : goals.goal === "improve"
-              ? "cải thiện sức khỏe"
-              : "hỗ trợ bệnh lý";
-      
-          const userInfo = {
-            ...baseInfo,
-            goal: detailedGoal,
-            day: goals.deadline ? Number(goals.deadline) * 7 : 30, // đổi tuần → ngày
-          };
-      
-          const result = await dispatch(generateNutritionThunk(userInfo)).unwrap();
-          setNutritionData(result);
-          setShowNutritionModal(true);
+            const baseInfo = buildUserInfo();
+
+            const detailedGoal =
+                goals.goal === "lose"
+                    ? `giảm ${goals.change || 0} kg`
+                    : goals.goal === "gain"
+                        ? `tăng ${goals.change || 0} kg`
+                        : goals.goal === "maintain"
+                            ? "duy trì"
+                            : goals.goal === "improve"
+                                ? "cải thiện sức khỏe"
+                                : "hỗ trợ bệnh lý";
+
+            const userInfo = {
+                ...baseInfo,
+                goal: detailedGoal,
+                day: goals.deadline ? Number(goals.deadline) * 7 : 30,
+            };
+
+            const result = await dispatch(generateNutritionThunk(userInfo)).unwrap();
+            setNutritionData(result);
+            setShowNutritionModal(true);
         } catch (err) {
-          alert("❌ Không thể tính dinh dưỡng: " + err);
+            alert("❌ Không thể tính dinh dưỡng: " + err);
         }
-      };
-      
-      const handleConfirmMealPlan = async () => {
+    };
+
+    const handleConfirmMealPlan = async () => {
         try {
-          setCreatingPlan(true);
-      
-          const baseInfo = buildUserInfo();
-      
-          // Tạo lại thông tin người dùng đồng bộ với bước tính nutrition
-          const detailedGoal =
-            goals.goal === "lose"
-              ? `giảm ${goals.change || 0} kg`
-              : goals.goal === "gain"
-              ? `tăng ${goals.change || 0} kg`
-              : goals.goal === "maintain"
-              ? "duy trì"
-              : goals.goal === "improve"
-              ? "cải thiện sức khỏe"
-              : "hỗ trợ bệnh lý";
-      
-          const userInfo = {
-            ...baseInfo,
-            goal: detailedGoal,
-            day: goals.deadline ? Number(goals.deadline) * 7 : 30,
-          };
-      
-          await dispatch(
-            generateMealPlanThunk({ userInfo, nutrition: nutritionData })
-          ).unwrap();
-      
-          navigate("/plan-result");
+            setCreatingPlan(true);
+
+            const baseInfo = buildUserInfo();
+
+            const detailedGoal =
+                goals.goal === "lose"
+                    ? `giảm ${goals.change || 0} kg`
+                    : goals.goal === "gain"
+                        ? `tăng ${goals.change || 0} kg`
+                        : goals.goal === "maintain"
+                            ? "duy trì"
+                            : goals.goal === "improve"
+                                ? "cải thiện sức khỏe"
+                                : "hỗ trợ bệnh lý";
+
+            const userInfo = {
+                ...baseInfo,
+                goal: detailedGoal,
+                day: goals.deadline ? Number(goals.deadline) * 7 : 30,
+            };
+
+            await dispatch(
+                generateMealPlanThunk({ userInfo, nutrition: nutritionData })
+            ).unwrap();
+
+            navigate("/plan-result");
         } catch (err) {
-          alert("❌ Lỗi khi tạo lịch: " + err);
+            alert("❌ Lỗi khi tạo lịch: " + err);
         } finally {
-          setCreatingPlan(false);
+            setCreatingPlan(false);
         }
-      };      
+    };
 
     const StepIndicator = ({ step, label }: { step: number; label: string }) => {
         const isActive = currentStep === step;
@@ -243,17 +241,24 @@ export default function CreatePlanPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-500 via-cyan-500 to-teal-400 relative overflow-hidden">
+        <div className="min-h-screen w-full bg-gradient-to-br from-blue-500 via-cyan-500 to-teal-400 relative overflow-hidden">
             <div className="absolute inset-0 bg-black/10 backdrop-blur-[1px]" />
-            <main className="relative z-20 w-full px-4 py-10 pt-[105px] max-w-4xl mx-auto">
+            <main className="relative z-20 w-full px-4 py-10 max-w-4xl mx-auto">
                 <div className="mb-8">
+                    <button
+                        onClick={() => navigate('/plans')}
+                        className="group flex items-center gap-2 px-4 py-2 rounded-xl bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 transition-all duration-300 mb-4"
+                    >
+                        <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+                        <span className="font-medium">Quay lại danh sách</span>
+                    </button>
+
                     <h1 className="text-4xl font-bold text-white mb-2 flex items-center gap-3">
                         <Target className="w-10 h-10" /> Tạo Kế Hoạch Dinh Dưỡng
                     </h1>
                     <p className="text-blue-100">Xây dựng thực đơn phù hợp với mục tiêu của bạn</p>
                 </div>
 
-                {/* Step indicators */}
                 <div className="mb-8 flex justify-between items-center">
                     <StepIndicator step={1} label="Cá nhân" />
                     <div className="flex-1 h-1 bg-white/30 mx-2" />
@@ -370,7 +375,6 @@ export default function CreatePlanPage() {
                                 <h2 className="text-2xl font-bold text-gray-800">Xác Định Yêu Cầu Đầu Vào</h2>
                             </div>
 
-                            {/* --- CHỌN MỤC TIÊU --- */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-3">
                                     Mục tiêu của bạn là gì? <span className="text-red-500">*</span>
@@ -385,12 +389,12 @@ export default function CreatePlanPage() {
                                                     change: 0,
                                                     targetWeight: 0,
                                                     weeklyChange: 1,
-                                                    deadline: ""
+                                                    deadline: "",
                                                 });
                                             }}
                                             className={`p-6 rounded-xl border-2 text-center transition-all ${goals.goal === option.value
-                                                ? "border-blue-500 bg-blue-50 shadow-lg scale-105"
-                                                : "border-gray-300 hover:border-blue-300"
+                                                    ? "border-blue-500 bg-blue-50 shadow-lg scale-105"
+                                                    : "border-gray-300 hover:border-blue-300"
                                                 }`}
                                         >
                                             <div className="text-4xl mb-2">{option.icon}</div>
@@ -401,14 +405,13 @@ export default function CreatePlanPage() {
                                 </div>
                             </div>
 
-                            {/* --- NẾU LÀ GIẢM HOẶC TĂNG CÂN --- */}
                             {(goals.goal === "lose" || goals.goal === "gain") && (
                                 <>
-                                    {/* SỐ CÂN MUỐN THAY ĐỔI */}
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                Số cân muốn {goals.goal === "lose" ? "giảm" : "tăng"} (kg) <span className="text-red-500">*</span>
+                                                Số cân muốn {goals.goal === "lose" ? "giảm" : "tăng"} (kg)
+                                                <span className="text-red-500">*</span>
                                             </label>
                                             <input
                                                 type="number"
@@ -427,7 +430,6 @@ export default function CreatePlanPage() {
                                             />
                                         </div>
 
-                                        {/* THAY ĐỔI MỖI TUẦN */}
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-2">
                                                 Tốc độ thay đổi (kg/tuần)
@@ -440,40 +442,37 @@ export default function CreatePlanPage() {
                                             />
                                         </div>
                                     </div>
+                                </>
+                            )}
 
-                                    {/* THỜI GIAN ƯỚC TÍNH */}
-                                    {goals.change > 0 && (
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                                                <Calendar className="w-5 h-5 text-blue-600" />
-                                                Thời gian đạt mục tiêu <span className="text-red-500">*</span>
-                                            </label>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                                    <Calendar className="w-5 h-5 text-blue-600" />
+                                    Thời gian đạt mục tiêu <span className="text-red-500">*</span>
+                                </label>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                    {[1, 2, 3, 4, 5].map((w) => (
+                                        <button
+                                            key={w}
+                                            onClick={() => setGoals({ ...goals, deadline: `${w}` })}
+                                            className={`py-3 rounded-xl border-2 font-semibold transition-all ${goals.deadline === `${w}`
+                                                    ? "border-blue-500 bg-blue-50 text-blue-700 shadow-md"
+                                                    : "border-gray-300 hover:border-blue-300"
+                                                }`}
+                                        >
+                                            {w} tuần
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
 
-                                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                                                {Array.from({ length: 5 }, (_, i) => i + 1)
-                                                    .filter((w) => w >= goals.change)
-                                                    .map((w) => (
-                                                        <button
-                                                            key={w}
-                                                            onClick={() => setGoals({ ...goals, deadline: `${w}` })}
-                                                            className={`py-3 rounded-xl border-2 font-semibold transition-all ${goals.deadline === `${w}`
-                                                                ? "border-blue-500 bg-blue-50 text-blue-700 shadow-md"
-                                                                : "border-gray-300 hover:border-blue-300"
-                                                                }`}
-                                                        >
-                                                            {w} tuần
-                                                        </button>
-                                                    ))}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* TÓM TẮT */}
-                                    {goals.change > 0 && goals.deadline && (
-                                        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mt-4">
-                                            <h3 className="font-semibold text-blue-900 mb-2">Chi tiết mục tiêu:</h3>
-                                            <ul className="text-sm text-blue-800 space-y-1">
-                                                <li>• Cân nặng hiện tại: {personalInfo.weight} kg</li>
+                            {goals.deadline && (
+                                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mt-4">
+                                    <h3 className="font-semibold text-blue-900 mb-2">Chi tiết mục tiêu:</h3>
+                                    <ul className="text-sm text-blue-800 space-y-1">
+                                        <li>• Cân nặng hiện tại: {personalInfo.weight} kg</li>
+                                        {goals.goal === "lose" || goals.goal === "gain" ? (
+                                            <>
                                                 <li>
                                                     • Mục tiêu: {goals.goal === "lose" ? "Giảm" : "Tăng"} {goals.change} kg
                                                 </li>
@@ -485,14 +484,17 @@ export default function CreatePlanPage() {
                                                     kg
                                                 </li>
                                                 <li>• Tốc độ: 1 kg/tuần</li>
-                                                <li>• Thời gian ước tính: {goals.deadline} tuần</li>
-                                            </ul>
-                                        </div>
-                                    )}
-                                </>
+                                            </>
+                                        ) : (
+                                            <li>• Mục tiêu: {goalOptions.find((g) => g.value === goals.goal)?.label}</li>
+                                        )}
+                                        <li>• Thời gian ước tính: {goals.deadline} tuần</li>
+                                    </ul>
+                                </div>
                             )}
                         </div>
                     )}
+
                     {currentStep === 3 && (
                         <div className="space-y-6 animate-fade-in">
                             <div className="flex items-center gap-3 mb-6">
@@ -500,7 +502,6 @@ export default function CreatePlanPage() {
                                 <h2 className="text-2xl font-bold text-gray-800">Thông Tin Ăn Uống</h2>
                             </div>
 
-                            {/* Dị ứng */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
                                     Dị ứng thực phẩm (nếu có)
@@ -514,7 +515,6 @@ export default function CreatePlanPage() {
                                 />
                             </div>
 
-                            {/* Sở thích */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
                                     Sở thích ăn uống (nếu có)
@@ -528,7 +528,6 @@ export default function CreatePlanPage() {
                                 />
                             </div>
 
-                            {/* Số bữa ăn */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-3">
                                     Số bữa ăn trong ngày <span className="text-red-500">*</span>
@@ -556,7 +555,6 @@ export default function CreatePlanPage() {
                                 </div>
                             </div>
 
-                            {/* Giờ ăn cụ thể — chỉ hiện nếu số bữa ≥ 3 */}
                             {dietInfo.mealsPerDay && dietInfo.mealsPerDay >= 3 && (
                                 <div className="mt-4">
                                     <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
@@ -596,7 +594,6 @@ export default function CreatePlanPage() {
                                 </div>
                             )}
 
-                            {/* Ngân sách */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                                     <DollarSign className="w-5 h-5 text-green-600" />
@@ -691,8 +688,8 @@ export default function CreatePlanPage() {
                         onClick={() => setCurrentStep((p) => (p > 1 ? (p - 1) as Step : p))}
                         disabled={currentStep === 1}
                         className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all ${currentStep === 1
-                                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                            ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                             }`}
                     >
                         <ChevronLeft className="w-5 h-5" /> Quay lại
@@ -716,7 +713,6 @@ export default function CreatePlanPage() {
                     )}
                 </div>
 
-                {/* Nutrition Modal */}
                 {showNutritionModal && nutritionData && (
                     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50">
                         <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-lg relative animate-fade-in">
@@ -753,17 +749,17 @@ export default function CreatePlanPage() {
                                     onClick={handleConfirmMealPlan}
                                     disabled={creatingPlan}
                                     className={`flex items-center gap-2 px-5 py-2 rounded-xl font-semibold transition-all ${creatingPlan
-                                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                            : 'bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:shadow-md'
+                                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                        : 'bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:shadow-md'
                                         }`}
                                 >
                                     {creatingPlan ? (
                                         <>
-                                            <Loader2 className="w-5 h-5 animate-spin" /> Đang tạo lịch...
+                                            <Loader2 className="w-5 h-5 animate-spin" /> Đang tạo lịch mẫu...
                                         </>
                                     ) : (
                                         <>
-                                            <Check className="w-5 h-5" /> Tạo lịch
+                                            <Check className="w-5 h-5" /> Tạo lịch mẫu
                                         </>
                                     )}
                                 </button>

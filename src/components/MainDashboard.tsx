@@ -1,22 +1,30 @@
 import React from 'react';
-import { Camera, ChefHat, Target, BarChart3, Plus, Apple, Sparkles, Clock,Calendar } from 'lucide-react';
+import { Camera, ChefHat, Target, BarChart3, Plus, Apple, Sparkles, Clock, Calendar, Utensils, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatch, RootState } from "../redux/store";
+import { fetchNextMealThunk, fetchSchedulesThunk } from "../redux/slices/planSlice";
+import { useEffect } from "react";
+import { fetchRecentMealsThunk } from "../redux/slices/mealSlice";
 
 export default function MainDashboard() {
+    const dispatch = useDispatch<AppDispatch>();
+
+    const token =
+        useSelector((state: RootState) => state.auth.accessToken) ||
+        localStorage.getItem("accessToken");
+
+    const { nextMeal, loading, error,schedules } = useSelector((state: RootState) => state.plan);
+
+    useEffect(() => {
+        if (token) {
+            dispatch(fetchNextMealThunk(token));
+            dispatch(fetchRecentMealsThunk());
+            dispatch(fetchSchedulesThunk(token));
+        }
+    }, [dispatch, token]);
     const navigate = useNavigate();
-
-    const nutritionData = {
-        calories: { consumed: 1245, target: 1800, remaining: 555 },
-        protein: { amount: 85, target: 100, percentage: 85 },
-        carbs: { amount: 156, target: 200, percentage: 78 },
-        fat: { amount: 42, target: 70, percentage: 60 }
-    };
-
-    const recentMeals = [
-        { id: '1', name: 'Phở bò', type: 'Bữa sáng', time: '8:30 AM', calories: 520, protein: 25, carbs: 60, color: 'orange' as const },
-        { id: '2', name: 'Salad cá hồi', type: 'Bữa trưa', time: '12:15 PM', calories: 380, protein: 35, carbs: 15, color: 'green' as const },
-        { id: '3', name: 'Smoothie việt quất', type: 'Snack', time: '3:00 PM', calories: 180, protein: 8, carbs: 35, color: 'purple' as const }
-    ];
+    const { recentMeals } = useSelector((state: RootState) => state.meal);
 
     const actionCards = [
         {
@@ -49,12 +57,12 @@ export default function MainDashboard() {
         },
         {
             id: 'viewPlan',
-            title: 'My Plan',
-            description: 'Xem lịch ăn uống đã tạo',
+            title: 'ListMealsScan',
+            description: 'Xem danh sách món ăn đã scan',
             icon: Calendar,
             gradient: 'from-teal-400/30 to-green-400/30',
             iconColor: 'text-teal-500',
-            onClick: () => navigate('/plan-result')
+            onClick: () => navigate('/scan-history')
         },
     ];
 
@@ -118,59 +126,139 @@ export default function MainDashboard() {
 
             {/* Nutrition Overview */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                {/* Meal Schedule Overview */}
                 <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 border border-blue-200 shadow-xl">
                     <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
                         <Target className="w-6 h-6 text-blue-600" />
-                        Nutrition Overview
+                        Meal Schedule Overview
                     </h2>
 
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                            <span className="text-gray-600">Calories</span>
-                            <span className="text-lg font-semibold">{nutritionData.calories.consumed} / {nutritionData.calories.target}</span>
+                    {loading ? (
+                        <p className="text-gray-500 italic">Đang tải dữ liệu...</p>
+                    ) : error ? (
+                        <div className="text-red-500 flex items-center gap-2">
+                            <AlertCircle className="w-5 h-5" />
+                            {error}
                         </div>
-                        <div className="w-full bg-gray-200 rounded-full h-3">
-                            <div
-                                className="bg-gradient-to-r from-orange-400 to-red-500 h-3 rounded-full transition-all duration-1000"
-                                style={{ width: `${(nutritionData.calories.consumed / nutritionData.calories.target) * 100}%` }}
-                            ></div>
-                        </div>
+                    ) : nextMeal ? (
+                        <>
+                            {/* 🧠 Thông báo tổng quan */}
+                            <p className="text-gray-700 text-lg font-medium">{nextMeal.message}</p>
 
-                        <div className="grid grid-cols-3 gap-4 mt-6">
-                            <div className="text-center">
-                                <div className="text-lg font-bold text-red-600">{nutritionData.protein.amount}g</div>
-                                <div className="text-sm text-gray-600">Protein</div>
-                                <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                                    <div
-                                        className="bg-red-500 h-2 rounded-full transition-all duration-1000"
-                                        style={{ width: `${nutritionData.protein.percentage}%` }}
-                                    ></div>
+                            {/* 📋 Có thông tin lịch trình */}
+                            {nextMeal.scheduleInfo && (
+                                <div className="bg-blue-50 border border-blue-200 p-4 rounded-xl mt-4">
+                                    <p className="font-semibold text-blue-700">
+                                        📋 Kế hoạch: {nextMeal.scheduleInfo.nameSchedule}
+                                    </p>
+                                    <p className="text-sm text-gray-600">
+                                        🎯 Mục tiêu: {nextMeal.scheduleInfo.goal}
+                                        {nextMeal.scheduleInfo.kgGoal
+                                            ? ` (${nextMeal.scheduleInfo.kgGoal} kg)`
+                                            : ""}
+                                    </p>
                                 </div>
-                            </div>
-                            <div className="text-center">
-                                <div className="text-lg font-bold text-green-600">{nutritionData.carbs.amount}g</div>
-                                <div className="text-sm text-gray-600">Carbs</div>
-                                <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                                    <div
-                                        className="bg-green-500 h-2 rounded-full transition-all duration-1000"
-                                        style={{ width: `${nutritionData.carbs.percentage}%` }}
-                                    ></div>
+                            )}
+
+                            {/* 🍽️ Có bữa ăn sắp tới */}
+                            {nextMeal.meal && (
+                                <div className="relative bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-2xl p-5 mt-5 shadow-md hover:shadow-lg transition-all duration-300">
+                                    <div className="flex items-center gap-6">
+                                        {/* 🕒 Thời gian & loại bữa */}
+                                        <div className="text-center min-w-[90px]">
+                                            <div className="text-3xl font-extrabold text-green-700 leading-tight drop-shadow-sm">
+                                                {nextMeal.meal.mealTime || "--:--"}
+                                            </div>
+                                            <div
+                                                className="inline-block mt-2 px-3 py-1 rounded-full text-sm font-semibold text-white bg-gradient-to-r from-green-500 to-emerald-600 shadow-sm"
+                                            >
+                                                {nextMeal.meal.mealType
+                                                    ? nextMeal.meal.mealType.charAt(0).toUpperCase() +
+                                                    nextMeal.meal.mealType.slice(1)
+                                                    : "Không rõ"}
+                                            </div>
+                                        </div>
+
+                                        {/* 🍽️ Món ăn */}
+                                        <div className="flex-1">
+                                            <h3 className="text-xl font-bold text-green-800">
+                                                {nextMeal.meal.mealName || nextMeal.meal.nameMeals || "Chưa có tên món"}
+                                            </h3>
+                                            {nextMeal.meal.description && (
+                                                <p className="text-gray-600 text-sm mt-1">{nextMeal.meal.description}</p>
+                                            )}
+
+                                            {/* 🔹 Nutrition info */}
+                                            {nextMeal.meal.CPFCa && (
+                                                <div className="flex flex-wrap gap-3 text-sm text-gray-600 mt-3">
+                                                    <span className="font-medium text-green-600">
+                                                        🔥 {nextMeal.meal.CPFCa[0]} kcal
+                                                    </span>
+                                                    <span>💪 Protein: {nextMeal.meal.CPFCa[1]}g</span>
+                                                    <span>🥑 Fat: {nextMeal.meal.CPFCa[2]}g</span>
+                                                    <span>🌾 Carbs: {nextMeal.meal.CPFCa[3]}g</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                            <div className="text-center">
-                                <div className="text-lg font-bold text-yellow-600">{nutritionData.fat.amount}g</div>
-                                <div className="text-sm text-gray-600">Fat</div>
-                                <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                                    <div
-                                        className="bg-yellow-500 h-2 rounded-full transition-all duration-1000"
-                                        style={{ width: `${nutritionData.fat.percentage}%` }}
-                                    ></div>
+                            )}
+
+
+                            {/* 📅 Ngày thực hiện */}
+                            {nextMeal.actualDate && (
+                                <p className="text-gray-600 text-sm mt-2">
+                                    📅 Ngày thực hiện: {nextMeal.actualDate} (Ngày {nextMeal.dayOrder})
+                                </p>
+                            )}
+
+                            {/* 🎉 Hoàn thành lịch */}
+                            {nextMeal.done && (
+                                <div className="text-green-600 font-semibold mt-3">
+                                    🎉 Bạn đã hoàn thành lịch trình ăn uống!
                                 </div>
+                            )}
+
+                            {/* 🔘 Nút điều hướng */}
+                            <div className="mt-6 text-center">
+                                {nextMeal.hasSchedule === false ? (
+                                    <button
+                                        onClick={() => navigate("/plans")}
+                                        className="bg-gradient-to-r from-blue-500 to-cyan-600 text-white px-6 py-3 rounded-xl hover:shadow-lg transition-all duration-300 flex items-center gap-2 mx-auto"
+                                    >
+                                        <Plus className="w-5 h-5" />
+                                        Tạo lịch trình mới
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={() => {
+                                            const name = nextMeal?.scheduleInfo?.nameSchedule;
+
+                                            // ✅ Dò kế hoạch trong Redux (đã lấy ở trên)
+                                            const foundSchedule = schedules.find(
+                                                (s) => s.nameSchedule === name || s.status === "active"
+                                            );
+
+                                            if (foundSchedule?._id) {
+                                                navigate(`/plan/${foundSchedule._id}`);
+                                            } else {
+                                                alert(
+                                                    "Không tìm thấy kế hoạch phù hợp, vui lòng vào trang 'My Plan' để xem chi tiết!"
+                                                );
+                                            }
+                                        }}
+                                        className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-3 rounded-xl hover:shadow-lg transition-all duration-300 flex items-center gap-2 mx-auto"
+                                    >
+                                        <Calendar className="w-5 h-5" />
+                                        Xem chi tiết kế hoạch
+                                    </button>
+                                )}
                             </div>
-                        </div>
-                    </div>
+                        </>
+                    ) : (
+                        <p className="text-gray-500 italic">Không có dữ liệu lịch trình</p>
+                    )}
                 </div>
-
                 <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 border border-blue-200 shadow-xl">
                     <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
                         <Clock className="w-6 h-6 text-blue-600" />
@@ -178,43 +266,55 @@ export default function MainDashboard() {
                     </h2>
 
                     <div className="space-y-4">
-                        {recentMeals.map((meal, index) => {
-                            const Icon = getIcon(meal.color);
-                            const colors = getColorClasses(meal.color);
+                        {recentMeals && recentMeals.length > 0 ? (
+                            recentMeals.map((meal: any, index: number) => {
+                                const colors = ["orange", "green", "purple"];
+                                const color = colors[index % colors.length];
+                                const Icon = getIcon(color);
+                                const style = getColorClasses(color);
 
-                            return (
-                                <div
-                                    key={meal.id}
-                                    className={`p-4 rounded-xl border ${colors.bg} ${colors.border} hover:shadow-lg transition-all duration-300`}
-                                    style={{ animationDelay: `${index * 150}ms` }}
-                                >
-                                    <div className="flex items-center gap-4">
-                                        <div className={`w-12 h-12 rounded-full bg-gradient-to-r ${colors.iconBg} flex items-center justify-center`}>
-                                            <Icon className="w-6 h-6 text-white" />
-                                        </div>
-                                        <div className="flex-1">
-                                            <div className="flex justify-between items-start mb-1">
-                                                <h3 className="font-semibold text-gray-800">{meal.name}</h3>
-                                                <span className="text-sm text-gray-600">{meal.time}</span>
+                                const nutrition = meal.nutrition || {};
+                                const mealTime = new Date(meal.time).toLocaleTimeString("vi-VN", {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                });
+
+                                return (
+                                    <div
+                                        key={index}
+                                        className={`p-4 rounded-xl border ${style.bg} ${style.border} hover:shadow-lg transition-all duration-300`}
+                                    >
+                                        <div className="flex items-center gap-4">
+                                            <div className={`w-12 h-12 rounded-full bg-gradient-to-r ${style.iconBg} flex items-center justify-center`}>
+                                                <Icon className="w-6 h-6 text-white" />
                                             </div>
-                                            <div className="flex justify-between items-center">
-                                                <span className={`text-sm px-2 py-1 rounded-full ${colors.bg} ${colors.textColor}`}>
-                                                    {meal.type}
-                                                </span>
+
+                                            <div className="flex-1">
+                                                <div className="flex justify-between items-start mb-1">
+                                                    <h3 className="font-semibold text-gray-800">{meal.name}</h3>
+                                                    <span className="text-sm text-gray-600">{mealTime}</span>
+                                                </div>
+
                                                 <div className="text-sm text-gray-600">
-                                                    {meal.calories} cal • {meal.protein}g protein
+                                                    {nutrition.calories || 0} kcal • {nutrition.protein || 0}g protein •{" "}
+                                                    {nutrition.carbs || 0}g carbs
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                            );
-                        })}
+                                );
+                            })
+                        ) : (
+                            <p className="text-gray-500 italic">Chưa có món ăn nào được quét gần đây</p>
+                        )}
                     </div>
 
-                    <button className="w-full mt-6 bg-gradient-to-r from-blue-500 to-cyan-600 text-white py-3 rounded-xl hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2 group">
-                        <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform" />
-                        Add New Meal
+                    <button
+                        onClick={() => navigate("/scan-meal")}
+                        className="w-full mt-6 bg-gradient-to-r from-green-500 to-emerald-600 text-white py-3 rounded-xl hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2 group"
+                    >
+                        <Camera className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                        Scan Meal
                     </button>
                 </div>
             </div>
