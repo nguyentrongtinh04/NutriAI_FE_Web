@@ -214,7 +214,8 @@ export default function CreatePlanPage() {
                 generateMealPlanThunk({ userInfo, nutrition: nutritionData })
             ).unwrap();
 
-            navigate("/plan-result");
+            navigate("/plan-result", { state: { userInfo } });
+
         } catch (err) {
             alert("❌ Lỗi khi tạo lịch: " + err);
         } finally {

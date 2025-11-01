@@ -19,6 +19,7 @@ import { useDispatch } from "react-redux";
 import { AppDispatch } from "../../redux/store";
 import { createScheduleThunk } from "../../redux/slices/planSlice";
 import { useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 
 export default function PlanResultPage() {
   const [selectedDay, setSelectedDay] = useState<number>(0);
@@ -27,16 +28,22 @@ export default function PlanResultPage() {
   const currentDay = mealPlan.schedule[selectedDay];
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
-  const token = useSelector((state: RootState) => state.auth.accessToken) || localStorage.getItem("accessToken");
+  const token =
+    useSelector((state: RootState) => state.auth.accessToken) ||
+    localStorage.getItem("accessToken");
+
+  // 🟢 State modal
+  const [showModal, setShowModal] = useState(false);
+  const [scheduleName, setScheduleName] = useState("");
+  const [startDate, setStartDate] = useState<string>("");
+  const location = useLocation();
+  const userInfo = location.state?.userInfo;
 
   const toggleMealFlip = (mealIndex: number) => {
     setFlippedMeals((prev) => {
       const newSet = new Set(prev);
-      if (newSet.has(mealIndex)) {
-        newSet.delete(mealIndex);
-      } else {
-        newSet.add(mealIndex);
-      }
+      if (newSet.has(mealIndex)) newSet.delete(mealIndex);
+      else newSet.add(mealIndex);
       return newSet;
     });
   };
@@ -55,7 +62,7 @@ export default function PlanResultPage() {
           <p className="text-red-600 text-lg font-semibold mb-2">Lỗi khi tải kế hoạch</p>
           <p className="text-gray-600 mb-6">{error}</p>
           <button
-           onClick={() => navigate("/create-plan")}
+            onClick={() => navigate("/create-plan")}
             className="bg-gradient-to-r from-blue-500 to-cyan-600 text-white px-6 py-3 rounded-xl hover:shadow-lg transition-all"
           >
             Quay lại tạo kế hoạch
@@ -72,9 +79,7 @@ export default function PlanResultPage() {
           <p className="text-gray-600 text-lg">
             Chưa có kế hoạch nào — hãy tạo kế hoạch trước.
           </p>
-          <button
-            className="mt-6 bg-gradient-to-r from-blue-500 to-cyan-600 text-white px-6 py-3 rounded-xl hover:shadow-lg transition-all duration-300"
-          >
+          <button className="mt-6 bg-gradient-to-r from-blue-500 to-cyan-600 text-white px-6 py-3 rounded-xl hover:shadow-lg transition-all duration-300">
             Tạo kế hoạch ngay
           </button>
         </div>
@@ -93,8 +98,7 @@ export default function PlanResultPage() {
 
   const getMealTypeInfo = (type: string) => {
     const lower = type.toLowerCase();
-
-    if (["breakfast", "sáng"].includes(lower)) {
+    if (["breakfast", "sáng"].includes(lower))
       return {
         label: "Bữa sáng",
         icon: ChefHat,
@@ -103,8 +107,7 @@ export default function PlanResultPage() {
         border: "border-orange-200",
         text: "text-orange-600",
       };
-    }
-    if (["lunch", "trưa"].includes(lower)) {
+    if (["lunch", "trưa"].includes(lower))
       return {
         label: "Bữa trưa",
         icon: Drumstick,
@@ -113,8 +116,7 @@ export default function PlanResultPage() {
         border: "border-green-200",
         text: "text-green-600",
       };
-    }
-    if (["dinner", "chiều", "tối"].includes(lower)) {
+    if (["dinner", "chiều", "tối"].includes(lower))
       return {
         label: "Bữa tối",
         icon: ChefHat,
@@ -123,7 +125,6 @@ export default function PlanResultPage() {
         border: "border-pink-200",
         text: "text-pink-600",
       };
-    }
     return {
       label: "Khác",
       icon: ChefHat,
@@ -134,63 +135,25 @@ export default function PlanResultPage() {
     };
   };
 
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-500 via-cyan-500 to-teal-400 py-8 px-4">
       <div className="max-w-6xl mx-auto">
+        {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <button
             className="flex items-center gap-2 text-white hover:text-blue-100 transition-colors"
+            onClick={() => navigate(-1)}
           >
             <ArrowLeft className="w-5 h-5" />
             <span>Quay lại</span>
           </button>
           <button
-            onClick={async () => {
+            onClick={() => {
               if (!token) {
                 alert("Bạn cần đăng nhập để tạo lịch!");
                 return;
               }
-
-              const scheduleData = {
-                height: mealPlan.userInfo?.height || 170,
-                weight: mealPlan.userInfo?.weight || 65,
-                gender: mealPlan.userInfo?.gender || "male",
-                age: mealPlan.userInfo?.age || 25,
-                goal: mealPlan.userInfo?.goal || "Giảm cân",
-                kgGoal: mealPlan.userInfo?.kgGoal || 2,
-                duration: (mealPlan.userInfo?.duration || mealPlan.schedule.length) * 7,
-                startDate: new Date().toISOString(),
-                schedule: mealPlan.schedule,
-                nameSchedule: `Kế hoạch ${mealPlan.userInfo?.goal || "Cá nhân"}`,
-              };
-
-              try {
-                const formattedSchedule = scheduleData.schedule.map((day: any) => ({
-                  ...day,
-                  meals: day.meals.map((m: any) => ({
-                    ...m,
-                    mealName: m.nameMeals, // ✅ đổi key
-                    nameMeals: undefined,  // ❌ bỏ key cũ (optional)
-                  })),
-                }));
-                const genderMap: Record<string, string> = {
-                  male: "nam",
-                  female: "nữ",
-                  other: "khác",
-                };                
-                const finalData= {
-                  ...scheduleData,
-                  schedule: formattedSchedule,
-                  gender: genderMap[scheduleData.gender] || scheduleData.gender,
-                };
-
-                await dispatch(createScheduleThunk({ scheduleData: finalData, token }));
-                alert("✅ Tạo lịch thành công!");
-                navigate("/plans");
-              } catch (err: any) {
-                alert("❌ Lỗi khi lưu lịch: " + err);
-              }
+              setShowModal(true);
             }}
             className="flex items-center gap-2 bg-white/90 backdrop-blur-sm text-blue-600 px-6 py-3 rounded-xl font-semibold hover:bg-white hover:shadow-xl transition-all duration-300 border-2 border-white/50 hover:scale-105"
           >
@@ -199,6 +162,7 @@ export default function PlanResultPage() {
           </button>
         </div>
 
+        {/* Title */}
         <div className="text-center mb-10">
           <h1 className="text-4xl font-bold text-white mb-2 flex justify-center items-center gap-3">
             <CheckCircle2 className="w-10 h-10 animate-bounce" />
@@ -211,14 +175,15 @@ export default function PlanResultPage() {
           </p>
         </div>
 
+        {/* Main content */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          {/* Sidebar */}
           <div className="lg:col-span-1">
             <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 border border-blue-200 shadow-xl sticky top-4">
               <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
                 <Calendar className="w-6 h-6 text-blue-600" />
                 Chọn ngày
               </h2>
-
               <div className="space-y-3">
                 {mealPlan.schedule.map((day: any, index: number) => (
                   <button
@@ -232,20 +197,18 @@ export default function PlanResultPage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <div
-                          className={`font-semibold ${selectedDay === index
-                            ? "text-white"
-                            : "text-gray-800"
+                          className={`font-semibold ${selectedDay === index ? "text-white" : "text-gray-800"
                             }`}
                         >
                           Ngày {index + 1}
                         </div>
                         <div
-                          className={`text-sm ${selectedDay === index
-                            ? "text-blue-100"
-                            : "text-gray-600"
+                          className={`text-sm ${selectedDay === index ? "text-blue-100" : "text-gray-600"
                             }`}
                         >
-                          {new Date(Date.now() + index * 24 * 60 * 60 * 1000).toLocaleDateString("vi-VN", {
+                          {new Date(
+                            Date.now() + index * 24 * 60 * 60 * 1000
+                          ).toLocaleDateString("vi-VN", {
                             weekday: "long",
                             day: "2-digit",
                             month: "2-digit",
@@ -296,28 +259,28 @@ export default function PlanResultPage() {
             </div>
           </div>
 
+          {/* Meals */}
           <div className="lg:col-span-2 space-y-6">
             {currentDay.meals.map((meal: any, index: number) => {
               const mealInfo = getMealTypeInfo(meal.mealType);
               const Icon = mealInfo.icon;
               const isFlipped = flippedMeals.has(index);
-
               return (
                 <div
                   key={index}
                   className="relative h-[180px] cursor-pointer"
-                  style={{ perspective: '1000px' }}
+                  style={{ perspective: "1000px" }}
                   onClick={() => toggleMealFlip(index)}
                 >
                   <div
-                    className={`relative w-full h-full transition-transform duration-700 ${isFlipped ? '[transform:rotateY(180deg)]' : ''
+                    className={`relative w-full h-full transition-transform duration-700 ${isFlipped ? "[transform:rotateY(180deg)]" : ""
                       }`}
-                    style={{ transformStyle: 'preserve-3d' }}
+                    style={{ transformStyle: "preserve-3d" }}
                   >
                     {/* Mặt trước */}
                     <div
                       className={`absolute inset-0 bg-white/90 rounded-2xl p-6 border-2 ${mealInfo.border} shadow-lg hover:shadow-2xl transition-shadow`}
-                      style={{ backfaceVisibility: 'hidden' }}
+                      style={{ backfaceVisibility: "hidden" }}
                     >
                       <div className="flex items-center gap-4 h-full">
                         <div
@@ -325,20 +288,18 @@ export default function PlanResultPage() {
                         >
                           <Icon className="w-8 h-8 text-white" />
                         </div>
-
                         <div className="flex-1">
                           <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <h3 className="text-xl font-bold text-gray-800">
-                                {meal.nameMeals}
-                              </h3>
-                            </div>
+                            <h3 className="text-xl font-bold text-gray-800">
+                              {meal.nameMeals}
+                            </h3>
                             <div className="flex items-center gap-2 text-gray-600">
                               <Clock className="w-4 h-4" />
-                              <span className="text-sm font-medium">{meal.mealTime}</span>
+                              <span className="text-sm font-medium">
+                                {meal.mealTime}
+                              </span>
                             </div>
                           </div>
-
                           <span
                             className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${mealInfo.bg} ${mealInfo.text}`}
                           >
@@ -352,8 +313,8 @@ export default function PlanResultPage() {
                     <div
                       className={`absolute inset-0 bg-white/25 rounded-2xl p-6 border-2 ${mealInfo.border} shadow-lg`}
                       style={{
-                        backfaceVisibility: 'hidden',
-                        transform: 'rotateY(180deg)',
+                        backfaceVisibility: "hidden",
+                        transform: "rotateY(180deg)",
                       }}
                     >
                       <div className="h-full overflow-hidden">
@@ -363,40 +324,47 @@ export default function PlanResultPage() {
                           >
                             <Icon className="w-6 h-6 text-white" />
                           </div>
-                          <p className="text-gray-600 text-lg mb-4 font-bold">{meal.description}</p>
+                          <p className="text-gray-600 text-lg mb-4 font-bold">
+                            {meal.description}
+                          </p>
                         </div>
 
                         <div className="grid grid-cols-4 gap-2">
-                          <div className={`${mealInfo.bg} rounded-lg p-2 text-center`}>
-                            <Flame className={`w-4 h-4 mx-auto mb-1 ${mealInfo.text}`} />
-                            <div className={`flex items-baseline justify-center gap-1 text-base font-bold ${mealInfo.text}`}>
-                              <span>{meal.CPFCa?.[0]}</span>
-                              <span className="text-xs text-gray-600 font-normal">kcal</span>
+                          {["kcal", "protein", "fat", "carbs"].map((label, i) => (
+                            <div
+                              key={i}
+                              className={`${mealInfo.bg} rounded-lg p-2 text-center`}
+                            >
+                              {i === 0 && (
+                                <Flame
+                                  className={`w-4 h-4 mx-auto mb-1 ${mealInfo.text}`}
+                                />
+                              )}
+                              {i === 1 && (
+                                <Drumstick
+                                  className={`w-4 h-4 mx-auto mb-1 ${mealInfo.text}`}
+                                />
+                              )}
+                              {i === 2 && (
+                                <Droplet
+                                  className={`w-4 h-4 mx-auto mb-1 ${mealInfo.text}`}
+                                />
+                              )}
+                              {i === 3 && (
+                                <Wheat
+                                  className={`w-4 h-4 mx-auto mb-1 ${mealInfo.text}`}
+                                />
+                              )}
+                              <div
+                                className={`flex items-baseline justify-center gap-1 text-base font-bold ${mealInfo.text}`}
+                              >
+                                <span>{meal.CPFCa?.[i]}</span>
+                                <span className="text-xs text-gray-600 font-normal">
+                                  {label}
+                                </span>
+                              </div>
                             </div>
-                          </div>
-                          <div className={`${mealInfo.bg} rounded-lg p-2 text-center`}>
-                            <Drumstick
-                              className={`w-4 h-4 mx-auto mb-1 ${mealInfo.text}`}
-                            />
-                            <div className={`flex items-baseline justify-center gap-1 text-base font-bold ${mealInfo.text}`}>
-                              <span>{meal.CPFCa?.[1]}</span>
-                              <span className="text-xs text-gray-600 font-normal">protein</span>
-                            </div>
-                          </div>
-                          <div className={`${mealInfo.bg} rounded-lg p-2 text-center`}>
-                            <Droplet className={`w-4 h-4 mx-auto mb-1 ${mealInfo.text}`} />
-                            <div className={`flex items-baseline justify-center gap-1 text-base font-bold ${mealInfo.text}`}>
-                              <span>{meal.CPFCa?.[2]}</span>
-                              <span className="text-xs text-gray-600 font-normal">fat</span>
-                            </div>
-                          </div>
-                          <div className={`${mealInfo.bg} rounded-lg p-2 text-center`}>
-                            <Wheat className={`w-4 h-4 mx-auto mb-1 ${mealInfo.text}`} />
-                            <div className={`flex items-baseline justify-center gap-1 text-base font-bold ${mealInfo.text}`}>
-                              <span>{meal.CPFCa?.[3]}</span>
-                              <span className="text-xs text-gray-600 font-normal">carbs</span>
-                            </div>
-                          </div>
+                          ))}
                         </div>
                       </div>
                     </div>
@@ -406,6 +374,143 @@ export default function PlanResultPage() {
             })}
           </div>
         </div>
+
+        {/* 🟢 Modal tạo lịch */}
+        {showModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-2xl p-6 w-[90%] max-w-md shadow-2xl animate-fadeIn">
+              <h2 className="text-2xl font-bold text-center mb-4 text-gray-800">
+                🗓️ Tạo lịch ăn uống
+              </h2>
+              <div className="bg-gray-50 rounded-lg p-3 mb-4 text-sm text-gray-700">
+                <p>
+                  🎯 <span className="font-semibold">Mục tiêu:</span>{" "}
+                  {userInfo?.goal || "Không xác định"}
+                </p>
+                <p>
+                  ⚖️ Cân nặng: {userInfo?.weight || "-"} kg | Chiều cao:{" "}
+                  {userInfo?.height || "-"} cm
+                </p>
+                <p>
+                  👤 Giới tính:{" "}
+                  {userInfo?.gender === "male"
+                    ? "Nam"
+                    : userInfo?.gender === "female"
+                      ? "Nữ"
+                      : "Khác"}
+                </p>
+              </div>
+
+              {/* Nhập tên lịch */}
+              <label className="block mb-2 text-sm font-semibold text-gray-700">
+                Tên lịch
+              </label>
+              <input
+                type="text"
+                value={scheduleName}
+                onChange={(e) => setScheduleName(e.target.value)}
+                placeholder="Nhập tên kế hoạch..."
+                className="w-full mb-4 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
+              />
+
+              {/* Chọn ngày bắt đầu */}
+              <label className="block mb-2 text-sm font-semibold text-gray-700">
+                Ngày bắt đầu
+              </label>
+              <input
+                type="date"
+                value={startDate}
+                min={new Date().toISOString().split("T")[0]}
+                max={new Date(
+                  Date.now() + 3 * 24 * 60 * 60 * 1000
+                )
+                  .toISOString()
+                  .split("T")[0]}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full mb-6 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
+              />
+
+              <div className="flex justify-between mt-4">
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold"
+                >
+                  Hủy
+                </button>
+
+                <button
+                  onClick={async () => {
+                    if (!scheduleName.trim()) {
+                      alert("Vui lòng nhập tên kế hoạch!");
+                      return;
+                    }
+                    if (!startDate) {
+                      alert("Vui lòng chọn ngày bắt đầu!");
+                      return;
+                    }
+
+                    const scheduleData = {
+                      height: mealPlan.userInfo?.height || 170,
+                      weight: mealPlan.userInfo?.weight || 65,
+                      gender: mealPlan.userInfo?.gender || "male",
+                      age: mealPlan.userInfo?.age || 25,
+                      goal: mealPlan.userInfo?.goal || "Giảm cân",
+                      kgGoal: mealPlan.userInfo?.kgGoal || 2,
+                      duration:
+                        (mealPlan.userInfo?.duration ||
+                          mealPlan.schedule.length) * 7,
+                      startDate,
+                      schedule: mealPlan.schedule,
+                      nameSchedule: scheduleName,
+                    };
+
+                    try {
+                      const formattedSchedule = scheduleData.schedule.map(
+                        (day: any) => ({
+                          ...day,
+                          meals: day.meals.map((m: any) => ({
+                            ...m,
+                            mealName: m.nameMeals,
+                            nameMeals: undefined,
+                          })),
+                        })
+                      );
+
+                      const genderMap: Record<string, string> = {
+                        male: "nam",
+                        female: "nữ",
+                        other: "khác",
+                      };
+
+                      const finalData = {
+                        ...scheduleData,
+                        schedule: formattedSchedule,
+                        gender:
+                          genderMap[scheduleData.gender] ||
+                          scheduleData.gender,
+                      };
+
+                      if (!token) {
+                        alert("Bạn cần đăng nhập để tạo lịch!");
+                        return;
+                      }
+                      await dispatch(createScheduleThunk({ scheduleData: finalData, token }));
+
+                      alert("✅ Tạo lịch thành công!");
+                      setShowModal(false);
+                      navigate("/plans");
+                    } catch (err: any) {
+                      alert("❌ Lỗi khi lưu lịch: " + err);
+                    }
+                  }}
+                  className="px-6 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all"
+                >
+                  Tạo lịch
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
