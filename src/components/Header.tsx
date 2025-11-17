@@ -67,22 +67,6 @@ export default function Header() {
             </span>
           </div>
 
-          {/* Navigation */}
-          <nav className="hidden md:flex items-center gap-8">
-            <a href="#" className="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-medium shadow-lg">
-              Dashboard
-            </a>
-            <a href="#" className="px-4 py-2 text-blue-700 hover:text-blue-900 font-medium transition-colors">
-              Image Scan
-            </a>
-            <a href="#" className="px-4 py-2 text-blue-700 hover:text-blue-900 font-medium transition-colors">
-              Meal Plan
-            </a>
-            <a href="#" className="px-4 py-2 text-blue-700 hover:text-blue-900 font-medium transition-colors">
-              Progress
-            </a>
-          </nav>
-
           {/* User Actions */}
           <div className="flex items-center gap-4">
             {/* Enhanced Notification Bell */}

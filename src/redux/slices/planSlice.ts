@@ -57,9 +57,9 @@ export const generateMealPlanThunk = createAsyncThunk(
 // 🧠 Lấy danh sách lịch trình người dùng
 export const fetchSchedulesThunk = createAsyncThunk(
   "plan/fetchSchedules",
-  async (token: string, { rejectWithValue }) => {
+  async (_, { rejectWithValue }) => {
     try {
-      const data = await planService.getUserSchedules(token);
+      const data = await planService.getUserSchedules();
       return data.schedules;
     } catch (err: any) {
       return rejectWithValue(err.message || "Lỗi khi tải danh sách lịch trình");
@@ -70,23 +70,23 @@ export const fetchSchedulesThunk = createAsyncThunk(
 // 🧠 Tạo lịch trình ăn uống và lưu vào DB
 export const createScheduleThunk = createAsyncThunk(
   "plan/createSchedule",
-  async ({ scheduleData, token }: { scheduleData: any; token: string }, { rejectWithValue }) => {
-    try {
-      const data = await planService.createFullSchedule(scheduleData, token);
-      return data.schedule; // trả về lịch vừa tạo
-    } catch (err: any) {
-      return rejectWithValue(err.message || "Lỗi khi tạo lịch trình");
-    }
+  async (scheduleData: any, { rejectWithValue }) => {
+      try {
+          const data = await planService.createFullSchedule(scheduleData);
+          return data.schedule;
+      } catch (err: any) {
+          return rejectWithValue(err.message || "Lỗi khi tạo lịch trình");
+      }
   }
 );
 
 // 🕒 Lấy bữa ăn kế tiếp trong lịch trình hiện tại
 export const fetchNextMealThunk = createAsyncThunk(
   "plan/fetchNextMeal",
-  async (token: string, { rejectWithValue }) => {
+  async (_, { rejectWithValue }) => {
     try {
-      const data = await planService.getNextMeal(token);
-      return data; // trả full dữ liệu từ BE
+      const data = await planService.getNextMeal();
+      return data;
     } catch (err: any) {
       return rejectWithValue(err.message || "Lỗi khi lấy bữa ăn kế tiếp");
     }

@@ -7,6 +7,7 @@ export interface Provider {
 }
 
 export interface User {
+  _id?: string;
   id?: string;
   authId?: string;
   fullname?: string;
@@ -24,6 +25,7 @@ export interface User {
 }
 
 interface UserState {
+  [x: string]: any;
   profile: User | null;
   loading: boolean;
   error: string | null;

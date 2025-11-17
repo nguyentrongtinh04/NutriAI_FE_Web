@@ -32,7 +32,7 @@ export default function ScheduleDetailPage() {
   useEffect(() => {
     const fetchDetail = async () => {
       try {
-        const data = await planService.getFullSchedule(id!, token!);
+        const data = await planService.getFullSchedule(id!);
         setSchedule(data);
   
         // 📆 Tự động focus ngày hiện tại

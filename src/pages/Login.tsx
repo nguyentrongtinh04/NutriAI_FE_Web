@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { User, Lock, Eye, EyeOff, Sparkles, LogIn, UserPlus, ArrowRight } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "../redux/store";
 import { useNotify } from "../components/notifications/NotificationsProvider";
 import { authService } from "../services/authService";
 import { GoogleLogin } from "@react-oauth/google";
-
+import { fetchMe } from "../redux/slices/userSlice";
 declare global {
   interface Window {
     google: any;
@@ -19,9 +19,13 @@ export default function Login() {
   const [errorMsg, setErrorMsg] = useState("");
   const [showUserDetail, setShowUserDetail] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-
+  const location = useLocation();
   const navigate = useNavigate();
   const notify = useNotify();
+
+  const params = new URLSearchParams(location.search);
+  const redirectPath = params.get("redirect") || "/home";
+
   const dispatch = useDispatch<AppDispatch>();
   // ===== Normal login =====
   const handleLogin = async (e: React.FormEvent) => {
@@ -39,12 +43,39 @@ export default function Login() {
 
       // Nếu login thành công
       notify.success("🎉 Đăng nhập thành công!");
-      setErrorMsg(""); // clear lỗi
+      setErrorMsg("");
 
-      console.log("👉 Data sau khi login:", res); // in ra console
-      // Hoặc lưu vào state
-      // setUser(res.user);
+      // Lưu token
+      localStorage.setItem("accessToken", res.access_token);
+      localStorage.setItem("refreshToken", res.refresh_token);
 
+      // 🧠 Gọi fetchMe để tải user vào Redux
+      const userRes = await dispatch(fetchMe()).unwrap();
+
+      if (userRes?.id) {
+        // id của user service
+        localStorage.setItem("userId", userRes.id);
+      } else if (userRes?.authId) {
+        // fallback (nếu BE chưa trả user id)
+        localStorage.setItem("userId", userRes.authId);
+      }
+
+      // ✅ Lưu role
+      if (userRes?.role) {
+        localStorage.setItem("role", userRes.role);
+      }
+
+      // 👉 Điều hướng theo role
+      if (userRes.role === "admin") {
+        navigate("/admin");
+      } else {
+        navigate(redirectPath);
+      }
+
+      // ✅ Lưu userId cho các API khác (scan, history)
+      if (userRes?.id || userRes?.authId) {
+        localStorage.setItem("userId", userRes.id || userRes.authId);
+      }
     } catch (e: any) {
       const status = e.response?.status;
       const message = e.response?.data?.message || e.message;

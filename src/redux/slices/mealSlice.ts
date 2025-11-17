@@ -43,13 +43,17 @@ export const analyzeMeal = createAsyncThunk(
 
 // 🆕 Lấy 3 món scan gần nhất
 export const fetchRecentMealsThunk = createAsyncThunk(
-  "plan/fetchRecentMeals",
-  async (_, { rejectWithValue }) => {
+  "meal/fetchRecentMeals",
+  async (_, thunkAPI) => {
     try {
-      const data = await mealService.getRecentScannedMeals();
-      return data;
-    } catch (err: any) {
-      return rejectWithValue(err.message || "Lỗi khi tải danh sách món gần nhất");
+      const state: any = thunkAPI.getState();
+      const userId = state.user.profile?._id;
+      if (!userId) throw new Error("User chưa đăng nhập");
+
+      const res = await mealService.getRecentMeals(userId);
+      return res.meals; // BE trả { message, meals }
+    } catch (error: any) {
+      return thunkAPI.rejectWithValue(error.message || "Không thể tải dữ liệu");
     }
   }
 );

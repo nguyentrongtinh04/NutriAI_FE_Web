@@ -9,7 +9,13 @@ import { fetchRecentMealsThunk } from "../redux/slices/mealSlice";
 
 export default function MainDashboard() {
     const dispatch = useDispatch<AppDispatch>();
-
+    const { profile } = useSelector((state: RootState) => state.user);
+    const displayName =
+    profile?.fullname ||
+    profile?.email?.split("@")[0] ||
+    profile?.phone ||
+    "User";
+  
     const token =
         useSelector((state: RootState) => state.auth.accessToken) ||
         localStorage.getItem("accessToken");
@@ -18,9 +24,9 @@ export default function MainDashboard() {
 
     useEffect(() => {
         if (token) {
-            dispatch(fetchNextMealThunk(token));
+            dispatch(fetchNextMealThunk());
             dispatch(fetchRecentMealsThunk());
-            dispatch(fetchSchedulesThunk(token));
+            dispatch(fetchSchedulesThunk());
         }
     }, [dispatch, token]);
     const navigate = useNavigate();
@@ -93,7 +99,7 @@ export default function MainDashboard() {
                     <h1 className="text-4xl font-bold text-white mb-2 flex items-center gap-3">
                         <span className="animate-bounce">👋</span>
                         <span className="bg-gradient-to-r from-white via-cyan-200 to-white bg-clip-text text-transparent animate-pulse">
-                            Welcome back, ADMIN!
+                            Welcome back, {displayName}!
                         </span>
                     </h1>
                     <p className="text-blue-200 text-lg animate-fade-in">Today is a great day to maintain a healthy diet</p>

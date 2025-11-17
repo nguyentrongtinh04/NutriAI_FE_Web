@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Send, Bot, User, Minimize2, Maximize2 } from 'lucide-react';
-import { sendMessageToBot } from "../services/chatBotService";
+import { chatBotService } from "../services/chatBotService";
 
 interface Message {
   id: string;
@@ -58,7 +58,7 @@ export default function ChatBot({ isOpen, onClose }: ChatBotProps) {
     setIsTyping(true);
   
     try {
-      const reply = await sendMessageToBot(inputText);
+      const reply = await chatBotService.sendMessageToBot(inputText);
   
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),

@@ -4,7 +4,12 @@ import { Phone, Mail, Lock, ArrowLeft, Sparkles, Send, Shield, RotateCcw } from 
 import firebase from "../firebase"; // 👈 import firebase như Register.tsx
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "../redux/store";
-import { checkAvailability, sendEmailVerification, verifyEmail } from "../redux/slices/authSlice";
+import {
+  checkAvailability,
+  sendEmailVerification,
+  verifyEmail,
+} from "../redux/actions/authActions";
+
 import { useNotify } from "../components/notifications/NotificationsProvider";
 
 export default function ForgotPassword() {
@@ -56,7 +61,7 @@ export default function ForgotPassword() {
       const msg = "⚠️ Gửi mã OTP thất bại. Vui lòng kiểm tra số điện thoại và thử lại.";
       setError(msg);
       notify.error(msg);
-    }    
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -87,15 +92,16 @@ export default function ForgotPassword() {
 
     if (method === "email") {
       try {
-        await dispatch(checkAvailability({ email: input })).unwrap();
+        // ⚠️ phải gọi thêm () để thực thi hàm async
+        const res = await checkAvailability(undefined, input)();
         notify.error("❌ Email chưa được đăng ký");
       } catch (err: any) {
-        // Nếu BE báo "Phone or Email already exists" nghĩa là có tài khoản
         if (err.message === "Phone or Email already exists") {
           try {
-            const res = await dispatch(sendEmailVerification(input)).unwrap();
-            notify.success(res.message); // ✅ Hiển thị đúng thông báo BE
-            // ✅ Chỉ bật modal nếu BE trả success thật
+            // ✅ thêm () ở cuối
+            const res = await sendEmailVerification(input)();
+            notify.success(res.message);
+    
             if (res.success) {
               setShowOtpModal(true);
               setTimer(60);
@@ -103,21 +109,19 @@ export default function ForgotPassword() {
               setOtp(["", "", "", "", "", ""]);
             }
           } catch (err2: any) {
-            // ❌ Nếu gửi thất bại (email chưa verify, tài khoản google, v.v.)
             const msg =
               err2.response?.data?.message ||
               err2.message ||
               "⚠️ Gửi mã xác thực thất bại.";
             setError(msg);
             notify.error(msg);
-            // 🚫 Không mở modal ở đây!
             setShowOtpModal(false);
           }
         } else {
           notify.error("❌ Có lỗi không xác định khi kiểm tra email.");
         }
       }
-    }    
+    }        
   };
 
   const handleOtpChange = (value: string, index: number) => {
@@ -149,10 +153,10 @@ export default function ForgotPassword() {
         notify.success("✅ OTP verified!");
         navigate("/reset-password", { state: { phone: input, from: "forgot" } });
       } else {
-        await dispatch(verifyEmail({ email: input, code })).unwrap();
+        const res = await verifyEmail(input, code);
         notify.success("✅ Email verified!");
         navigate("/reset-password", { state: { email: input, from: "forgot" } });
-      }
+      }      
     } catch (err) {
       console.error("verifyOtp error:", err);
       notify.error("❌ OTP không đúng");
@@ -171,28 +175,29 @@ export default function ForgotPassword() {
           setTimer(60);
           setCanResend(false);
         })
-        .catch((err) => {
-          console.error("resend phone OTP error:", err);
+        .catch((err: any) => {
           const msg = "❌ Failed to resend OTP to phone";
           setError(msg);
           notify.error(msg);
         });
     } else {
-      dispatch(sendEmailVerification(input))
-        .unwrap()
-        .then((res) => {
+      sendEmailVerification(input)()
+        .then((res: any) => {
           notify.success(res.message);
           setOtp(["", "", "", "", "", ""]);
           inputRefs.current[0]?.focus();
           setTimer(60);
           setCanResend(false);
         })
-        .catch((err) => {
-          const msg = err?.response?.data?.message || err.message || "❌ Gửi lại mã xác thực thất bại.";
+        .catch((err: any) => {
+          const msg =
+            err?.response?.data?.message ||
+            err.message ||
+            "❌ Gửi lại mã xác thực thất bại.";
           setError(msg);
           notify.error(msg);
         });
-    }
+    }      
   }
 
   return (

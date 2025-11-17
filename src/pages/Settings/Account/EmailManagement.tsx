@@ -11,7 +11,7 @@ import {
   Link,
   Unlink,
   Eye,
-  EyeOff
+  EyeOff,
 } from "lucide-react";
 import { useSelector, useDispatch } from "react-redux";
 import { AppDispatch, RootState } from "../../../redux/store";
@@ -22,8 +22,9 @@ import {
   confirmEmailChange,
   linkGoogle,
   linkPhone,
-  requestUnlink, confirmUnlink
-} from "../../../redux/slices/authSlice";
+  requestUnlink,
+  confirmUnlink,
+} from "../../../redux/actions/authActions";
 import { fetchMe } from "../../../redux/slices/userSlice";
 import { useNotify } from "../../../components/notifications/NotificationsProvider";
 import { GoogleLogin } from "@react-oauth/google";
@@ -37,7 +38,6 @@ export default function EmailManagement({ onBack }: { onBack: () => void }) {
   const [otp, setOtp] = useState("");
   const [showOtpInput, setShowOtpInput] = useState(false);
 
-  // update email
   const [showUpdateForm, setShowUpdateForm] = useState(false);
   const [newEmail, setNewEmail] = useState("");
   const [updateOtp, setUpdateOtp] = useState("");
@@ -54,71 +54,100 @@ export default function EmailManagement({ onBack }: { onBack: () => void }) {
     }
   }, [profile]);
 
-  // request change email
-  const handleRequestEmailChange = (oldEmail: string) => {
+  // === Email Change ===
+  const handleRequestEmailChange = async (oldEmail: string) => {
     if (!newEmail) {
       notify.error("⚠️ Please enter a new email.");
       return;
     }
-    dispatch(requestEmailChange({ oldEmail, newEmail }))
-      .unwrap()
-      .then(() => {
-        notify.success("📩 Code sent to your current email to confirm change.");
-        setShowUpdateOtpInput(true);
-      })
-      .catch(() => {
-        notify.error("❌ Failed to request email change.");
-      });
+    try {
+      await requestEmailChange(oldEmail, newEmail)();
+      notify.success("📩 Code sent to your current email to confirm change.");
+      setShowUpdateOtpInput(true);
+    } catch {
+      notify.error("❌ Failed to request email change.");
+    }
   };
 
-  const handleConfirmEmailChange = (oldEmail: string) => {
-    dispatch(confirmEmailChange({ oldEmail, code: updateOtp }))
-      .unwrap()
-      .then(() => {
-        notify.success("🎉 Email changed successfully! Please verify new email.");
-        dispatch(fetchMe());
-        setShowUpdateForm(false);
-        setShowUpdateOtpInput(false);
-        setNewEmail("");
-        setUpdateOtp("");
-      })
-      .catch(() => {
-        notify.error("❌ Invalid confirmation code.");
-      });
+  const handleConfirmEmailChange = async (oldEmail: string) => {
+    try {
+      await confirmEmailChange(oldEmail, updateOtp)();
+      notify.success("🎉 Email changed successfully! Please verify new email.");
+      dispatch(fetchMe());
+      setShowUpdateForm(false);
+      setShowUpdateOtpInput(false);
+      setNewEmail("");
+      setUpdateOtp("");
+    } catch {
+      notify.error("❌ Invalid confirmation code.");
+    }
   };
 
-  const handleRequestUnlink = (type: "google" | "phone") => {
-    dispatch(requestUnlink(type))
-      .unwrap()
-      .then(() => {
-        notify.success("📩 OTP sent! Please check your " + (type === "google" ? "email" : "phone"));
-        setUnlinkType(type);
-        setShowUnlinkOtpInput(true);
-      })
-      .catch(() => notify.error("❌ Failed to send unlink OTP"));
+  // === Unlink ===
+  const handleRequestUnlink = async (type: "google" | "phone") => {
+    try {
+      await requestUnlink(type)();
+      notify.success(
+        "📩 OTP sent! Please check your " +
+          (type === "google" ? "email" : "phone")
+      );
+      setUnlinkType(type);
+      setShowUnlinkOtpInput(true);
+    } catch {
+      notify.error("❌ Failed to send unlink OTP");
+    }
   };
 
-  const handleConfirmUnlink = () => {
+  const handleConfirmUnlink = async () => {
     if (!unlinkType) return;
-    dispatch(confirmUnlink({ type: unlinkType, code: unlinkOtp }))
-      .unwrap()
-      .then(() => {
-        notify.success("🎉 " + unlinkType + " account unlinked successfully!");
-        setShowUnlinkOtpInput(false);
-        setUnlinkOtp("");
-        setUnlinkType(null);
-        dispatch(fetchMe());
-      })
-      .catch(() => notify.error("❌ Invalid unlink code"));
+    try {
+      await confirmUnlink(unlinkType, unlinkOtp)();
+      notify.success(`🎉 ${unlinkType} account unlinked successfully!`);
+      setShowUnlinkOtpInput(false);
+      setUnlinkOtp("");
+      setUnlinkType(null);
+      dispatch(fetchMe());
+    } catch {
+      notify.error("❌ Invalid unlink code");
+    }
+  };
+
+  // === Verify Email ===
+  const handleSendVerification = async (email: string) => {
+    try {
+      await sendEmailVerification(email)();
+      notify.success("📩 Verification code sent to your email");
+      setShowOtpInput(true);
+    } catch {
+      notify.error("❌ Failed to send verification code");
+    }
+  };
+
+  const handleVerifyEmail = async (email: string) => {
+    try {
+      await verifyEmail(email, otp)();
+      notify.success("✅ Email verified successfully!");
+      dispatch(fetchMe());
+      setShowOtpInput(false);
+      setOtp("");
+    } catch {
+      notify.error("❌ Invalid verification code");
+    }
   };
 
   return (
     <div className="min-h-screen w-full relative overflow-hidden bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 font-sans">
-      {/* Animated Background Effects */}
+      {/* Animated Background */}
       <div className="absolute inset-0">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
+        <div
+          className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl animate-pulse"
+          style={{ animationDelay: "1s" }}
+        ></div>
+        <div
+          className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl animate-pulse"
+          style={{ animationDelay: "2s" }}
+        ></div>
       </div>
 
       {/* Header */}
@@ -137,7 +166,6 @@ export default function EmailManagement({ onBack }: { onBack: () => void }) {
 
       {/* Main Content */}
       <div className="relative z-20 max-w-5xl mx-auto px-6 py-4">
-        {/* Welcome Section */}
         <div className="mb-8 relative">
           <div className="absolute -inset-4 bg-gradient-to-r from-blue-400/20 via-cyan-400/30 to-blue-400/20 rounded-3xl blur-2xl animate-pulse"></div>
           <div className="relative text-center">
@@ -147,21 +175,23 @@ export default function EmailManagement({ onBack }: { onBack: () => void }) {
                 Email Management
               </span>
             </h1>
-            <p className="text-blue-200 text-lg animate-fade-in">Manage your email settings and account linking</p>
+            <p className="text-blue-200 text-lg animate-fade-in">
+              Manage your email settings and account linking
+            </p>
           </div>
         </div>
 
+        {/* Main Card */}
         <div className="bg-white/95 backdrop-blur-3xl border-2 border-blue-200/60 rounded-3xl p-8 shadow-2xl relative overflow-hidden">
-          {/* Animated background for the main card */}
           <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-400/10 to-cyan-400/10 rounded-full blur-2xl"></div>
           <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-purple-400/5 to-pink-400/5 rounded-full blur-3xl"></div>
 
-          {emails.map((email, index) => (
+          {emails.map((email) => (
             <div key={email.id} className="relative">
-              {/* Main Email Card */}
               <div className="relative group mb-8">
                 <div className="absolute -inset-2 bg-gradient-to-r from-blue-400/20 via-cyan-400/20 to-blue-400/20 rounded-2xl blur-lg opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
                 <div className="relative p-6 rounded-2xl border-2 bg-gradient-to-br from-white/90 to-white/70 backdrop-blur-sm border-blue-200/50 shadow-xl">
+                  {/* Email Info */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-cyan-600 flex items-center justify-center">
@@ -183,59 +213,38 @@ export default function EmailManagement({ onBack }: { onBack: () => void }) {
                       </div>
                     </div>
 
+                    {/* Buttons */}
                     <div className="flex gap-3">
                       <button
                         onClick={() => setShowUpdateForm(!showUpdateForm)}
-                        className="group relative inline-flex items-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                        className="group relative inline-flex items-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 transform hover:scale-105"
                       >
                         <Edit3 className="w-4 h-4 group-hover:animate-pulse" />
                         Update Email
                       </button>
 
-                      {/* Email Verification */}
                       {!profile?.emailVerified && (
                         <>
                           {!showOtpInput ? (
                             <button
-                              onClick={() => {
-                                dispatch(sendEmailVerification(profile!.email!))
-                                  .unwrap()
-                                  .then(() => {
-                                    notify.success("📩 Verification code sent to your email");
-                                    setShowOtpInput(true);
-                                  })
-                                  .catch(() => notify.error("❌ Failed to send verification code"));
-                              }}
-                              className="group relative inline-flex items-center gap-2 bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                              onClick={() => handleSendVerification(email.email)}
+                              className="group relative inline-flex items-center gap-2 bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 transform hover:scale-105"
                             >
                               <Send className="w-4 h-4 group-hover:animate-pulse" />
                               Verify Email
                             </button>
                           ) : (
                             <div className="flex gap-2 items-center">
-                              <div className="relative">
-                                <input
-                                  type="text"
-                                  placeholder="Enter verification code"
-                                  value={otp}
-                                  onChange={(e) => setOtp(e.target.value)}
-                                  className="border-2 border-blue-200 focus:border-blue-400 px-4 py-2 rounded-xl bg-white/90 backdrop-blur-sm transition-all duration-300 shadow-sm focus:shadow-lg"
-                                />
-                                <Sparkles className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-blue-400 animate-pulse" />
-                              </div>
+                              <input
+                                type="text"
+                                placeholder="Enter verification code"
+                                value={otp}
+                                onChange={(e) => setOtp(e.target.value)}
+                                className="border-2 border-blue-200 focus:border-blue-400 px-4 py-2 rounded-xl"
+                              />
                               <button
-                                onClick={() => {
-                                  dispatch(verifyEmail({ email: profile!.email!, code: otp }))
-                                    .unwrap()
-                                    .then(() => {
-                                      notify.success("✅ Email verified successfully!");
-                                      dispatch(fetchMe());
-                                      setShowOtpInput(false);
-                                      setOtp("");
-                                    })
-                                    .catch(() => notify.error("❌ Invalid verification code"));
-                                }}
-                                className="group bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-4 py-2 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                                onClick={() => handleVerifyEmail(email.email)}
+                                className="group bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 text-white px-4 py-2 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105"
                               >
                                 <Check className="w-4 h-4 group-hover:animate-bounce" />
                               </button>
@@ -246,294 +255,107 @@ export default function EmailManagement({ onBack }: { onBack: () => void }) {
                     </div>
                   </div>
 
-                  {/* Account Linking Section */}
-                  <div className="mt-8 pt-8 border-t border-blue-100">
-                    <h4 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
-                      <Link className="w-5 h-5 text-blue-600" />
-                      Account Linking
-                    </h4>
-
-                    {/* Provider Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                      {/* Google */}
-                      <div className="relative group p-5 rounded-2xl bg-gradient-to-br from-white/90 to-white/70 border border-red-100 shadow-sm hover:shadow-lg transition-all duration-300">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-red-500 to-orange-500 flex items-center justify-center text-white font-bold text-sm">
-                              G
-                            </div>
-                            <div>
-                              <p className="font-semibold text-gray-800">Google Account</p>
-                              <p className="text-xs text-gray-500">Login using your Google ID</p>
-                            </div>
-                          </div>
-                          {profile?.providers?.some((p: any) => p.type === "google") ? (
-                            <span className="inline-flex items-center gap-1 text-green-600 text-sm font-semibold bg-green-100 px-3 py-1 rounded-full">
-                              <Check className="w-3 h-3" /> Linked
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 text-red-500 text-sm font-semibold bg-red-100 px-3 py-1 rounded-full">
-                              <AlertCircle className="w-3 h-3" /> Not linked
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Phone */}
-                      <div className="relative group p-5 rounded-2xl bg-gradient-to-br from-white/90 to-white/70 border border-blue-100 shadow-sm hover:shadow-lg transition-all duration-300">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold text-sm">
-                              📱
-                            </div>
-                            <div>
-                              <p className="font-semibold text-gray-800">Phone & Password</p>
-                              <p className="text-xs text-gray-500">Login using your phone number</p>
-                            </div>
-                          </div>
-                          {profile?.providers?.some((p: any) => p.type === "local") ? (
-                            <span className="inline-flex items-center gap-1 text-green-600 text-sm font-semibold bg-green-100 px-3 py-1 rounded-full">
-                              <Check className="w-3 h-3" /> Linked
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 text-red-500 text-sm font-semibold bg-red-100 px-3 py-1 rounded-full">
-                              <AlertCircle className="w-3 h-3" /> Not linked
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Unlink Buttons */}
-                    {profile?.providers && profile.providers.length > 1 && (
-                      <div className="text-center mb-8">
-                        <h5 className="text-md font-semibold text-gray-700 mb-4 flex items-center justify-center gap-2">
-                          <Unlink className="w-4 h-4 text-red-500" />
-                          Unlink Accounts
-                        </h5>
-                        <div className="flex justify-center gap-4 flex-wrap">
-                          {profile.providers.some((p: any) => p.type === "google") && (
-                            <button
-                              onClick={() => handleRequestUnlink("google")}
-                              className="group inline-flex items-center gap-2 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-5 py-2 rounded-xl text-sm font-semibold transition-all duration-300 transform hover:scale-105 shadow-md"
-                            >
-                              <Unlink className="w-4 h-4 group-hover:animate-pulse" />
-                              Unlink Google
-                            </button>
-                          )}
-                          {profile.providers.some((p: any) => p.type === "local") && (
-                            <button
-                              onClick={() => handleRequestUnlink("phone")}
-                              className="group inline-flex items-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-5 py-2 rounded-xl text-sm font-semibold transition-all duration-300 transform hover:scale-105 shadow-md"
-                            >
-                              <Unlink className="w-4 h-4 group-hover:animate-pulse" />
-                              Unlink Phone
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  {/* Unlink OTP Input */}
+                  {/* Unlink OTP */}
                   {showUnlinkOtpInput && (
-                    <div className="mb-6 p-4 rounded-xl bg-red-50 border-2 border-red-200">
-                      <h5 className="text-md font-semibold text-red-700 mb-3">Confirm Unlink</h5>
+                    <div className="mt-6 p-4 rounded-xl bg-red-50 border-2 border-red-200">
+                      <h5 className="text-md font-semibold text-red-700 mb-3">
+                        Confirm Unlink
+                      </h5>
                       <div className="flex gap-3">
-                        <div className="relative flex-1">
-                          <input
-                            type="text"
-                            placeholder="Enter unlink OTP"
-                            value={unlinkOtp}
-                            onChange={(e) => setUnlinkOtp(e.target.value)}
-                            className="w-full border-2 border-red-200 focus:border-red-400 px-4 py-2 rounded-xl bg-white transition-all duration-300 shadow-sm focus:shadow-lg"
-                          />
-                          <AlertCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-red-400" />
-                        </div>
+                        <input
+                          type="text"
+                          placeholder="Enter unlink OTP"
+                          value={unlinkOtp}
+                          onChange={(e) => setUnlinkOtp(e.target.value)}
+                          className="w-full border-2 border-red-200 px-4 py-2 rounded-xl"
+                        />
                         <button
                           onClick={handleConfirmUnlink}
-                          className="group bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-6 py-2 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                          className="bg-green-500 text-white px-5 py-2 rounded-xl"
                         >
-                          <Check className="w-4 h-4 group-hover:animate-bounce" />
+                          <Check className="w-4 h-4" />
                         </button>
                       </div>
                     </div>
                   )}
 
-                  {/* Link New Accounts */}
-                  <div className="space-y-4">
-                    {profile?.phone ? (
-                      // user đang dùng phone => cho link Google
-                      <div className="p-4 rounded-xl bg-gradient-to-br from-red-50 to-orange-50 border-2 border-orange-200">
-                        <h5 className="text-md font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                          <span className="w-5 h-5 text-red-500">🔗</span>
-                          Link Google Account
+                  {/* Update Email Form */}
+                  {showUpdateForm && (
+                    <div className="mt-6 pt-6 border-t-2 border-blue-100">
+                      <div className="p-6 rounded-xl bg-gradient-to-br from-blue-50 to-cyan-50 border-2 border-blue-200">
+                        <h5 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                          <Edit3 className="w-5 h-5 text-blue-600" />
+                          Update Email Address
                         </h5>
-                        <GoogleLogin
-                          onSuccess={async (credentialResponse) => {
-                            const idToken = credentialResponse.credential;
-                            if (!idToken) {
-                              notify.error("Không lấy được Google ID token");
-                              return;
-                            }
-                            try {
-                              await dispatch(linkGoogle(idToken)).unwrap();
-                              notify.success("✅ Google account linked successfully!");
-                              dispatch(fetchMe());
-                            } catch (err: any) {
-                              console.error("Google link error:", err);
-                              const msg =
-                                err?.message ||
-                                err?.response?.data?.message ||
-                                (typeof err === "string" ? err : "❌ Liên kết Google thất bại. Vui lòng thử lại.");
-                              notify.error(msg);
-                            }
-                          }}
-                          onError={() => notify.error("❌ Google login failed")}
-                          useOneTap={false}
-                        />
-                      </div>
-                    ) : (
-                      // user đang dùng Google => cho link phone/password
-                      <div className="p-4 rounded-xl bg-gradient-to-br from-blue-50 to-cyan-50 border-2 border-blue-200">
-                        <h5 className="text-md font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                          <span className="w-5 h-5 text-blue-500">📱</span>
-                          Link Phone Account
-                        </h5>
-                        <div className="space-y-3">
-                          <div className="relative">
-                            <input
-                              type="text"
-                              placeholder="Enter phone number"
-                              value={newEmail}
-                              onChange={(e) => setNewEmail(e.target.value)}
-                              className="w-full border-2 border-blue-200 focus:border-blue-400 px-4 py-3 rounded-xl bg-white transition-all duration-300 shadow-sm focus:shadow-lg"
-                            />
-                          </div>
-                          <div className="relative">
-                            <input
-                              type={showPassword ? "text" : "password"}
-                              placeholder="Enter password"
-                              value={updateOtp}
-                              onChange={(e) => setUpdateOtp(e.target.value)}
-                              className="w-full border-2 border-blue-200 focus:border-blue-400 px-4 py-3 rounded-xl bg-white transition-all duration-300 shadow-sm focus:shadow-lg pr-12"
-                            />
-                            <button
-                              onClick={() => setShowPassword(!showPassword)}
-                              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                            >
-                              {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                            </button>
-                          </div>
-                          <button
-                            onClick={async () => {
-                              try {
-                                await dispatch(linkPhone({ phone: newEmail, password: updateOtp })).unwrap();
-                                notify.success("✅ Phone account linked successfully!");
-                                dispatch(fetchMe());
-                              } catch {
-                                notify.error("❌ Failed to link phone account.");
-                              }
-                            }}
-                            className="group w-full bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 text-white py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
-                          >
-                            <Link className="w-5 h-5 group-hover:animate-pulse" />
-                            Link Phone Account
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Update Email Form */}
-                {showUpdateForm && (
-                  <div className="mt-6 pt-6 border-t-2 border-blue-100">
-                    <div className="p-6 rounded-xl bg-gradient-to-br from-blue-50 to-cyan-50 border-2 border-blue-200">
-                      <h5 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                        <Edit3 className="w-5 h-5 text-blue-600" />
-                        Update Email Address
-                      </h5>
-                      <div className="space-y-4">
-                        <div className="relative">
+                        <div className="space-y-4">
                           <input
                             type="email"
-                            placeholder="Enter new email address"
+                            placeholder="Enter new email"
                             value={newEmail}
                             onChange={(e) => setNewEmail(e.target.value)}
-                            className="w-full border-2 border-blue-200 focus:border-blue-400 px-4 py-3 rounded-xl bg-white transition-all duration-300 shadow-sm focus:shadow-lg"
+                            className="w-full border-2 border-blue-200 px-4 py-3 rounded-xl"
                           />
-                          <Mail className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-blue-400" />
-                        </div>
-                        {!showUpdateOtpInput ? (
-                          <button
-                            onClick={() => handleRequestEmailChange(email.email)}
-                            className="group w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
-                          >
-                            <Send className="w-5 h-5 group-hover:animate-pulse" />
-                            Send Verification Code
-                          </button>
-                        ) : (
-                          <div className="space-y-3">
-                            <div className="relative">
+                          {!showUpdateOtpInput ? (
+                            <button
+                              onClick={() =>
+                                handleRequestEmailChange(email.email)
+                              }
+                              className="w-full bg-blue-500 text-white py-3 rounded-xl"
+                            >
+                              <Send className="w-5 h-5 inline mr-2" />
+                              Send Verification Code
+                            </button>
+                          ) : (
+                            <div className="space-y-3">
                               <input
                                 type="text"
                                 placeholder="Enter code sent to old email"
                                 value={updateOtp}
                                 onChange={(e) => setUpdateOtp(e.target.value)}
-                                className="w-full border-2 border-green-200 focus:border-green-400 px-4 py-3 rounded-xl bg-white transition-all duration-300 shadow-sm focus:shadow-lg"
+                                className="w-full border-2 border-green-200 px-4 py-3 rounded-xl"
                               />
-                              <Sparkles className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-green-400 animate-pulse" />
+                              <button
+                                onClick={() =>
+                                  handleConfirmEmailChange(email.email)
+                                }
+                                className="w-full bg-green-500 text-white py-3 rounded-xl"
+                              >
+                                <Check className="w-5 h-5 inline mr-2" />
+                                Confirm Email Change
+                              </button>
                             </div>
-                            <button
-                              onClick={() => handleConfirmEmailChange(email.email)}
-                              className="group w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
-                            >
-                              <Check className="w-5 h-5 group-hover:animate-bounce" />
-                              Confirm Email Change
-                            </button>
-                          </div>
-                        )}
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </div>
           ))}
 
-        {/* Security Tips */}
-        <div className="relative group">
-          <div className="absolute -inset-2 bg-gradient-to-r from-blue-400/20 via-purple-400/20 to-blue-400/20 rounded-2xl blur-lg opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
-          <div className="relative p-6 bg-gradient-to-br from-blue-50/90 to-purple-50/90 backdrop-blur-sm border-2 border-blue-200 rounded-2xl shadow-xl">
-            <div className="flex gap-4">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
-                <Shield className="w-6 h-6 text-white" />
-              </div>
-              <div className="flex-1">
-                <h4 className="font-bold text-blue-800 mb-3 text-lg flex items-center gap-2">
-                  Email Security Tips
-                  <Sparkles className="w-5 h-5 text-purple-500 animate-pulse" />
-                </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2 text-sm text-blue-700">
-                    <div className="flex items-start gap-2">
-                      <span className="w-2 h-2 rounded-full bg-blue-400 mt-2 flex-shrink-0"></span>
-                      <span>Your primary email is used for important notifications</span>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <span className="w-2 h-2 rounded-full bg-green-400 mt-2 flex-shrink-0"></span>
-                      <span>Verify your email to ensure account security</span>
-                    </div>
-                  </div>
-                  <div className="space-y-2 text-sm text-blue-700">
-                    <div className="flex items-start gap-2">
-                      <span className="w-2 h-2 rounded-full bg-purple-400 mt-2 flex-shrink-0"></span>
-                      <span>Update email only after confirming with old one</span>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <span className="w-2 h-2 rounded-full bg-orange-400 mt-2 flex-shrink-0"></span>
-                      <span>Link multiple accounts for better security</span>
-                    </div>
+          {/* Security Tips */}
+          <div className="relative group">
+            <div className="absolute -inset-2 bg-gradient-to-r from-blue-400/20 via-purple-400/20 to-blue-400/20 rounded-2xl blur-lg opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
+            <div className="relative p-6 bg-gradient-to-br from-blue-50/90 to-purple-50/90 border-2 border-blue-200 rounded-2xl shadow-xl">
+              <div className="flex gap-4">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+                  <Shield className="w-6 h-6 text-white" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-bold text-blue-800 mb-3 text-lg flex items-center gap-2">
+                    Email Security Tips
+                    <Sparkles className="w-5 h-5 text-purple-500 animate-pulse" />
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-blue-700 text-sm">
+                    <ul className="space-y-2">
+                      <li>• Your primary email is used for important notifications</li>
+                      <li>• Verify your email to ensure account security</li>
+                    </ul>
+                    <ul className="space-y-2">
+                      <li>• Update email only after confirming with old one</li>
+                      <li>• Link multiple accounts for better security</li>
+                    </ul>
                   </div>
                 </div>
               </div>
@@ -542,6 +364,5 @@ export default function EmailManagement({ onBack }: { onBack: () => void }) {
         </div>
       </div>
     </div>
-    </div >
   );
 }

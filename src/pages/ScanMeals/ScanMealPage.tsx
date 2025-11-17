@@ -5,7 +5,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { analyzeMeal, clearMeal } from "../../redux/slices/mealSlice";
 import { AppDispatch, RootState } from "../../redux/store";
 import { mealService } from "../../services/mealService";
-
+import { useNotify } from "../../components/notifications/NotificationsProvider";
 
 export default function ScanMealPage() {
   const navigate = useNavigate();
@@ -13,8 +13,9 @@ export default function ScanMealPage() {
   const [preview, setPreview] = useState<string | null>(null);
   const [error, setError] = useState("");
   const dispatch = useDispatch<AppDispatch>();
-
+  const { profile } = useSelector((state: RootState) => state.user);
   const { loading, result, error: reduxError } = useSelector((state: RootState) => state.meal);
+  const notify = useNotify();
 
   const handleSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
@@ -109,11 +110,14 @@ export default function ScanMealPage() {
               <div className="relative inline-block">
                 <div className="absolute -inset-1 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-lg blur opacity-30 group-hover:opacity-60 transition duration-300"></div>
                 <button
-                  onClick={() => navigate('/home')}
+                  onClick={() => {
+                    const token = localStorage.getItem("accessToken");
+                    navigate(token ? "/home" : "/");
+                  }}
                   className="relative flex items-center gap-2 px-3 sm:px-4 py-2 bg-white/90 backdrop-blur-sm text-blue-700 hover:text-cyan-600 rounded-lg transition-all duration-300 group border border-blue-200 shadow-lg text-sm sm:text-base"
                 >
                   <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 group-hover:-translate-x-1 transition-transform" />
-                  <span className="font-semibold">Quay lại Dashboard</span>
+                  <span className="font-semibold">Quay lại</span>
                 </button>
               </div>
             </div>
@@ -368,8 +372,6 @@ export default function ScanMealPage() {
                           </div>
                         </div>
                       )}
-
-                      {/* Action Buttons */}
                       {/* Action Buttons */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                         <div className="relative">
@@ -377,19 +379,30 @@ export default function ScanMealPage() {
                           <button
                             onClick={async () => {
                               try {
+                                const userId = profile?._id;
+                                if (!userId) {
+                                  notify.warning("⚠️ Bạn cần đăng nhập để lưu món ăn!");
+                                  navigate("/login");
+                                  return;
+                                }
+
                                 const payload = {
+                                  userId,
                                   food_en: result.food_en,
                                   food_vi: result.food_vi,
                                   image_url: result.image_url,
                                   nutrition: result.nutrition,
                                   confidence: result.confidence,
+                                  mealType: "OTHER",
                                 };
+
                                 const res = await mealService.saveScannedMeal(payload);
                                 alert("✅ " + res.message);
                               } catch (err: any) {
                                 alert("❌ Lưu thất bại: " + err.message);
                               }
                             }}
+
                             className="relative w-full px-4 sm:px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl font-semibold shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 text-sm sm:text-base"
                           >
                             💾 Lưu món này

@@ -12,7 +12,7 @@ export default function PlansPage() {
     const token = useSelector((state: RootState) => state.auth.accessToken) || localStorage.getItem("accessToken");
 
     useEffect(() => {
-        if (token) dispatch(fetchSchedulesThunk(token));
+        if (token) dispatch(fetchSchedulesThunk());
     }, [dispatch, token]);
 
     const getGoalInfo = (goal: string) => {

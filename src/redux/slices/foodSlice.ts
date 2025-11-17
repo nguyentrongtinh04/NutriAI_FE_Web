@@ -70,6 +70,18 @@ export const getFeaturedFoods = createAsyncThunk(
     }
   );  
 
+  export const getRandomFoods = createAsyncThunk(
+    "foods/random",
+    async (limit: number = 30, { rejectWithValue }) => {
+      try {
+        return await foodService.getRandom(limit);
+      } catch (err: any) {
+        return rejectWithValue(err.message);
+      }
+    }
+  );
+  
+
 const foodSlice = createSlice({
   name: "foods",
   initialState,
@@ -117,7 +129,18 @@ const foodSlice = createSlice({
       })
       .addCase(getFeaturedFoods.rejected, (state) => {
         state.loading = false;
+      })
+      .addCase(getRandomFoods.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(getRandomFoods.fulfilled, (state, action) => {
+        state.loading = false;
+        state.list = action.payload;
+      })
+      .addCase(getRandomFoods.rejected, (state) => {
+        state.loading = false;
       });
+      
 
   },
 });

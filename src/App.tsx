@@ -24,6 +24,10 @@ import PlansPage from "./pages/Plans/PlansPage";
 import ScanHistoryPage from "./pages/ScanMeals/ScanHistoryPage";
 import PlanResultPage from "./pages/Plans/PlanResultPage";
 import ScheduleDetailPage from "./pages/Plans/ScheduleDetailPage";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import RequireAdmin from "./routes/RequireAdmin";
+import CreateSmartSchedulePage  from "./pages/Plans/CreateSmartSchedulePage";
+
 function App() {
   return (
     <AuthProvider>
@@ -41,6 +45,8 @@ function App() {
           <Route path="/scan-history" element={<ScanHistoryPage />} />
           <Route path="/plan-result" element={<PlanResultPage />} />
           <Route path="/plan/:id" element={<ScheduleDetailPage />} />
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/create-smart-schedule" element={<CreateSmartSchedulePage />} />
           
           {/* Private routes */}
           <Route path="/settings/change-password" element={<PrivateRoute><ChangePassword /></PrivateRoute>} />

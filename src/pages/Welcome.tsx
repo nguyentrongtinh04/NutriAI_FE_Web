@@ -20,7 +20,7 @@ export default function Welcome() {
           <div className="absolute bottom-1/4 left-1/3 w-72 h-72 bg-gradient-to-r from-sky-400/55 via-blue-400/65 to-cyan-500/55 rounded-full blur-3xl animate-bounce delay-2000"></div>
           <div className="absolute top-3/4 right-1/3 w-64 h-64 bg-gradient-to-r from-blue-300/45 via-cyan-400/55 to-blue-500/45 rounded-full blur-3xl animate-bounce delay-3000"></div>
         </div>
-        
+
         {/* Animated Light Rays */}
         <div className="absolute inset-0">
           <div className="absolute top-0 left-1/4 w-2 h-full bg-gradient-to-b from-cyan-400/60 via-transparent to-blue-500/60 transform rotate-12 animate-pulse"></div>
@@ -112,32 +112,35 @@ export default function Welcome() {
 
       {/* Enhanced Logo - Keep Original */}
       <div className="absolute left-6 z-50 flex flex-col items-start">
-      <div className="relative">
+        <div className="relative">
           <div className="absolute -inset-4 bg-gradient-to-r from-blue-400/30 via-cyan-300/40 to-blue-500/30 rounded-full blur-2xl animate-pulse"></div>
           <div className="absolute -inset-2 bg-white/20 rounded-full blur-xl animate-pulse delay-500"></div>
-        <img
-          src="/src/assets/logo.png"
-          alt="Logo"
-          className="w-32 h-32 object-contain drop-shadow-lg"
-        />
+          <img
+            src="/src/assets/logo.png"
+            alt="Logo"
+            className="w-32 h-32 object-contain drop-shadow-lg"
+          />
         </div>
       </div>
 
       {/* Enhanced Header */}
       <header className="flex justify-end items-center max-w-7xl mx-auto px-6 py-8 z-20 relative">
         <nav className="hidden md:flex gap-10 text-white text-lg font-bold mr-auto ml-40">
-          <a href="#" className="hover:text-cyan-300 transition-all duration-300 relative group">
-            Home
+          <Link
+            to="/scan-meal"
+            className="hover:text-cyan-300 transition-all duration-300 relative group"
+          >
+            Scan Meals
             <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-cyan-400 transition-all duration-300 group-hover:w-full"></span>
-          </a>
-          <a href="#" className="hover:text-cyan-300 transition-all duration-300 relative group">
-            Nutrition
+          </Link>
+
+          <Link
+            to="/search-food"
+            className="hover:text-cyan-300 transition-all duration-300 relative group"
+          >
+            Search Food
             <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-cyan-400 transition-all duration-300 group-hover:w-full"></span>
-          </a>
-          <a href="#" className="hover:text-cyan-300 transition-all duration-300 relative group">
-            Advice
-            <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-cyan-400 transition-all duration-300 group-hover:w-full"></span>
-          </a>
+          </Link>
         </nav>
 
         <div className="flex gap-4">
@@ -167,7 +170,7 @@ export default function Welcome() {
           {/* Enhanced Glowing Border */}
           <div className="absolute -inset-3 bg-gradient-to-r from-cyan-400 via-blue-500 to-cyan-400 rounded-3xl blur-xl opacity-60 animate-pulse"></div>
           <div className="absolute -inset-2 bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-500 rounded-3xl blur-lg opacity-40 animate-pulse delay-500"></div>
-          
+
           <div className="relative bg-white/90 backdrop-blur-3xl border-2 border-blue-200/60 rounded-3xl p-8 shadow-2xl shadow-cyan-500/20 text-center md:text-left">
             <h1 className="text-4xl sm:text-5xl font-extrabold leading-tight mb-4">
               <span className="bg-gradient-to-r from-blue-600 via-cyan-500 to-blue-700 bg-clip-text text-transparent animate-pulse">
@@ -179,7 +182,7 @@ export default function Welcome() {
                 NutriAI
               </span>
             </h1>
-            
+
             <p className="text-blue-700 text-lg mt-4 font-medium">
               Personalized AI-powered nutrition suggestions and activity tracking.
             </p>
@@ -199,7 +202,7 @@ export default function Welcome() {
                   <div className="absolute inset-0 bg-white/20 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
                 </button>
               </div>
-              
+
               <div className="relative">
                 <div className="absolute -inset-1 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-full blur opacity-25 group-hover:opacity-50 transition duration-300"></div>
                 <button className="relative flex items-center justify-center gap-2 border-2 border-blue-300/50 px-6 py-3 rounded-full text-blue-700 bg-white/60 backdrop-blur-sm hover:bg-white/80 transition-all duration-300 transform hover:scale-105 group">
