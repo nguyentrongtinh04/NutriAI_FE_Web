@@ -39,7 +39,7 @@ export default function Login() {
       }
 
       // Lấy dữ liệu trả về từ service
-      const res = await authService.loginWithPassword(username, password, dispatch, navigate);
+      const res = await authService.loginWithPassword(username, password);
 
       // Nếu login thành công
       notify.success("🎉 Đăng nhập thành công!");

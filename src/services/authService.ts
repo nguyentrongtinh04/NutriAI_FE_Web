@@ -63,10 +63,19 @@ export const authService = {
   },
 
   // Đăng ký
-  register: async (payload: { phone: string; email: string; password: string }) => {
+  register: async (payload: {
+    phone: string;
+    email: string;
+    password: string;
+    fullname: string;
+    DOB: string;
+    gender: "MALE" | "FEMALE" | "OTHER";
+    height: number;
+    weight: number;
+  }) => {
     const res = await authApi.post("/register", payload);
-    return res.data; // { access_token, refresh_token }
-  },
+    return res.data;
+  },  
 
   // ========================
   // 🔹 ACCOUNT LINK / UNLINK
@@ -129,4 +138,20 @@ export const authService = {
     const res = await authApi.post("/confirm-email-change", { oldEmail, code });
     return res.data;
   },
+  resetPasswordByPhone: async (phone: string, newPassword: string) => {
+    const res = await authApi.post("/reset-password-phone", {
+      phone,
+      newPassword,
+    });
+    return res.data;
+  },
+
+  resetPasswordByEmail: async (email: string, newPassword: string) => {
+    const res = await authApi.post("/reset-password-email", {
+      email,
+      newPassword,
+    });
+    return res.data;
+  },
+
 };

@@ -11,8 +11,7 @@ import { setUser, clearUser } from "../slices/userSlice";
 export const loginWithGoogle = (idToken: string, navigate: any) =>
   async (dispatch: AppDispatch) => {
     try {
-      const { access_token, refresh_token, new_user } = await authService.loginWithGoogle(idToken);
-
+      const { access_token, refresh_token, new_user } = await authService.loginWithGoogle(idToken, dispatch, navigate);      ;
       dispatch(setAuth({ accessToken: access_token, refreshToken: refresh_token }));
       localStorage.setItem("accessToken", access_token);
       localStorage.setItem("refreshToken", refresh_token);
@@ -55,6 +54,11 @@ export const register = (payload: any, navigate: any) =>
         phone: payload.phone,
         email: payload.email,
         password: payload.password,
+        fullname: payload.fullName,
+        DOB: payload.DOB,
+        gender: payload.gender,
+        height: payload.height,
+        weight: payload.weight,
       });
 
       dispatch(setAuth({ accessToken: access_token, refreshToken: refresh_token }));

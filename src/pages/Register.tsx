@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { User, Phone, Lock, Eye, EyeOff, Sparkles, UserPlus, ArrowRight, Mail, Users } from "lucide-react";;
+import { User, Phone, Lock, Eye, EyeOff, Sparkles, UserPlus, ArrowRight, Mail, Users, Calendar } from "lucide-react";;
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "../redux/store";
 import { authService } from "../services/authService";
@@ -34,7 +34,7 @@ export default function Register() {
         phone: string;
         gender: string;
         password: string;
-        confirmPassword: string;
+        DOB: string;
         height: string;
         weight: string;
     };
@@ -45,7 +45,7 @@ export default function Register() {
         phone: "",
         gender: "",
         password: "",
-        confirmPassword: "",
+        DOB: "",
         height: "",
         weight: ""
     });
@@ -56,39 +56,38 @@ export default function Register() {
         phone: "",
         gender: "",
         password: "",
-        confirmPassword: "",
+        DOB: "",
         height: "",
         weight: ""
     });
-
 
     const [submitting, setSubmitting] = useState(false);
     // Hàm reset container
 
     useEffect(() => {
         if (!window.recaptchaVerifier) {
-          window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier("recaptcha-container", {
-            size: "invisible",
-            callback: (response: any) => {
-              console.log("✅ reCAPTCHA solved:", response);
-            },
-          });
-          window.recaptchaVerifier.render();
+            window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier("recaptcha-container", {
+                size: "invisible",
+                callback: (response: any) => {
+                    console.log("✅ reCAPTCHA solved:", response);
+                },
+            });
+            window.recaptchaVerifier.render();
         }
-      }, []);
-      
+    }, []);
+
     // Hàm gửi OTP
     const sendOtpFirebase = async (phone: string) => {
         try {
-          const appVerifier = window.recaptchaVerifier;
-          const confirmationResult = await firebase.auth().signInWithPhoneNumber(phone, appVerifier);
-          setConfirmation(confirmationResult);
-          notify.success("📩 OTP đã được gửi!");
+            const appVerifier = window.recaptchaVerifier;
+            const confirmationResult = await firebase.auth().signInWithPhoneNumber(phone, appVerifier);
+            setConfirmation(confirmationResult);
+            notify.success("📩 OTP đã được gửi!");
         } catch (err) {
-          console.error("sendOtpFirebase error:", err);
-          notify.error("❌ Gửi OTP thất bại");
+            console.error("sendOtpFirebase error:", err);
+            notify.error("❌ Gửi OTP thất bại");
         }
-      };      
+    };
 
     // Xác minh OTP
     const verifyOtpFirebase = async (otp: string) => {
@@ -129,7 +128,7 @@ export default function Register() {
             phone: "",
             gender: "",
             password: "",
-            confirmPassword: "",
+            DOB: "",
             height: "",
             weight: ""
         };
@@ -143,7 +142,24 @@ export default function Register() {
         else if (!/^0\d{9,}$/.test(form.phone)) { newErrors.phone = "Phone must start with 0 and be at least 10 digits"; isValid = false; }
         if (!form.gender) { newErrors.gender = "Please select your gender"; isValid = false; }
         if (form.password.length < 6) { newErrors.password = "Password must be at least 6 characters"; isValid = false; }
-        if (form.password !== form.confirmPassword) { newErrors.confirmPassword = "Passwords do not match"; isValid = false; }
+        if (!form.DOB.trim()) {
+            newErrors.DOB = "Date of birth is required";
+            isValid = false;
+        } else {
+            const today = new Date();
+            const dobDate = new Date(form.DOB);
+            const age = today.getFullYear() - dobDate.getFullYear();
+            const m = today.getMonth() - dobDate.getMonth();
+
+            const realAge = m < 0 || (m === 0 && today.getDate() < dobDate.getDate())
+                ? age - 1
+                : age;
+
+            if (realAge < 18) {
+                newErrors.DOB = "You must be at least 18 years old";
+                isValid = false;
+            }
+        }
         if (!form.height.trim()) { newErrors.height = "Height is required"; isValid = false; }
         else if (isNaN(Number(form.height)) || Number(form.height) <= 0) { newErrors.height = "Height must be a positive number"; isValid = false; }
         if (!form.weight.trim()) { newErrors.weight = "Weight is required"; isValid = false; }
@@ -182,15 +198,12 @@ export default function Register() {
                     email,
                     password,
                     fullname: fullName,
-                    DOB: date.toISOString().split("T")[0],
+                    DOB: form.DOB,
                     gender: gender.toUpperCase() as "MALE" | "FEMALE" | "OTHER",
-                    height: form.height,
-                    weight: form.weight,
+                    height: Number(form.height),
+                    weight: Number(form.weight),
                 },
-                dispatch,
-                navigate
             );
-
             notify.success("🎉 Tạo tài khoản thành công!");
         } catch (err: any) {
             notify.error("❌ OTP không hợp lệ hoặc đăng ký thất bại");
@@ -457,36 +470,27 @@ export default function Register() {
                                         </div>
                                     </div>
 
-                                    {/* Enhanced Confirm Password Field */}
+                                    {/* DOB Field */}
                                     <div className="relative group">
                                         <div className="absolute -inset-1 bg-gradient-to-r from-cyan-400 to-blue-400 rounded-xl blur opacity-25 group-focus-within:opacity-50 transition duration-300"></div>
                                         <div className="relative">
                                             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                                <Lock className="h-5 w-5 text-blue-500 group-focus-within:text-cyan-500 transition-colors animate-pulse" />
+                                                <Calendar className="h-5 w-5 text-blue-500 group-focus-within:text-cyan-500 transition-colors animate-pulse" />
                                             </div>
                                             <input
-                                                type={showConfirmPassword ? "text" : "password"}
-                                                name="confirmPassword"
-                                                placeholder="Confirm Password"
-                                                value={form.confirmPassword}
+                                                type="date"
+                                                name="DOB"
+                                                placeholder="Date of Birth"
+                                                value={form.DOB}
                                                 onChange={handleChange}
-                                                className={`w-full pl-12 pr-12 py-4 bg-blue-50/70 border-2 ${errors.confirmPassword ? 'border-red-400' : 'border-blue-200'} rounded-xl text-blue-900 placeholder-blue-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-400 focus:bg-white/90 transition-all duration-300 backdrop-blur-sm`}
+                                                className={`w-full pl-12 pr-4 py-4 bg-blue-50/70 border-2 ${errors.DOB ? "border-red-400" : "border-blue-200"
+                                                    } rounded-xl text-blue-900 placeholder-blue-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-400 transition-all duration-300`}
                                             />
-                                            <button
-                                                type="button"
-                                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                                className="absolute inset-y-0 right-0 pr-4 flex items-center text-blue-500 hover:text-cyan-500 transition-colors"
-                                            >
-                                                {showConfirmPassword ? <EyeOff className="h-5 w-5 animate-pulse" /> : <Eye className="h-5 w-5 animate-pulse" />}
-                                            </button>
-                                            {/* Tooltip Error */}
-                                            {errors.confirmPassword && (
-                                                <div className="absolute -top-2 right-16 z-10">
-                                                    <div className="relative">
-                                                        <div className="bg-red-500 text-white text-xs px-3 py-2 rounded-lg shadow-lg animate-pulse whitespace-nowrap">
-                                                            {errors.confirmPassword}
-                                                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-red-500"></div>
-                                                        </div>
+                                            {errors.DOB && (
+                                                <div className="absolute -top-2 right-4 z-10">
+                                                    <div className="bg-red-500 text-white text-xs px-3 py-2 rounded-lg shadow-lg animate-pulse">
+                                                        {errors.DOB}
+                                                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-l-4 border-r-4 border-t-4 border-transparent border-t-red-500"></div>
                                                     </div>
                                                 </div>
                                             )}
