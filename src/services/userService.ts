@@ -9,10 +9,7 @@ export const userService = {
   updateAndUploadAvatar: async (file: File) => {
     const formData = new FormData();
     formData.append("file", file);
-    return (
-      await userApi.patch("/update-avatar", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      })
-    ).data;
+  
+    return (await userApi.patch("/update-avatar", formData)).data;
   },
 };

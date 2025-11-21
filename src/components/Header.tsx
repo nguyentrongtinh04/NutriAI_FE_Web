@@ -12,6 +12,7 @@ export default function Header() {
   const [showChatBot, setShowChatBot] = useState(false);
   const dispatch = useDispatch();
   const { profile } = useSelector((state: any) => state.user);
+  const DEFAULT_AVATAR = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
   useEffect(() => {
     dispatch(fetchMe() as any);
   }, [dispatch]);
@@ -106,15 +107,15 @@ export default function Header() {
 
                 <div
                   className={`relative p-2 rounded-full cursor-pointer transition-all duration-500 transform ${showSettingsMenu
-                      ? 'bg-gradient-to-r from-blue-100 to-cyan-100 scale-110 rotate-180 shadow-lg'
-                      : 'hover:bg-blue-50 hover:scale-105'
+                    ? 'bg-gradient-to-r from-blue-100 to-cyan-100 scale-110 rotate-180 shadow-lg'
+                    : 'hover:bg-blue-50 hover:scale-105'
                     }`}
                   onClick={() => setShowSettingsMenu(!showSettingsMenu)}
                 >
                   <Settings
                     className={`w-6 h-6 transition-all duration-500 ${showSettingsMenu
-                        ? 'text-blue-700 animate-pulse'
-                        : 'text-blue-600 hover:text-blue-800'
+                      ? 'text-blue-700 animate-pulse'
+                      : 'text-blue-600 hover:text-blue-800'
                       }`}
                   />
                 </div>
@@ -221,10 +222,14 @@ export default function Header() {
               className="flex items-center gap-2 bg-blue-50 rounded-full px-3 py-2 cursor-pointer hover:bg-blue-100 transition-all duration-300 transform hover:scale-105 group"
               onClick={handleProfileClick}
             >
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full flex items-center justify-center group-hover:animate-pulse">
-                <User className="w-4 h-4 text-white" />
-              </div>
-              <span className="text-blue-800 font-medium">  {profile?.fullname || profile?.email }</span>
+              <img
+                src={profile?.avt || DEFAULT_AVATAR}
+                alt="Avatar"
+                className="w-8 h-8 rounded-full object-cover border-2 border-white shadow-md"
+              />
+              <span className="text-blue-800 font-medium">
+                {profile?.fullname || profile?.email}
+              </span>
             </div>
           </div>
         </div>
