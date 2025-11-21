@@ -75,4 +75,18 @@
   background: transparent;
 }
   
-  
+.bar-hover-effect path {
+  transition: all 0.25s ease;
+  transform-origin: left;
+}
+
+.bar-hover-effect path:hover {
+  filter: brightness(1.4);
+  transform: scaleX(1.03);
+}
+.recharts-bar-background, 
+.recharts-bar-background-rectangle, 
+.recharts-bar-rectangle-background {
+  display: none !important;
+}
+

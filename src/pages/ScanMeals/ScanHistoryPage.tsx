@@ -49,25 +49,36 @@ export default function ScanHistoryPage() {
 
     const categorizeMeals = (list: any[]) => {
         const categories: Record<string, any[]> = {
-            "🥩 Giàu đạm": [],
-            "🍚 Giàu tinh bột": [],
-            "🥑 Giàu chất béo": [],
-            "🍰 Tráng miệng": [],
-            "🍿 Ăn nhẹ": [],
-            "🍱 Khác": [],
+          "🥩 Giàu đạm": [],
+          "🍚 Giàu tinh bột": [],
+          "🥑 Giàu chất béo": [],
+          "🍰 Tráng miệng": [],
+          "🍿 Ăn nhẹ": [],
+          "🍱 Khác": [],
         };
+      
+        const proteinKeywords = /(thịt|gà|bò|heo|cá|trứng|tôm|đậu|nem|sườn)/i;
+        const carbKeywords = /(cơm|bún|phở|mì|nui|bánh mì|cháo|khoai|bánh)/i;
+        const fatKeywords = /(chiên|rán|xào|mỡ|kho|da gà|ram)/i;
+        const dessertKeywords = /(chè|kem|bánh|tráng miệng|dessert|pudding)/i;
+        const snackKeywords = /(trái cây|hoa quả|sinh tố|nước|trà|ăn vặt|snack|juice)/i;
+      
         list.forEach((m) => {
-            const { protein = 0, fat = 0, carbs = 0 } = m.nutrition || {};
-            const name = (m.food_vi || "").toLowerCase();
-            if (/(bánh|kem|chè|dessert)/i.test(name)) return categories["🍰 Tráng miệng"].push(m);
-            if (/(salad|trái cây|snack|sinh tố|ăn vặt)/i.test(name)) return categories["🍿 Ăn nhẹ"].push(m);
-            if (protein > fat && protein > carbs) return categories["🥩 Giàu đạm"].push(m);
-            if (carbs > protein && carbs > fat) return categories["🍚 Giàu tinh bột"].push(m);
-            if (fat > protein && fat > carbs) return categories["🥑 Giàu chất béo"].push(m);
-            categories["🍱 Khác"].push(m);
+          const name = (m.food_vi || "").toLowerCase();
+      
+          if (dessertKeywords.test(name)) return categories["🍰 Tráng miệng"].push(m);
+          if (snackKeywords.test(name)) return categories["🍿 Ăn nhẹ"].push(m);
+          if (proteinKeywords.test(name)) return categories["🥩 Giàu đạm"].push(m);
+          if (carbKeywords.test(name)) return categories["🍚 Giàu tinh bột"].push(m);
+          if (fatKeywords.test(name)) return categories["🥑 Giàu chất béo"].push(m);
+      
+          categories["🍱 Khác"].push(m);
         });
+      
         return categories;
-    };
+      };
+      
+    
     useEffect(() => {
         if (meals.length > 0) setCategorizedMeals(categorizeMeals(meals));
     }, [meals]);

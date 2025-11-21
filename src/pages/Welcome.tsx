@@ -1,6 +1,7 @@
-import React from "react";
 import { Link } from "react-router-dom";
 import { Sparkles, Play, Search, Heart, Activity, Zap } from "lucide-react";
+import logo from "../assets/logo.png";
+import doctor from "../assets/doctor.png";
 
 export default function Welcome() {
   return (
@@ -115,9 +116,7 @@ export default function Welcome() {
         <div className="relative">
           <div className="absolute -inset-4 bg-gradient-to-r from-blue-400/30 via-cyan-300/40 to-blue-500/30 rounded-full blur-2xl animate-pulse"></div>
           <div className="absolute -inset-2 bg-white/20 rounded-full blur-xl animate-pulse delay-500"></div>
-          <img
-            src="/src/assets/logo.png"
-            alt="Logo"
+          <img src={logo} alt="Logo"
             className="w-32 h-32 object-contain drop-shadow-lg"
           />
         </div>
@@ -155,10 +154,12 @@ export default function Welcome() {
           </div>
           <div className="relative">
             <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-600 rounded-full blur opacity-60 animate-pulse"></div>
-            <button className="relative px-6 py-2 rounded-full bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-600 text-white font-semibold shadow-2xl hover:shadow-cyan-500/50 transition-all duration-300 transform hover:scale-105 overflow-hidden group">
+            <Link
+              to="/register"
+              className="relative px-6 py-2 rounded-full bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-600 text-white font-semibold shadow-2xl hover:shadow-cyan-500/50 transition-all duration-300 transform hover:scale-105 overflow-hidden group"
+            >
               <span className="relative z-10">Sign Up</span>
-              <div className="absolute inset-0 bg-white/20 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
-            </button>
+            </Link>
           </div>
         </div>
       </header>
@@ -241,9 +242,7 @@ export default function Welcome() {
 
         {/* Doctor Image - Keep Original */}
         <div className="flex justify-center md:justify-end w-full md:w-[30%] relative">
-          <img
-            src="/src/assets/doctor.png"
-            alt="Doctor"
+          <img src={doctor} alt="Doctor"
             className="w-full max-w-[340px] h-auto object-contain drop-shadow-2xl"
           />
         </div>

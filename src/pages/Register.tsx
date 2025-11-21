@@ -9,6 +9,9 @@ import "firebase/compat/auth";
 import firebase, { auth } from "../firebase";
 import { Ruler, Weight } from "lucide-react";
 import { GoogleLogin } from "@react-oauth/google";
+
+import logo from "../assets/logo.png";
+import MedicalIllustration from "../assets/login_left_image.png";
 declare global {
     interface Window {
         recaptchaVerifier: any;
@@ -285,8 +288,7 @@ export default function Register() {
                             <div className="relative">
                                 <div className="absolute -inset-2 bg-gradient-to-r from-blue-400/40 via-cyan-300/50 to-blue-500/40 rounded-full blur-xl animate-pulse"></div>
                                 <div className="absolute -inset-1 bg-white/30 rounded-full blur-lg animate-pulse delay-500"></div>
-                                <img
-                                    src="/src/assets/logo.png"
+                                <img src={logo}
                                     alt="NutriAI Logo"
                                     className="relative w-25 h-20 object-contain rounded-full drop-shadow-2xl filter brightness-110 contrast-110 saturate-110"
                                 />
@@ -632,8 +634,7 @@ export default function Register() {
                     <div className="relative">
                         <div className="absolute -inset-4 bg-gradient-to-r from-blue-400/30 via-cyan-300/40 to-blue-500/30 rounded-full blur-2xl animate-pulse"></div>
                         <div className="absolute -inset-2 bg-white/20 rounded-full blur-xl animate-pulse delay-500"></div>
-                        <img
-                            src="/src/assets/login_left_image.png"
+                        <img src={MedicalIllustration}
                             alt="Medical Illustration"
                             className="relative max-w-full h-auto object-contain drop-shadow-2xl filter brightness-110 contrast-110 saturate-110 transform hover:scale-105 transition-all duration-300 rounded-2xl"
                         />

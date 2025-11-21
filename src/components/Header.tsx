@@ -5,6 +5,7 @@ import ChatBot from './ChatBot';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchMe } from '../redux/slices/userSlice';
 
+import logo from '../assets/logo.png';
 export default function Header() {
   const navigate = useNavigate();
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
@@ -56,8 +57,7 @@ export default function Header() {
           <div className="flex items-center gap-3">
             <div className="relative">
               <div className="absolute -inset-2 bg-gradient-to-r from-blue-400/30 to-cyan-400/30 rounded-full blur-lg animate-pulse"></div>
-              <img
-                src="/src/assets/logo.png"
+              <img src={logo}
                 alt="NutriAI Logo"
                 className="relative w-20 h-15 object-contain drop-shadow-2xl filter brightness-110 contrast-110 saturate-110"
               />

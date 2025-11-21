@@ -1,15 +1,54 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState, AppDispatch } from "../../redux/store";
 import { fetchSchedulesThunk } from "../../redux/slices/planSlice";
 import { Calendar, Target, Loader2, Plus, TrendingUp, Clock, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { scheduleResultService } from "../../services/scheduleResultService";
+import RatingModal from "../../components/modals/RatingModal";
+import ReviewListModal from "../../components/modals/ReviewListModal";
 
 export default function PlansPage() {
     const dispatch = useDispatch<AppDispatch>();
     const navigate = useNavigate();
     const { schedules, loading, error } = useSelector((state: RootState) => state.plan);
     const token = useSelector((state: RootState) => state.auth.accessToken) || localStorage.getItem("accessToken");
+    const [showRateModal, setShowRateModal] = useState(false);
+    const [scheduleToRate, setScheduleToRate] = useState<any>(null);
+    const [showReviewList, setShowReviewList] = useState(false);
+    const handleOpenReviewList = () => setShowReviewList(true);
+    
+    const handleCreate = () => {
+        const active = schedules.find(s => s.status === "active");
+        if (active) {
+            alert("⚠️ Bạn đang có một lịch ăn uống đang hoạt động. Hãy hoàn thành lịch hiện tại trước khi tạo mới!");
+            return;
+        }
+        navigate("/create-plan");
+    };
+
+    const onScheduleClick = async (schedule: any) => {
+        // Nếu lịch đang active → mở chi tiết luôn
+        if (schedule.status === "active") {
+            navigate(`/plan/${schedule._id}`);
+            return;
+        }
+
+        // Nếu completed → kiểm tra đánh giá
+        try {
+            await scheduleResultService.check(schedule._id);
+            // Đã đánh giá → vào chi tiết
+            navigate(`/plan/${schedule._id}`);
+        } catch (err: any) {
+            if (err.response?.status === 404) {
+                // Chưa đánh giá → chuyển sang PlanResultPage với trạng thái đánh giá
+                setScheduleToRate(schedule);
+                setShowRateModal(true);
+            } else {
+                alert("Không thể kiểm tra đánh giá của lịch này!");
+            }
+        }
+    };
 
     useEffect(() => {
         if (token) dispatch(fetchSchedulesThunk());
@@ -116,7 +155,7 @@ export default function PlansPage() {
                             </p>
 
                             <button
-                                onClick={() => navigate('/create-plan')}
+                                onClick={handleCreate}
                                 className="group/btn relative inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-lg font-semibold rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
                             >
                                 <div className="absolute -inset-1 bg-gradient-to-r from-green-400 to-emerald-500 rounded-xl blur opacity-0 group-hover/btn:opacity-100 transition-all duration-500"></div>
@@ -182,14 +221,26 @@ export default function PlansPage() {
                             </h1>
                         </div>
 
-                        <button
-                            onClick={() => navigate('/create-plan')}
-                            className="group relative flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
-                        >
-                            <div className="absolute -inset-1 bg-gradient-to-r from-green-400 to-emerald-500 rounded-xl blur opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
-                            <Plus className="w-5 h-5 relative group-hover:rotate-90 transition-transform duration-300" />
-                            <span className="relative">Tạo mới</span>
-                        </button>
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={handleOpenReviewList}
+                                className="group relative flex items-center gap-2 px-6 py-3 
+            bg-gradient-to-r from-purple-500 to-pink-500 text-white 
+            font-semibold rounded-xl shadow-lg hover:shadow-2xl transition-all"
+                            >
+                                📋 Danh sách đánh giá
+                            </button>
+
+                            <button
+                                onClick={handleCreate}
+                                className="group relative flex items-center gap-2 px-6 py-3 
+            bg-gradient-to-r from-green-500 to-emerald-600 text-white 
+            font-semibold rounded-xl shadow-lg hover:shadow-2xl transition-all"
+                            >
+                                <Plus className="w-5 h-5" />
+                                Tạo mới
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -206,7 +257,7 @@ export default function PlansPage() {
                         return (
                             <div
                                 key={plan._id}
-                                onClick={() => navigate(`/plan/${plan._id}`)} // 👈 thêm dòng này
+                                onClick={() => onScheduleClick(plan)}
                                 className="relative group cursor-pointer"
                                 style={{ animationDelay: `${index * 100}ms` }}
                             >
@@ -292,6 +343,16 @@ export default function PlansPage() {
                     })}
                 </div>
             </div>
+            <RatingModal
+                open={showRateModal}
+                schedule={scheduleToRate}
+                onClose={() => setShowRateModal(false)}
+                onSuccess={(scheduleId: string) => {
+                    setShowRateModal(false);
+                    navigate(`/plan/${scheduleId}`);
+                }}
+            />
+            <ReviewListModal open={showReviewList} onClose={() => setShowReviewList(false)} />
         </div>
     );
 }

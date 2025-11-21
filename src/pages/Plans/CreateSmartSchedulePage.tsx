@@ -18,12 +18,11 @@ export default function CreateSmartSchedulePage() {
     const { loading: aiLoading } = useSelector((s: RootState) => s.ai);
 
     const [userInfo, setUserInfo] = useState({
+        height: Number(profile?.height) || 170,
+        weight: Number(profile?.weight) || 70,
+        age: profile?.DOB ? new Date().getFullYear() - new Date(profile.DOB).getFullYear() : 25,
         gender: profile?.gender === "MALE" ? "nam" :
-            profile?.gender === "FEMALE" ? "nữ" :
-                "nữ",
-        age: profile?.DOB || 25,
-        weight: profile?.weight || 58,
-        height: profile?.height || 160,
+            profile?.gender === "FEMALE" ? "nữ" : "nam",
         goal: "giảm cân",
         activity: "vừa",
     });
@@ -58,6 +57,17 @@ export default function CreateSmartSchedulePage() {
 
     const maxKgLose = Math.max(0, Number(userInfo.weight) - minWeight);
     const maxKgGain = Math.max(0, maxWeight - Number(userInfo.weight));
+
+    const checkActiveSchedule = async () => {
+        try {
+            const res = await planApi.get("/get-me");
+            const schedules = res.data.schedules || [];
+            return schedules.some((s: any) => s.status === "active");
+        } catch (err) {
+            console.error("Lỗi khi kiểm tra lịch active:", err);
+            return false;
+        }
+    };
 
     const handleAddMeal = (dayIdx: number, mealIdx: number, value: string) => {
         if (!value.trim()) return;
@@ -512,7 +522,7 @@ export default function CreateSmartSchedulePage() {
                             </div>
                         </div>
 
-                        <div className="col-span-6 space-y-4">
+                        <div className="col-span-4 space-y-4">
                             <div className="relative group h-full">
                                 <div className="absolute -inset-1 bg-gradient-to-r from-green-400 via-emerald-400 to-teal-400 rounded-2xl blur-lg opacity-50 group-hover:opacity-75 animate-pulse transition-all duration-500"></div>
                                 <div className="relative bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-6 border border-green-200/50 h-full flex flex-col">
@@ -530,14 +540,14 @@ export default function CreateSmartSchedulePage() {
                                             <button
                                                 onClick={() => setCurrentDayIndex(Math.max(0, currentDayIndex - 1))}
                                                 disabled={currentDayIndex === 0}
-                                                className="p-2 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 text-white hover:from-blue-600 hover:to-cyan-700 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-300 hover:scale-110 disabled:hover:scale-100 shadow-lg hover:shadow-xl"
+                                                className="p-2 rounded-xl bg-gradien-to-br from-blue-500 to-cyan-600 text-white hover:from-blue-600 hover:to-cyan-700 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-300 hover:scale-110 disabled:hover:scale-100 shadow-lg hover:shadow-xl"
                                             >
                                                 <ChevronLeft className="w-5 h-5" />
                                             </button>
 
                                             <div className="relative group/day">
                                                 <div className="absolute -inset-1 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-xl blur opacity-50 group-hover/day:opacity-75 transition-opacity"></div>
-                                                <div className="relative px-6 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl font-bold text-lg shadow-lg">
+                                                <div className="relative px-6 py-1 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl font-bold text-lg shadow-lg whitespace-nowrap">
                                                     Ngày {currentDayIndex + 1} / {scheduleDays}
                                                 </div>
                                             </div>
@@ -614,11 +624,10 @@ export default function CreateSmartSchedulePage() {
                                             <button
                                                 key={idx}
                                                 onClick={() => setCurrentDayIndex(idx)}
-                                                className={`relative w-10 h-10 rounded-full font-semibold transition-all duration-300 ${
-                                                    idx === currentDayIndex
-                                                        ? "bg-gradient-to-br from-blue-600 to-cyan-600 text-white shadow-xl scale-110"
-                                                        : "bg-gray-200 text-gray-600 hover:bg-gradient-to-br hover:from-gray-300 hover:to-gray-400 hover:scale-105"
-                                                }`}
+                                                className={`relative w-10 h-10 rounded-full font-semibold transition-all duration-300 ${idx === currentDayIndex
+                                                    ? "bg-gradient-to-br from-blue-600 to-cyan-600 text-white shadow-xl scale-110"
+                                                    : "bg-gray-200 text-gray-600 hover:bg-gradient-to-br hover:from-gray-300 hover:to-gray-400 hover:scale-105"
+                                                    }`}
                                             >
                                                 {idx === currentDayIndex && (
                                                     <span className="absolute inset-0 rounded-full bg-blue-400 animate-ping opacity-75"></span>
@@ -631,7 +640,7 @@ export default function CreateSmartSchedulePage() {
                             </div>
                         </div>
 
-                        <div className="col-span-3">
+                        <div className="col-span-5">
                             <div className="relative group h-full">
                                 <div className="absolute -inset-1 bg-gradient-to-r from-pink-400 via-rose-400 to-red-400 rounded-2xl blur-lg opacity-50 group-hover:opacity-75 animate-pulse transition-all duration-500"></div>
                                 <div className="relative bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-6 border border-pink-200/50 h-full flex flex-col">
@@ -744,16 +753,22 @@ export default function CreateSmartSchedulePage() {
                     </button>
 
                     <button
-                        onClick={() => {
+                        onClick={async () => {
                             if (!isGoalAchieved) return;
+
+                            const hasActive = await checkActiveSchedule();
+                            if (hasActive) {
+                                alert("⚠️ Bạn đã có lịch đang hoạt động. Hãy hoàn thành trước khi tạo lịch mới!");
+                                return;
+                            }
+
                             setShowModal(true);
                         }}
                         disabled={!isGoalAchieved}
-                        className={`relative group/btn px-6 py-2.5 rounded-xl text-white flex items-center gap-2 transition-all duration-300 font-medium shadow-lg hover:shadow-xl overflow-hidden ${
-                            isGoalAchieved
-                                ? "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 hover:scale-105"
-                                : "bg-gray-400 cursor-not-allowed"
-                        }`}
+                        className={`relative group/btn px-6 py-2.5 rounded-xl text-white flex items-center gap-2 transition-all duration-300 font-medium shadow-lg hover:shadow-xl overflow-hidden ${isGoalAchieved
+                            ? "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 hover:scale-105"
+                            : "bg-gray-400 cursor-not-allowed"
+                            }`}
                     >
                         {isGoalAchieved && (
                             <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-emerald-400 opacity-0 group-hover/btn:opacity-100 transition-opacity blur"></div>

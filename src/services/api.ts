@@ -13,6 +13,10 @@ export const IP_PLAN = `${IP_BASE}:5003/schedule`;
 export const IP_AI = `${IP_BASE}:5003/Ai-schedule`;
 export const IP_ADMIN = `${IP_BASE}:5010/admin`;
 export const IP_CHATBOT = `${IP_BASE}:5004/api/chatbot`;
+export const authAdminApi = axios.create({
+  baseURL: "http://localhost:5005/auth",  // AUTH-SERVICE
+});
+export const IP_SCHEDULE_RESULT = `${IP_BASE}:5003/schedule-result`;
 
 // 🔹 Tạo axios instance cho từng service
 export const authApi = axios.create({ baseURL: IP_AUTH });
@@ -23,6 +27,9 @@ export const planApi = axios.create({ baseURL: IP_PLAN });
 export const aiApi = axios.create({ baseURL: IP_AI });
 export const adminApi = axios.create({ baseURL: IP_ADMIN });
 export const chatbotApi = axios.create({ baseURL: IP_CHATBOT });
+export const scheduleResultApi = axios.create({
+  baseURL: `${IP_BASE}:5003/schedule-result`,
+});
 
 // 🔹 Gắn accessToken cho mỗi request
 const attachToken = (config: any) => {
@@ -31,7 +38,7 @@ const attachToken = (config: any) => {
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 };
-[authApi, userApi, mealApi, foodApi, planApi, aiApi, adminApi].forEach(api =>
+[authApi, userApi, mealApi, foodApi, planApi, aiApi, adminApi,authAdminApi,scheduleResultApi].forEach(api =>
   api.interceptors.request.use(attachToken)
 );
 
@@ -78,4 +85,4 @@ const attachResponseInterceptor = (instance: any) => {
     }
   );
 };
-[authApi, userApi, mealApi, foodApi, planApi, aiApi, adminApi].forEach(attachResponseInterceptor);
+[authApi, userApi, mealApi, foodApi, planApi, aiApi, adminApi,authAdminApi,scheduleResultApi].forEach(attachResponseInterceptor);

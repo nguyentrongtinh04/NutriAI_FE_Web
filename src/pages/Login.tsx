@@ -7,6 +7,10 @@ import { useNotify } from "../components/notifications/NotificationsProvider";
 import { authService } from "../services/authService";
 import { GoogleLogin } from "@react-oauth/google";
 import { fetchMe } from "../redux/slices/userSlice";
+import { jwtDecode } from "jwt-decode";
+
+import logo from "../assets/logo.png";
+import MedicalIllustration from "../assets/login_left_image.png";
 declare global {
   interface Window {
     google: any;
@@ -28,6 +32,13 @@ export default function Login() {
 
   const dispatch = useDispatch<AppDispatch>();
   // ===== Normal login =====
+ 
+
+  interface TokenPayload {
+    role: "user" | "admin";
+    sub: string; // authId
+  }
+  
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -37,49 +48,40 @@ export default function Login() {
         notify.error(msg);
         return;
       }
-
-      // Lấy dữ liệu trả về từ service
+  
+      // Đăng nhập
       const res = await authService.loginWithPassword(username, password);
-
-      // Nếu login thành công
+  
       notify.success("🎉 Đăng nhập thành công!");
       setErrorMsg("");
-
+  
       // Lưu token
       localStorage.setItem("accessToken", res.access_token);
       localStorage.setItem("refreshToken", res.refresh_token);
-
-      // 🧠 Gọi fetchMe để tải user vào Redux
-      const userRes = await dispatch(fetchMe()).unwrap();
-
-      if (userRes?.id) {
-        // id của user service
-        localStorage.setItem("userId", userRes.id);
-      } else if (userRes?.authId) {
-        // fallback (nếu BE chưa trả user id)
-        localStorage.setItem("userId", userRes.authId);
-      }
-
-      // ✅ Lưu role
-      if (userRes?.role) {
-        localStorage.setItem("role", userRes.role);
-      }
-
-      // 👉 Điều hướng theo role
-      if (userRes.role === "admin") {
+  
+      // ⛔ LẤY ROLE từ token (không phải fetchMe)
+      const decoded = jwtDecode<TokenPayload>(res.access_token);
+      localStorage.setItem("role", decoded.role);
+  
+      // Nếu ADMIN → không gọi fetchMe(), không gọi User-Service
+      if (decoded.role === "admin") {
+        localStorage.setItem("userId", decoded.sub); // authId
         navigate("/admin");
-      } else {
-        navigate(redirectPath);
+        return; // Kết thúc luôn
       }
-
-      // ✅ Lưu userId cho các API khác (scan, history)
-      if (userRes?.id || userRes?.authId) {
-        localStorage.setItem("userId", userRes.id || userRes.authId);
-      }
+  
+      // 🟢 USER THƯỜNG → gọi fetch profile
+      const userRes = await dispatch(fetchMe()).unwrap();
+  
+      const uid = userRes?.id || userRes?.authId || decoded.sub;
+      localStorage.setItem("userId", uid);
+  
+      navigate(redirectPath);
+  
     } catch (e: any) {
       const status = e.response?.status;
       const message = e.response?.data?.message || e.message;
-
+  
       if (status === 404) {
         setErrorMsg("❌ Username không tồn tại.");
         notify.error("❌ Username không tồn tại.");
@@ -92,6 +94,7 @@ export default function Login() {
       }
     }
   };
+  
 
 
   return (
@@ -169,8 +172,7 @@ export default function Login() {
               <div className="relative">
                 <div className="absolute -inset-2 bg-gradient-to-r from-blue-400/40 via-cyan-300/50 to-blue-500/40 rounded-full blur-xl animate-pulse"></div>
                 <div className="absolute -inset-1 bg-white/30 rounded-full blur-lg animate-pulse delay-500"></div>
-                <img
-                  src="/src/assets/logo.png"
+                <img src={logo}
                   alt="NutriAI Logo"
                   className="relative w-25 h-20 object-contain drop-shadow-2xl filter brightness-110 contrast-110 saturate-110"
                 />
@@ -341,8 +343,7 @@ export default function Login() {
           <div className="relative">
             <div className="absolute -inset-4 bg-gradient-to-r from-blue-400/30 via-cyan-300/40 to-blue-500/30 rounded-full blur-2xl animate-pulse"></div>
             <div className="absolute -inset-2 bg-white/20 rounded-full blur-xl animate-pulse delay-500"></div>
-            <img
-              src="/src/assets/login_left_image.png"
+            <img src={MedicalIllustration}
               alt="Medical Illustration"
               className="relative max-w-full h-auto object-contain drop-shadow-2xl filter brightness-110 contrast-110 saturate-110 transform hover:scale-105 transition-all duration-300"
             />

@@ -32,12 +32,14 @@ export default function CreatePlanPage() {
     const [creatingPlan, setCreatingPlan] = useState(false);
     const [showNutritionModal, setShowNutritionModal] = useState(false);
     const [nutritionData, setNutritionData] = useState<any>(null);
+    const { profile } = useSelector((state: RootState) => state.user);
 
     const [personalInfo, setPersonalInfo] = useState({
-        height: 170,
-        weight: 70,
-        age: 25,
-        gender: '',
+        height: Number(profile?.height) || 170,
+        weight: Number(profile?.weight) || 70,
+        age: profile?.DOB ? new Date().getFullYear() - new Date(profile.DOB).getFullYear() : 25,
+        gender: profile?.gender === "MALE" ? "male" :
+            profile?.gender === "FEMALE" ? "female" : "",
         activityLevel: '',
         medicalConditions: '',
     });
@@ -107,10 +109,13 @@ export default function CreatePlanPage() {
     const canProceedStep1 = personalInfo.gender && personalInfo.activityLevel;
     const canProceedStep2 =
         goals.goal &&
-        ((goals.change > 0 && goals.deadline) ||
+        goals.deadline &&
+        (
             goals.goal === 'maintain' ||
             goals.goal === 'improve' ||
-            goals.goal === 'support');
+            goals.goal === 'support' ||
+            (goals.goal !== 'maintain' && goals.goal !== 'improve' && goals.goal !== 'support' && goals.change > 0)
+        );
     const canProceedStep3 = dietInfo.mealsPerDay !== null;
     const canProceedStep4 = planRequirements.cookingStyle && planRequirements.planDays;
 
@@ -394,8 +399,8 @@ export default function CreatePlanPage() {
                                                 });
                                             }}
                                             className={`p-6 rounded-xl border-2 text-center transition-all ${goals.goal === option.value
-                                                    ? "border-blue-500 bg-blue-50 shadow-lg scale-105"
-                                                    : "border-gray-300 hover:border-blue-300"
+                                                ? "border-blue-500 bg-blue-50 shadow-lg scale-105"
+                                                : "border-gray-300 hover:border-blue-300"
                                                 }`}
                                         >
                                             <div className="text-4xl mb-2">{option.icon}</div>
@@ -457,8 +462,8 @@ export default function CreatePlanPage() {
                                             key={w}
                                             onClick={() => setGoals({ ...goals, deadline: `${w}` })}
                                             className={`py-3 rounded-xl border-2 font-semibold transition-all ${goals.deadline === `${w}`
-                                                    ? "border-blue-500 bg-blue-50 text-blue-700 shadow-md"
-                                                    : "border-gray-300 hover:border-blue-300"
+                                                ? "border-blue-500 bg-blue-50 text-blue-700 shadow-md"
+                                                : "border-gray-300 hover:border-blue-300"
                                                 }`}
                                         >
                                             {w} tuần
@@ -695,21 +700,51 @@ export default function CreatePlanPage() {
                     >
                         <ChevronLeft className="w-5 h-5" /> Quay lại
                     </button>
-
                     {currentStep < 4 ? (
                         <button
-                            onClick={() => setCurrentStep((p) => (p < 4 ? (p + 1) as Step : p))}
-                            className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold bg-gradient-to-r from-blue-500 to-cyan-600 text-white hover:shadow-lg"
+                            onClick={() => {
+                                if (currentStep === 1 && !canProceedStep1) return;
+                                if (currentStep === 2 && !canProceedStep2) return;
+                                if (currentStep === 3 && !canProceedStep3) return;
+                                setCurrentStep((p) => (p < 4 ? (p + 1) as Step : p));
+                            }}
+                            disabled={
+                                (currentStep === 1 && !canProceedStep1) ||
+                                (currentStep === 2 && !canProceedStep2) ||
+                                (currentStep === 3 && !canProceedStep3)
+                            }
+                            className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold 
+        ${((currentStep === 1 && !canProceedStep1) ||
+                                    (currentStep === 2 && !canProceedStep2) ||
+                                    (currentStep === 3 && !canProceedStep3))
+                                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                    : 'bg-gradient-to-r from-blue-500 to-cyan-600 text-white hover:shadow-lg'
+                                }`}
                         >
                             Tiếp tục <ChevronRight className="w-5 h-5" />
                         </button>
                     ) : (
                         <button
-                            onClick={handleGenerateNutrition}
-                            disabled={loading}
-                            className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:shadow-lg"
+                            onClick={() => {
+                                if (!canProceedStep4) return;   // ⛔ NGĂN BẤM KHI CHƯA CHỌN
+                                handleGenerateNutrition();
+                            }}
+                            disabled={!canProceedStep4 || loading}
+                            className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all
+            ${!canProceedStep4 || loading
+                                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                    : "bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:shadow-lg"
+                                }`}
                         >
-                            {loading ? <><Loader2 className="w-5 h-5 animate-spin" /> Đang tính...</> : <><Check className="w-5 h-5" /> Hoàn thành</>}
+                            {loading ? (
+                                <>
+                                    <Loader2 className="w-5 h-5 animate-spin" /> Đang tính...
+                                </>
+                            ) : (
+                                <>
+                                    <Check className="w-5 h-5" /> Hoàn thành
+                                </>
+                            )}
                         </button>
                     )}
                 </div>
