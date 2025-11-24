@@ -1,8 +1,8 @@
 import axios from "axios";
 import { saveTokens, clearTokens, getTokens } from "./auth";
 
-const AUTH_SERVICES = import.meta.env.VITE_AUTH_SERVICES || "http://localhost:5000";
-const USER_SERVICES = import.meta.env.VITE_USER_SERVICES || "http://localhost:5000";
+const AUTH_SERVICES = import.meta.env.VITE_AUTH_SERVICES || "https://api.nutriai.sbs";
+const USER_SERVICES = import.meta.env.VITE_USER_SERVICES || "https://api.nutriai.sbs";
 
 // 👉 Auth service: BE mount /auth/*
 export const authApi = axios.create({

@@ -758,21 +758,21 @@ export default function CreatePlanPage() {
 
                             <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
                                 <ul className="text-sm text-blue-800 space-y-1">
-                                    <li>• BMR: {nutritionData.BMR}</li>
-                                    <li>• TDEE: {nutritionData.TDEE}</li>
-                                    <li>• Hệ số hoạt động: {nutritionData.activityFactor}</li>
-                                    <li>• Mục tiêu: {nutritionData.goalType}</li>
-                                    <li>• Thay đổi cân nặng: {nutritionData.weightChangeKg} kg</li>
-                                    <li>• Thời gian: {nutritionData.durationDays} ngày</li>
-                                    <li>• Chênh lệch calo mỗi ngày: {nutritionData.dailyCalorieChange}</li>
-                                    <li>• Lượng calo đề xuất: {nutritionData.calories}</li>
-                                    <li>• Protein: {nutritionData.protein}g</li>
-                                    <li>• Fat: {nutritionData.fat}g</li>
-                                    <li>• Carbs: {nutritionData.carbs}g</li>
+                                    <li>• BMR: {nutritionData.nutrition.BMR}</li>
+                                    <li>• TDEE: {nutritionData.nutrition.TDEE}</li>
+                                    <li>• Hệ số hoạt động: {nutritionData.nutrition.activityFactor}</li>
+                                    <li>• Mục tiêu: {nutritionData.nutrition.goalType}</li>
+                                    <li>• Thay đổi cân nặng: {nutritionData.nutrition.weightChangeKg} kg</li>
+                                    <li>• Thời gian: {nutritionData.nutrition.durationDays} ngày</li>
+                                    <li>• Chênh lệch calo mỗi ngày: {nutritionData.nutrition.dailyCalorieChange}</li>
+                                    <li>• Lượng calo đề xuất: {nutritionData.nutrition.calories}</li>
+                                    <li>• Protein: {nutritionData.nutrition.protein}g</li>
+                                    <li>• Fat: {nutritionData.nutrition.fat}g</li>
+                                    <li>• Carbs: {nutritionData.nutrition.carbs}g</li>
                                 </ul>
                             </div>
 
-                            <p className="text-gray-700 text-sm leading-relaxed mb-6">{nutritionData.notes}</p>
+                            <p className="text-gray-700 text-sm leading-relaxed mb-6">{nutritionData.nutrition.notes}</p>
 
                             <div className="flex justify-end gap-3">
                                 <button

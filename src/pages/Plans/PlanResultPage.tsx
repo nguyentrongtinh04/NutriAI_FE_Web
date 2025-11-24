@@ -25,6 +25,7 @@ export default function PlanResultPage() {
   const [selectedDay, setSelectedDay] = useState<number>(0);
   const [flippedMeals, setFlippedMeals] = useState<Set<number>>(new Set());
   const { mealPlan, loading, error } = useSelector((state: RootState) => state.plan);
+  const profile = useSelector((state: RootState) => state.user.profile);
   const currentDay = mealPlan.schedule[selectedDay];
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
@@ -96,8 +97,9 @@ export default function PlanResultPage() {
     { calories: 0, protein: 0, fat: 0, carbs: 0 }
   );
 
-  const getMealTypeInfo = (type: string) => {
-    const lower = type.toLowerCase();
+  const getMealTypeInfo = (type?: string) => {
+    const lower = (type || "").toLowerCase();
+
     if (["breakfast", "sáng"].includes(lower))
       return {
         label: "Bữa sáng",
@@ -107,6 +109,7 @@ export default function PlanResultPage() {
         border: "border-orange-200",
         text: "text-orange-600",
       };
+
     if (["lunch", "trưa"].includes(lower))
       return {
         label: "Bữa trưa",
@@ -116,6 +119,7 @@ export default function PlanResultPage() {
         border: "border-green-200",
         text: "text-green-600",
       };
+
     if (["dinner", "chiều", "tối"].includes(lower))
       return {
         label: "Bữa tối",
@@ -125,6 +129,7 @@ export default function PlanResultPage() {
         border: "border-pink-200",
         text: "text-pink-600",
       };
+
     return {
       label: "Khác",
       icon: ChefHat,
@@ -134,6 +139,46 @@ export default function PlanResultPage() {
       text: "text-blue-600",
     };
   };
+
+
+  function convertToTemplateFormat(schedule: any[]) {
+    return schedule.map((day: any) => {
+      const obj: any = {};
+
+      day.meals.forEach((m: any) => {
+        const type = m.mealType?.toLowerCase?.() || "";
+
+        if (type.includes("sáng") || type.includes("breakfast")) {
+          obj.breakfast = {
+            name: m.mealName || m.nameMeals,
+            description: m.description,
+            mealTime: m.mealTime,
+            CPFCa: m.CPFCa
+          };
+        }
+
+        if (type.includes("trưa") || type.includes("lunch")) {
+          obj.lunch = {
+            name: m.mealName || m.nameMeals,
+            description: m.description,
+            mealTime: m.mealTime,
+            CPFCa: m.CPFCa
+          };
+        }
+
+        if (type.includes("tối") || type.includes("chiều") || type.includes("dinner")) {
+          obj.dinner = {
+            name: m.mealName || m.nameMeals,
+            description: m.description,
+            mealTime: m.mealTime,
+            CPFCa: m.CPFCa
+          };
+        }
+      });
+
+      return obj;
+    });
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-500 via-cyan-500 to-teal-400 py-8 px-4">
@@ -449,52 +494,53 @@ export default function PlanResultPage() {
                       return;
                     }
 
-                    const scheduleData = {
-                      height: mealPlan.userInfo?.height || 170,
-                      weight: mealPlan.userInfo?.weight || 65,
-                      gender: mealPlan.userInfo?.gender || "male",
-                      age: mealPlan.userInfo?.age || 25,
-                      goal: mealPlan.userInfo?.goal || "Giảm cân",
-                      kgGoal: mealPlan.userInfo?.kgGoal || 2,
-                      duration:
-                        (mealPlan.userInfo?.duration ||
-                          mealPlan.schedule.length) * 7,
-                      startDate,
-                      schedule: mealPlan.schedule,
+                    function mapMealType(type: string) {
+                      const t = type.toLowerCase();
+
+                      if (t.includes("breakfast") || t.includes("sáng")) return "sáng";
+                      if (t.includes("lunch") || t.includes("trưa")) return "trưa";
+                      if (t.includes("dinner") || t.includes("tối")) return "tối";
+                      if (t.includes("chiều") || t.includes("evening")) return "chiều";
+                      if (t.includes("phu") || t.includes("snack") || t.includes("phụ")) return "phụ sáng";
+
+                      return "sáng"; // fallback
+                    }
+
+                    // format schedule chuẩn BE
+                    const formattedSchedule = mealPlan.schedule.map((day: any, i: number) => ({
+                      dateID: `Day ${i + 1}`,
+                      meals: day.meals.map((m: any) => ({
+                        mealName: m.mealName ?? m.nameMeals,
+                        mealType: mapMealType(m.mealType),
+                        mealTime: m.mealTime,
+                        description: m.description || "",
+                        CPFCa: [
+                          Number(m.CPFCa?.[0] || 0),
+                          Number(m.CPFCa?.[1] || 0),
+                          Number(m.CPFCa?.[2] || 0),
+                          Number(m.CPFCa?.[3] || 0),
+                        ],
+                      })),
+                    }));
+
+                    const finalData = {
+                      userId: profile?._id,
+                      height: Number(userInfo?.height),
+                      weight: Number(userInfo?.weight),
+                      gender: mealPlan.userInfo?.gender === "male" ? "nam" : "nữ",
+                      age: Number(userInfo?.age),
+                      goal: userInfo?.goal,
+                      kgGoal: userInfo?.kgGoal ?? 0,
+                      duration: Number(userInfo?.day),
+                      startDate: new Date(startDate).toISOString(),
+                      schedule: formattedSchedule,   // ⭐ FIX CHÍNH Ở ĐÂY
+                      idTemplate: mealPlan.userInfo?.dateTemplate ?? null,
                       nameSchedule: scheduleName,
+                      private: true,
                     };
 
                     try {
-                      const formattedSchedule = scheduleData.schedule.map(
-                        (day: any) => ({
-                          ...day,
-                          meals: day.meals.map((m: any) => ({
-                            ...m,
-                            mealName: m.nameMeals,
-                            nameMeals: undefined,
-                          })),
-                        })
-                      );
-
-                      const genderMap: Record<string, string> = {
-                        male: "nam",
-                        female: "nữ",
-                        other: "khác",
-                      };
-
-                      const finalData = {
-                        ...scheduleData,
-                        schedule: formattedSchedule,
-                        gender:
-                          genderMap[scheduleData.gender] ||
-                          scheduleData.gender,
-                      };
-
-                      if (!token) {
-                        alert("Bạn cần đăng nhập để tạo lịch!");
-                        return;
-                      }
-                      await dispatch(createScheduleThunk({ scheduleData: finalData, token }));
+                      await dispatch(createScheduleThunk(finalData)).unwrap();
 
                       alert("✅ Tạo lịch thành công!");
                       setShowModal(false);
@@ -507,6 +553,7 @@ export default function PlanResultPage() {
                 >
                   Tạo lịch
                 </button>
+
               </div>
             </div>
           </div>

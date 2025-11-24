@@ -53,10 +53,9 @@ export default function PlansPage() {
     useEffect(() => {
         if (token) dispatch(fetchSchedulesThunk());
     }, [dispatch, token]);
-
-    const getGoalInfo = (goal: string) => {
-        const normalized = goal?.toLowerCase();
-
+    const getGoalInfo = (goal?: string) => {
+        const normalized = (goal || "").toLowerCase();
+    
         if (normalized.includes("giảm")) {
             return { icon: "📉", color: "text-red-500", label: "Giảm cân" };
         }
@@ -72,10 +71,9 @@ export default function PlansPage() {
         if (normalized.includes("bệnh lý") || normalized.includes("hỗ trợ")) {
             return { icon: "❤️‍🩹", color: "text-pink-500", label: "Hỗ trợ bệnh lý" };
         }
-
+    
         return { icon: "🎯", color: "text-gray-500", label: goal || "Không xác định" };
     };
-
     if (loading) {
         return (
             <div className="min-h-screen flex justify-center items-center bg-gradient-to-br from-blue-50 via-cyan-50 to-blue-100">

@@ -35,7 +35,7 @@ export const generateNutritionThunk = createAsyncThunk(
   async (userInfo: any, { rejectWithValue }) => {
     try {
       const res = await planService.generateNutrition(userInfo);
-      return res.data.nutrition; // chỉ lấy nutrition
+      return res; // chỉ lấy nutrition
     } catch (err: any) {
       return rejectWithValue(err.message || "Lỗi khi tính dinh dưỡng");
     }
@@ -47,7 +47,7 @@ export const generateMealPlanThunk = createAsyncThunk(
   async ({ userInfo, nutrition }: any, { rejectWithValue }) => {
     try {
       const res = await planService.generateMealPlan(userInfo, nutrition);
-      return res.data; // meal plan object
+      return res; // meal plan object
     } catch (err: any) {
       return rejectWithValue(err.message || "Lỗi khi tạo meal plan");
     }
@@ -71,12 +71,12 @@ export const fetchSchedulesThunk = createAsyncThunk(
 export const createScheduleThunk = createAsyncThunk(
   "plan/createSchedule",
   async (scheduleData: any, { rejectWithValue }) => {
-      try {
-          const data = await planService.createFullSchedule(scheduleData);
-          return data.schedule;
-      } catch (err: any) {
-          return rejectWithValue(err.message || "Lỗi khi tạo lịch trình");
-      }
+    try {
+      const data = await planService.createFullSchedule(scheduleData);
+      return data.schedule;
+    } catch (err: any) {
+      return rejectWithValue(err.response?.data?.message || "Lỗi server");
+    }
   }
 );
 
