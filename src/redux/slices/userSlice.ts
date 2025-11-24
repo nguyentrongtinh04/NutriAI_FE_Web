@@ -43,7 +43,7 @@ export const fetchMe = createAsyncThunk("user/fetchMe", async (_, thunkAPI) => {
     const [userRes, authRes] = await Promise.all([
       userService.getMe(),
       // gọi auth service để lấy email, phone, role
-      fetch("http://localhost:5005/auth/me", {
+      fetch("https://api.nutriai.sbs/auth/me", {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
         },
