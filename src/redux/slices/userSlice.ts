@@ -105,7 +105,10 @@ const userSlice = createSlice({
     },
     clearUser: (state) => {
       state.profile = null;
-    },
+      state.loading = false;
+      state.error = null;
+  },
+  
   },
   extraReducers: (builder) => {
     // fetchMe

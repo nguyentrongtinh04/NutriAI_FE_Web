@@ -3,9 +3,10 @@ import { Bell, Settings, User, LogOut, ChevronDown, MessageCircle, HelpCircle, B
 import { useNavigate, Link } from 'react-router-dom';
 import ChatBot from './ChatBot';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchMe } from '../redux/slices/userSlice';
+import { clearUser, fetchMe } from '../redux/slices/userSlice';
 
 import logo from '../assets/logo.png';
+import { clearAuth } from '../redux/slices/authSlice';
 export default function Header() {
   const navigate = useNavigate();
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
@@ -14,13 +15,22 @@ export default function Header() {
   const { profile } = useSelector((state: any) => state.user);
   const DEFAULT_AVATAR = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
   useEffect(() => {
-    dispatch(fetchMe() as any);
+    const token = localStorage.getItem("accessToken");
+    if (token) {
+      dispatch(fetchMe() as any);
+    }
   }, [dispatch]);
 
+
   const handleSignOut = () => {
-    localStorage.removeItem('accessToken');
-    navigate('/login');
-  };
+    dispatch(clearUser());
+    dispatch(clearAuth());
+  
+    localStorage.clear();  // XÓA TẤT CẢ token, id, role, profile lưu cũ
+  
+    navigate("/login");
+    window.location.reload();   // 👈 RẤT QUAN TRỌNG: reset toàn app state
+  };  
 
   const handleProfileClick = () => {
     navigate('/profile');

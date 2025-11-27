@@ -6,11 +6,12 @@ import { AppDispatch, RootState } from "../redux/store";
 import { useNotify } from "../components/notifications/NotificationsProvider";
 import { authService } from "../services/authService";
 import { GoogleLogin } from "@react-oauth/google";
-import { fetchMe } from "../redux/slices/userSlice";
+import { clearUser, fetchMe } from "../redux/slices/userSlice";
 import { jwtDecode } from "jwt-decode";
 
 import logo from "../assets/logo.png";
 import MedicalIllustration from "../assets/login_left_image.png";
+import { clearAuth } from "../redux/slices/authSlice";
 declare global {
   interface Window {
     google: any;
@@ -32,15 +33,18 @@ export default function Login() {
 
   const dispatch = useDispatch<AppDispatch>();
   // ===== Normal login =====
- 
+
 
   interface TokenPayload {
     role: "user" | "admin";
     sub: string; // authId
   }
-  
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    dispatch(clearUser());
+    dispatch(clearAuth());
+
     try {
       if (!username || !password) {
         const msg = "❌ Username và Password không được để trống.";
@@ -48,40 +52,40 @@ export default function Login() {
         notify.error(msg);
         return;
       }
-  
+
       // Đăng nhập
       const res = await authService.loginWithPassword(username, password);
-  
+
       notify.success("🎉 Đăng nhập thành công!");
       setErrorMsg("");
-  
+
       // Lưu token
       localStorage.setItem("accessToken", res.access_token);
       localStorage.setItem("refreshToken", res.refresh_token);
-  
+
       // ⛔ LẤY ROLE từ token (không phải fetchMe)
       const decoded = jwtDecode<TokenPayload>(res.access_token);
       localStorage.setItem("role", decoded.role);
-  
+
       // Nếu ADMIN → không gọi fetchMe(), không gọi User-Service
       if (decoded.role === "admin") {
         localStorage.setItem("userId", decoded.sub); // authId
         navigate("/admin");
         return; // Kết thúc luôn
       }
-  
+
       // 🟢 USER THƯỜNG → gọi fetch profile
       const userRes = await dispatch(fetchMe()).unwrap();
-  
+
       const uid = userRes?.id || userRes?.authId || decoded.sub;
       localStorage.setItem("userId", uid);
-  
+
       navigate(redirectPath);
-  
+
     } catch (e: any) {
       const status = e.response?.status;
       const message = e.response?.data?.message || e.message;
-  
+
       if (status === 404) {
         setErrorMsg("❌ Username không tồn tại.");
         notify.error("❌ Username không tồn tại.");
@@ -94,7 +98,7 @@ export default function Login() {
       }
     }
   };
-  
+
 
 
   return (

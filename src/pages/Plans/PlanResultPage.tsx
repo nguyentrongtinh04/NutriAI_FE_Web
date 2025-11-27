@@ -18,8 +18,8 @@ import type { RootState } from "../../redux/store";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "../../redux/store";
 import { createScheduleThunk } from "../../redux/slices/planSlice";
-import { useNavigate } from "react-router-dom";
-import { useLocation } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useNotify } from "../../components/notifications/NotificationsProvider";
 
 export default function PlanResultPage() {
   const [selectedDay, setSelectedDay] = useState<number>(0);
@@ -29,6 +29,8 @@ export default function PlanResultPage() {
   const currentDay = mealPlan.schedule[selectedDay];
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
+  const notify = useNotify();
+
   const token =
     useSelector((state: RootState) => state.auth.accessToken) ||
     localStorage.getItem("accessToken");
@@ -195,7 +197,7 @@ export default function PlanResultPage() {
           <button
             onClick={() => {
               if (!token) {
-                alert("Bạn cần đăng nhập để tạo lịch!");
+                notify.warning("⚠️ Bạn cần đăng nhập để tạo lịch!");
                 return;
               }
               setShowModal(true);
@@ -486,11 +488,12 @@ export default function PlanResultPage() {
                 <button
                   onClick={async () => {
                     if (!scheduleName.trim()) {
-                      alert("Vui lòng nhập tên kế hoạch!");
+                      notify.warning("⚠️ Vui lòng nhập tên kế hoạch!");
                       return;
                     }
+
                     if (!startDate) {
-                      alert("Vui lòng chọn ngày bắt đầu!");
+                      notify.warning("⚠️ Vui lòng chọn ngày bắt đầu!");
                       return;
                     }
 
@@ -503,10 +506,9 @@ export default function PlanResultPage() {
                       if (t.includes("chiều") || t.includes("evening")) return "chiều";
                       if (t.includes("phu") || t.includes("snack") || t.includes("phụ")) return "phụ sáng";
 
-                      return "sáng"; // fallback
+                      return "sáng";
                     }
 
-                    // format schedule chuẩn BE
                     const formattedSchedule = mealPlan.schedule.map((day: any, i: number) => ({
                       dateID: `Day ${i + 1}`,
                       meals: day.meals.map((m: any) => ({
@@ -533,7 +535,7 @@ export default function PlanResultPage() {
                       kgGoal: userInfo?.kgGoal ?? 0,
                       duration: Number(userInfo?.day),
                       startDate: new Date(startDate).toISOString(),
-                      schedule: formattedSchedule,   // ⭐ FIX CHÍNH Ở ĐÂY
+                      schedule: formattedSchedule,
                       idTemplate: mealPlan.userInfo?.dateTemplate ?? null,
                       nameSchedule: scheduleName,
                       private: true,
@@ -541,15 +543,13 @@ export default function PlanResultPage() {
 
                     try {
                       await dispatch(createScheduleThunk(finalData)).unwrap();
-
-                      alert("✅ Tạo lịch thành công!");
+                      notify.success("🎉 Tạo lịch thành công!");
                       setShowModal(false);
                       navigate("/plans");
                     } catch (err: any) {
-                      alert("❌ Lỗi khi lưu lịch: " + err);
+                      notify.error("❌ Lỗi khi lưu lịch! " + (err?.response?.data?.message || ""));
                     }
                   }}
-                  className="px-6 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all"
                 >
                   Tạo lịch
                 </button>

@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { scheduleResultService } from "../../services/scheduleResultService";
 import RatingModal from "../../components/modals/RatingModal";
 import ReviewListModal from "../../components/modals/ReviewListModal";
+import { useNotify } from "../../components/notifications/NotificationsProvider";
 
 export default function PlansPage() {
     const dispatch = useDispatch<AppDispatch>();
@@ -17,11 +18,12 @@ export default function PlansPage() {
     const [scheduleToRate, setScheduleToRate] = useState<any>(null);
     const [showReviewList, setShowReviewList] = useState(false);
     const handleOpenReviewList = () => setShowReviewList(true);
+    const notify = useNotify();
     
     const handleCreate = () => {
         const active = schedules.find(s => s.status === "active");
         if (active) {
-            alert("⚠️ Bạn đang có một lịch ăn uống đang hoạt động. Hãy hoàn thành lịch hiện tại trước khi tạo mới!");
+            notify.warning("⚠️ Bạn đang có một lịch ăn uống đang hoạt động. Hãy hoàn thành lịch hiện tại trước khi tạo mới!");
             return;
         }
         navigate("/create-plan");
@@ -45,7 +47,7 @@ export default function PlansPage() {
                 setScheduleToRate(schedule);
                 setShowRateModal(true);
             } else {
-                alert("Không thể kiểm tra đánh giá của lịch này!");
+                notify.error("Không thể kiểm tra đánh giá của lịch này!");
             }
         }
     };

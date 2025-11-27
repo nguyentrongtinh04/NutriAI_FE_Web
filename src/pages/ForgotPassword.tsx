@@ -11,7 +11,8 @@ import {
 } from "../redux/actions/authActions";
 
 import { useNotify } from "../components/notifications/NotificationsProvider";
-
+import logo from "../assets/logo.png";
+import MedicalIllustration from "../assets/login_left_image.png";
 export default function ForgotPassword() {
   const [method, setMethod] = useState<"phone" | "email">("phone");
   const [input, setInput] = useState("");
@@ -275,8 +276,7 @@ export default function ForgotPassword() {
               <div className="relative">
                 <div className="absolute -inset-2 bg-gradient-to-r from-blue-400/40 via-cyan-300/50 to-blue-500/40 rounded-full blur-xl animate-pulse"></div>
                 <div className="absolute -inset-1 bg-white/30 rounded-full blur-lg animate-pulse delay-500"></div>
-                <img
-                  src="/src/assets/logo.png"
+               <img src={logo}
                   alt="NutriAI Logo"
                   className="relative w-25 h-20 object-contain rounded-full drop-shadow-2xl filter brightness-110 contrast-110 saturate-110"
                 />
@@ -407,8 +407,7 @@ export default function ForgotPassword() {
           <div className="relative">
             <div className="absolute -inset-4 bg-gradient-to-r from-blue-400/30 via-cyan-300/40 to-blue-500/30 rounded-full blur-2xl animate-pulse"></div>
             <div className="absolute -inset-2 bg-white/20 rounded-full blur-xl animate-pulse delay-500"></div>
-            <img
-              src="/src/assets/login_left_image.png"
+            <img src={MedicalIllustration}
               alt="Medical Illustration"
               className="relative max-w-full h-auto object-contain drop-shadow-2xl filter brightness-110 contrast-110 saturate-110 transform hover:scale-105 transition-all duration-300 rounded-2xl"
             />

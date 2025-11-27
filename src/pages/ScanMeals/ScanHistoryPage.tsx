@@ -19,10 +19,12 @@ import {
 } from "lucide-react";
 import { planService } from "../../services/planService";
 import { createScheduleThunk } from "../../redux/slices/planSlice";
+import { useNotify } from "../../components/notifications/NotificationsProvider";
 
 export default function ScanHistoryPage() {
     const navigate = useNavigate();
     const dispatch = useDispatch<AppDispatch>();
+    const notify = useNotify();
 
     const [loading, setLoading] = useState(true);
     const [meals, setMeals] = useState<any[]>([]);
@@ -49,36 +51,36 @@ export default function ScanHistoryPage() {
 
     const categorizeMeals = (list: any[]) => {
         const categories: Record<string, any[]> = {
-          "🥩 Giàu đạm": [],
-          "🍚 Giàu tinh bột": [],
-          "🥑 Giàu chất béo": [],
-          "🍰 Tráng miệng": [],
-          "🍿 Ăn nhẹ": [],
-          "🍱 Khác": [],
+            "🥩 Giàu đạm": [],
+            "🍚 Giàu tinh bột": [],
+            "🥑 Giàu chất béo": [],
+            "🍰 Tráng miệng": [],
+            "🍿 Ăn nhẹ": [],
+            "🍱 Khác": [],
         };
-      
+
         const proteinKeywords = /(thịt|gà|bò|heo|cá|trứng|tôm|đậu|nem|sườn)/i;
         const carbKeywords = /(cơm|bún|phở|mì|nui|bánh mì|cháo|khoai|bánh)/i;
         const fatKeywords = /(chiên|rán|xào|mỡ|kho|da gà|ram)/i;
         const dessertKeywords = /(chè|kem|bánh|tráng miệng|dessert|pudding)/i;
         const snackKeywords = /(trái cây|hoa quả|sinh tố|nước|trà|ăn vặt|snack|juice)/i;
-      
+
         list.forEach((m) => {
-          const name = (m.food_vi || "").toLowerCase();
-      
-          if (dessertKeywords.test(name)) return categories["🍰 Tráng miệng"].push(m);
-          if (snackKeywords.test(name)) return categories["🍿 Ăn nhẹ"].push(m);
-          if (proteinKeywords.test(name)) return categories["🥩 Giàu đạm"].push(m);
-          if (carbKeywords.test(name)) return categories["🍚 Giàu tinh bột"].push(m);
-          if (fatKeywords.test(name)) return categories["🥑 Giàu chất béo"].push(m);
-      
-          categories["🍱 Khác"].push(m);
+            const name = (m.food_vi || "").toLowerCase();
+
+            if (dessertKeywords.test(name)) return categories["🍰 Tráng miệng"].push(m);
+            if (snackKeywords.test(name)) return categories["🍿 Ăn nhẹ"].push(m);
+            if (proteinKeywords.test(name)) return categories["🥩 Giàu đạm"].push(m);
+            if (carbKeywords.test(name)) return categories["🍚 Giàu tinh bột"].push(m);
+            if (fatKeywords.test(name)) return categories["🥑 Giàu chất béo"].push(m);
+
+            categories["🍱 Khác"].push(m);
         });
-      
+
         return categories;
-      };
-      
-    
+    };
+
+
     useEffect(() => {
         if (meals.length > 0) setCategorizedMeals(categorizeMeals(meals));
     }, [meals]);
@@ -164,7 +166,7 @@ export default function ScanHistoryPage() {
 
         } catch (err) {
             console.error("❌ Lỗi khi tạo lịch:", err);
-            alert("Không thể tạo lịch!");
+            notify.warning("Không thể tạo lịch!");
         }
     };
 

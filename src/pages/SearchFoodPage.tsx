@@ -274,9 +274,9 @@ export default function SearchFoodPage() {
                                                             const userId = profile?._id;
                                                             if (!userId) {
                                                                 notify.warning("⚠️ Bạn cần đăng nhập để lưu món ăn!");
-                                                                navigate("/login?redirect=/");                                                                
+                                                                navigate("/login?redirect=/", { replace: true });
                                                                 return;
-                                                            }
+                                                            }                                                            
 
                                                             const normalizePhoto = (photo: string | undefined) => {
                                                                 if (!photo) return "";
@@ -299,12 +299,12 @@ export default function SearchFoodPage() {
                                                             };
 
                                                             await mealService.saveScannedMeal(data);
-                                                            alert("✅ Món ăn đã được lưu vào lịch sử!");
+                                                            notify.success("✅ Món ăn đã được lưu vào lịch sử!");
                                                             dispatch(clearFood()); // đóng modal sau khi lưu
                                                             dispatch(getRandomFoods(30));
                                                         } catch (error: any) {
                                                             console.error("❌ Save meal error:", error);
-                                                            alert("Lưu thất bại, thử lại sau!");
+                                                            notify.error("Lưu thất bại, thử lại sau!");
                                                         }
                                                     }}
                                                     className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white py-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-2 group"

@@ -25,7 +25,6 @@ import ScanHistoryPage from "./pages/ScanMeals/ScanHistoryPage";
 import PlanResultPage from "./pages/Plans/PlanResultPage";
 import ScheduleDetailPage from "./pages/Plans/ScheduleDetailPage";
 import AdminDashboard from "./pages/admin/AdminDashboard";
-import RequireAdmin from "./routes/RequireAdmin";
 import CreateSmartSchedulePage  from "./pages/Plans/CreateSmartSchedulePage";
 
 function App() {

@@ -382,7 +382,7 @@ export default function ScanMealPage() {
                                 const userId = profile?._id;
                                 if (!userId) {
                                   notify.warning("⚠️ Bạn cần đăng nhập để lưu món ăn!");
-                                  navigate("/login");
+                                  navigate("/login?redirect=/", { replace: true });
                                   return;
                                 }
 
@@ -397,9 +397,9 @@ export default function ScanMealPage() {
                                 };
 
                                 const res = await mealService.saveScannedMeal(payload);
-                                alert("✅ " + res.message);
+                                notify.success("✅ " + res.message);
                               } catch (err: any) {
-                                alert("❌ Lưu thất bại: " + err.message);
+                                notify.error("❌ Lưu thất bại: " + err.message);
                               }
                             }}
 
@@ -412,7 +412,15 @@ export default function ScanMealPage() {
                         <div className="relative">
                           <div className="absolute -inset-1 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-xl blur opacity-50 animate-pulse"></div>
                           <button
-                            onClick={() => navigate("/scan-history")}
+                            onClick={() => {
+                              const userId = profile?._id;
+                              if (!userId) {
+                                notify.warning("⚠️ Bạn cần đăng nhập để xem lịch sử!");
+                                navigate("/login?redirect=/scan-history", { replace: true });
+                                return;
+                              }
+                              navigate("/scan-history");
+                            }}                            
                             className="relative w-full px-4 sm:px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-xl font-semibold shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 text-sm sm:text-base"
                           >
                             📜 Xem lịch sử

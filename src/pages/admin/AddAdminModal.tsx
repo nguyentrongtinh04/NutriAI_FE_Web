@@ -17,8 +17,8 @@ export default function AddAdminModal({ onClose }: any) {
     };
 
     const handleSubmit = async () => {
-        if ( !form.phone || !form.password) {
-            notify.error("Vui lòng điền đầy đủ thông tin!");
+        if (!form.phone.trim() || !form.password.trim()) {
+            notify.warning("⚠️ Please fill out all fields!");
             return;
         }
 
@@ -27,13 +27,16 @@ export default function AddAdminModal({ onClose }: any) {
 
             const res = await adminService.createAdmin(form);
 
-            notify.success("Tạo admin thành công!");
+            notify.success("🎉 Admin created successfully!");
+            setForm({ phone: "", password: "" });
             onClose();
+
         } catch (e: any) {
             const msg =
                 e?.response?.data?.error ||
                 e?.response?.data?.message ||
-                "Tạo admin thất bại!";
+                e?.message ||
+                "❌ Failed to create admin!";
 
             notify.error(msg);
         } finally {
@@ -44,18 +47,17 @@ export default function AddAdminModal({ onClose }: any) {
     return (
         <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
 
-            {/* MODAL CARD */}
             <div className="bg-slate-800/90 rounded-2xl shadow-2xl border border-slate-700/60 p-8 w-[450px]
-        animate-[fadeIn_0.25s_ease-out]">
+                animate-[fadeIn_0.25s_ease-out]">
 
                 {/* HEADER */}
                 <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-700/50">
                     <div className="flex items-center gap-3">
                         <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600
-            flex items-center justify-center shadow-lg">
+                            flex items-center justify-center shadow-lg">
                             <UserCheck className="w-6 h-6 text-white" />
                         </div>
-                        <h2 className="text-2xl font-bold text-white">Thêm Admin</h2>
+                        <h2 className="text-2xl font-bold text-white">Add Admin</h2>
                     </div>
 
                     <button onClick={onClose} className="text-slate-400 hover:text-white">
@@ -68,14 +70,14 @@ export default function AddAdminModal({ onClose }: any) {
 
                     {/* Phone */}
                     <div>
-                        <label className="text-slate-300 font-medium">Số điện thoại</label>
+                        <label className="text-slate-300 font-medium">Phone Number</label>
                         <div className="mt-2 flex items-center gap-3 bg-slate-700/40 p-3 rounded-xl border border-slate-600/40">
                             <UserCheck className="w-5 h-5 text-slate-300" />
                             <input
                                 type="text"
                                 value={form.phone}
                                 onChange={(e) => handleChange("phone", e.target.value)}
-                                placeholder="Ví dụ: 03xxxxxxxx"
+                                placeholder="Example: 03xxxxxxxx"
                                 className="bg-transparent flex-1 text-white outline-none"
                             />
                         </div>
@@ -83,7 +85,7 @@ export default function AddAdminModal({ onClose }: any) {
 
                     {/* Password */}
                     <div>
-                        <label className="text-slate-300 font-medium">Mật khẩu</label>
+                        <label className="text-slate-300 font-medium">Password</label>
                         <div className="mt-2 flex items-center gap-3 bg-slate-700/40 p-3 rounded-xl border border-slate-600/40">
                             <Lock className="w-5 h-5 text-slate-300" />
                             <input
@@ -105,16 +107,16 @@ export default function AddAdminModal({ onClose }: any) {
                         onClick={onClose}
                         className="px-5 py-2.5 rounded-xl border border-slate-600 text-slate-300 hover:bg-slate-700/50"
                     >
-                        Hủy
+                        Cancel
                     </button>
 
                     <button
                         disabled={loading}
                         onClick={handleSubmit}
                         className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600
-            text-white font-semibold shadow-lg hover:scale-105 transition-all disabled:opacity-50"
+                            text-white font-semibold shadow-lg hover:scale-105 transition-all disabled:opacity-50"
                     >
-                        {loading ? "Đang lưu..." : "Thêm Admin"}
+                        {loading ? "Saving..." : "Add Admin"}
                     </button>
                 </div>
 

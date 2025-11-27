@@ -21,6 +21,7 @@ import {
     generateMealPlanThunk,
 } from '../../redux/slices/planSlice';
 import { useNavigate } from 'react-router-dom';
+import { useNotify } from "../../components/notifications/NotificationsProvider";
 
 type Step = 1 | 2 | 3 | 4;
 
@@ -33,6 +34,7 @@ export default function CreatePlanPage() {
     const [showNutritionModal, setShowNutritionModal] = useState(false);
     const [nutritionData, setNutritionData] = useState<any>(null);
     const { profile } = useSelector((state: RootState) => state.user);
+    const notify = useNotify();
 
     const [personalInfo, setPersonalInfo] = useState({
         height: Number(profile?.height) || 170,
@@ -75,17 +77,17 @@ export default function CreatePlanPage() {
     ];
 
     const goalOptions = [
-        { value: 'lose', label: 'Giảm cân', icon: '📉', description: 'Giảm cân an toàn và bền vững' },
-        { value: 'gain', label: 'Tăng cân', icon: '📈', description: 'Tăng cân và xây dựng cơ bắp' },
-        { value: 'maintain', label: 'Duy trì vóc dáng', icon: '⚖️', description: 'Giữ cân nặng và hình thể hiện tại' },
-        { value: 'improve', label: 'Cải thiện sức khỏe', icon: '💪', description: 'Ăn uống lành mạnh để cải thiện sức khỏe' },
-        { value: 'support', label: 'Hỗ trợ bệnh lý', icon: '❤️‍🩹', description: 'Điều chỉnh chế độ ăn cho tình trạng sức khỏe cụ thể' },
+        { value: 'lose', label: 'Lose weight', icon: '📉', description: 'Giảm cân an toàn và bền vững' },
+        { value: 'gain', label: 'Gain weight', icon: '📈', description: 'Tăng cân và xây dựng cơ bắp' },
+        { value: 'maintain', label: 'Maintain weight', icon: '⚖️', description: 'Giữ cân nặng và hình thể hiện tại' },
+        { value: 'improve', label: 'Improve health', icon: '💪', description: 'Ăn uống lành mạnh để cải thiện sức khỏe' },
+        { value: 'support', label: 'Support medical condition', icon: '❤️‍🩹', description: 'Điều chỉnh chế độ ăn cho tình trạng sức khỏe cụ thể' },
     ];
 
     const cookingStyles = [
-        { value: 'homeCook', label: 'Tự nấu', icon: '👨‍🍳', description: 'Tự chuẩn bị món ăn tại nhà' },
-        { value: 'eatOut', label: 'Ăn ngoài', icon: '🍽️', description: 'Ăn tại nhà hàng/quán ăn' },
-        { value: 'mixed', label: 'Kết hợp', icon: '🔄', description: 'Kết hợp cả hai phương án' },
+        { value: 'homeCook', label: 'HomeCook', icon: '👨‍🍳', description: 'Home cooked meals' },
+        { value: 'eatOut', label: 'EatOut', icon: '🍽️', description: 'Eat at restaurants' },
+        { value: 'mixed', label: 'Mixed', icon: '🔄', description: 'Combination of both' },
     ];
 
     const mealTimePresets: Record<string, string[]> = {
@@ -166,7 +168,7 @@ export default function CreatePlanPage() {
     const handleGenerateNutrition = async () => {
         try {
             const baseInfo = buildUserInfo();
-
+    
             const detailedGoal =
                 goals.goal === "lose"
                     ? `giảm ${goals.change || 0} kg`
@@ -177,27 +179,30 @@ export default function CreatePlanPage() {
                             : goals.goal === "improve"
                                 ? "cải thiện sức khỏe"
                                 : "hỗ trợ bệnh lý";
-
+    
             const userInfo = {
                 ...baseInfo,
                 goal: detailedGoal,
                 day: goals.deadline ? Number(goals.deadline) * 7 : 30,
             };
-
+    
             const result = await dispatch(generateNutritionThunk(userInfo)).unwrap();
+    
             setNutritionData(result);
             setShowNutritionModal(true);
-        } catch (err) {
-            alert("❌ Không thể tính dinh dưỡng: " + err);
+    
+            notify.success("🎉 Nutrition calculation successful!");
+        } catch (err: any) {
+            notify.error("❌ Failed to calculate nutrition. Please try again!");
         }
-    };
+    };    
 
     const handleConfirmMealPlan = async () => {
         try {
             setCreatingPlan(true);
-
+    
             const baseInfo = buildUserInfo();
-
+    
             const detailedGoal =
                 goals.goal === "lose"
                     ? `giảm ${goals.change || 0} kg`
@@ -208,26 +213,28 @@ export default function CreatePlanPage() {
                             : goals.goal === "improve"
                                 ? "cải thiện sức khỏe"
                                 : "hỗ trợ bệnh lý";
-
+    
             const userInfo = {
                 ...baseInfo,
                 goal: detailedGoal,
                 day: goals.deadline ? Number(goals.deadline) * 7 : 30,
             };
-
+    
             await dispatch(
                 generateMealPlanThunk({ userInfo, nutrition: nutritionData })
             ).unwrap();
-
+    
+            notify.success("🎯 Nutrition plan created successfully!");
+    
             navigate("/plan-result", { state: { userInfo } });
-
-        } catch (err) {
-            alert("❌ Lỗi khi tạo lịch: " + err);
+    
+        } catch (err: any) {
+            notify.error("❌ Failed to create plan. Please try again!");
         } finally {
             setCreatingPlan(false);
         }
     };
-
+    
     const StepIndicator = ({ step, label }: { step: number; label: string }) => {
         const isActive = currentStep === step;
         const isCompleted = currentStep > step;
@@ -256,23 +263,23 @@ export default function CreatePlanPage() {
                         className="group flex items-center gap-2 px-4 py-2 rounded-xl bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 transition-all duration-300 mb-4"
                     >
                         <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-                        <span className="font-medium">Quay lại danh sách</span>
+                        <span className="font-medium">Back to list</span>
                     </button>
 
                     <h1 className="text-4xl font-bold text-white mb-2 flex items-center gap-3">
-                        <Target className="w-10 h-10" /> Tạo Kế Hoạch Dinh Dưỡng
+                        <Target className="w-10 h-10" /> Create Nutrition Plan
                     </h1>
-                    <p className="text-blue-100">Xây dựng thực đơn phù hợp với mục tiêu của bạn</p>
+                    <p className="text-blue-100">Build a meal plan tailored to your goals</p>
                 </div>
 
                 <div className="mb-8 flex justify-between items-center">
-                    <StepIndicator step={1} label="Cá nhân" />
+                    <StepIndicator step={1} label="Personal" />
                     <div className="flex-1 h-1 bg-white/30 mx-2" />
-                    <StepIndicator step={2} label="Mục tiêu" />
+                    <StepIndicator step={2} label="Goals" />
                     <div className="flex-1 h-1 bg-white/30 mx-2" />
-                    <StepIndicator step={3} label="Ăn uống" />
+                    <StepIndicator step={3} label="Diet" />
                     <div className="flex-1 h-1 bg-white/30 mx-2" />
-                    <StepIndicator step={4} label="Thực đơn" />
+                    <StepIndicator step={4} label="Menu" />
                 </div>
 
                 <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-8 border border-blue-200 shadow-xl">
@@ -280,12 +287,12 @@ export default function CreatePlanPage() {
                         <div className="space-y-6 animate-fade-in">
                             <div className="flex items-center gap-3 mb-6">
                                 <User className="w-6 h-6 text-blue-600" />
-                                <h2 className="text-2xl font-bold text-gray-800">Thông Tin Cá Nhân</h2>
+                                <h2 className="text-2xl font-bold text-gray-800">Personal Information</h2>
                             </div>
 
                             <div className="grid grid-cols-2 gap-6">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Chiều cao (cm)</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Height (cm)</label>
                                     <input
                                         type="number"
                                         value={personalInfo.height}
@@ -294,7 +301,7 @@ export default function CreatePlanPage() {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Cân nặng (kg)</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Weight (kg)</label>
                                     <input
                                         type="number"
                                         value={personalInfo.weight}
@@ -303,7 +310,7 @@ export default function CreatePlanPage() {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Tuổi</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Age</label>
                                     <input
                                         type="number"
                                         value={personalInfo.age}
@@ -312,7 +319,7 @@ export default function CreatePlanPage() {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Giới tính <span className="text-red-500">*</span></label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Gender <span className="text-red-500">*</span></label>
                                     <div className="flex gap-4">
                                         <button
                                             onClick={() => setPersonalInfo({ ...personalInfo, gender: 'male' })}
@@ -321,7 +328,7 @@ export default function CreatePlanPage() {
                                                 : 'border-gray-300 hover:border-blue-300'
                                                 }`}
                                         >
-                                            Nam
+                                            Male
                                         </button>
                                         <button
                                             onClick={() => setPersonalInfo({ ...personalInfo, gender: 'female' })}
@@ -330,7 +337,7 @@ export default function CreatePlanPage() {
                                                 : 'border-gray-300 hover:border-pink-300'
                                                 }`}
                                         >
-                                            Nữ
+                                            Female
                                         </button>
                                     </div>
                                 </div>
@@ -339,7 +346,7 @@ export default function CreatePlanPage() {
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
                                     <Activity className="w-5 h-5 text-blue-600" />
-                                    Mức độ hoạt động <span className="text-red-500">*</span>
+                                    Activity Level <span className="text-red-500">*</span>
                                 </label>
                                 <div className="grid grid-cols-1 gap-3">
                                     {activityLevels.map((level) => (
@@ -361,12 +368,12 @@ export default function CreatePlanPage() {
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                                     <Heart className="w-5 h-5 text-red-500" />
-                                    Các bệnh lý (nếu có)
+                                    Medical conditions (if any)
                                 </label>
                                 <textarea
                                     value={personalInfo.medicalConditions}
                                     onChange={(e) => setPersonalInfo({ ...personalInfo, medicalConditions: e.target.value })}
-                                    placeholder="Ví dụ: Tiểu đường, cao huyết áp..."
+                                    placeholder="Example: diabetes, high blood pressure..."
                                     rows={3}
                                     className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                 />
@@ -378,12 +385,12 @@ export default function CreatePlanPage() {
                         <div className="space-y-6 animate-fade-in">
                             <div className="flex items-center gap-3 mb-6">
                                 <Target className="w-6 h-6 text-blue-600" />
-                                <h2 className="text-2xl font-bold text-gray-800">Xác Định Yêu Cầu Đầu Vào</h2>
+                                <h2 className="text-2xl font-bold text-gray-800">Define Your Goal</h2>
                             </div>
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-3">
-                                    Mục tiêu của bạn là gì? <span className="text-red-500">*</span>
+                                What is your goal? <span className="text-red-500">*</span>
                                 </label>
                                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                                     {goalOptions.map((option) => (
@@ -416,7 +423,7 @@ export default function CreatePlanPage() {
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                Số cân muốn {goals.goal === "lose" ? "giảm" : "tăng"} (kg)
+                                            Weight change {goals.goal === "lose" ? "giảm" : "tăng"} (kg)
                                                 <span className="text-red-500">*</span>
                                             </label>
                                             <input
@@ -426,19 +433,19 @@ export default function CreatePlanPage() {
                                                     const val = Number(e.target.value);
                                                     if (val < 0) return;
                                                     if (val > 15) {
-                                                        alert("⚠️ Mục tiêu thay đổi không nên quá 15 kg để đảm bảo an toàn!");
+                                                        alert("⚠️ The target change should not exceed 15 kg for safety!");
                                                         return;
                                                     }
                                                     setGoals({ ...goals, change: val });
                                                 }}
-                                                placeholder={`Nhập số kg muốn ${goals.goal === "lose" ? "giảm" : "tăng"}`}
+                                                placeholder={`Enter weight to ${goals.goal === "lose" ? "giảm" : "tăng"}`}
                                                 className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                             />
                                         </div>
 
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                Tốc độ thay đổi (kg/tuần)
+                                            Weekly change (kg/Weekly)
                                             </label>
                                             <input
                                                 type="number"
@@ -454,7 +461,7 @@ export default function CreatePlanPage() {
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                                     <Calendar className="w-5 h-5 text-blue-600" />
-                                    Thời gian đạt mục tiêu <span className="text-red-500">*</span>
+                                    Target duration <span className="text-red-500">*</span>
                                 </label>
                                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                                     {[1, 2, 3, 4, 5].map((w) => (
@@ -466,7 +473,7 @@ export default function CreatePlanPage() {
                                                 : "border-gray-300 hover:border-blue-300"
                                                 }`}
                                         >
-                                            {w} tuần
+                                            {w} weeks
                                         </button>
                                     ))}
                                 </div>
@@ -474,27 +481,27 @@ export default function CreatePlanPage() {
 
                             {goals.deadline && (
                                 <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mt-4">
-                                    <h3 className="font-semibold text-blue-900 mb-2">Chi tiết mục tiêu:</h3>
+                                    <h3 className="font-semibold text-blue-900 mb-2">Goal details:</h3>
                                     <ul className="text-sm text-blue-800 space-y-1">
-                                        <li>• Cân nặng hiện tại: {personalInfo.weight} kg</li>
+                                        <li>• Current weight: {personalInfo.weight} kg</li>
                                         {goals.goal === "lose" || goals.goal === "gain" ? (
                                             <>
                                                 <li>
-                                                    • Mục tiêu: {goals.goal === "lose" ? "Giảm" : "Tăng"} {goals.change} kg
+                                                    • Goal: {goals.goal === "lose" ? "Lose" : "Gain"} {goals.change} kg
                                                 </li>
                                                 <li>
-                                                    • Cân nặng dự kiến:{" "}
+                                                    • Expected weight:{" "}
                                                     {goals.goal === "lose"
                                                         ? personalInfo.weight - goals.change
                                                         : personalInfo.weight + goals.change}
                                                     kg
                                                 </li>
-                                                <li>• Tốc độ: 1 kg/tuần</li>
+                                                <li>• Rate: 1 kg/week</li>
                                             </>
                                         ) : (
-                                            <li>• Mục tiêu: {goalOptions.find((g) => g.value === goals.goal)?.label}</li>
+                                            <li>• Goal: {goalOptions.find((g) => g.value === goals.goal)?.label}</li>
                                         )}
-                                        <li>• Thời gian ước tính: {goals.deadline} tuần</li>
+                                        <li>• Estimated time: {goals.deadline} weeks</li>
                                     </ul>
                                 </div>
                             )}
@@ -505,38 +512,38 @@ export default function CreatePlanPage() {
                         <div className="space-y-6 animate-fade-in">
                             <div className="flex items-center gap-3 mb-6">
                                 <Utensils className="w-6 h-6 text-blue-600" />
-                                <h2 className="text-2xl font-bold text-gray-800">Thông Tin Ăn Uống</h2>
+                                <h2 className="text-2xl font-bold text-gray-800">Diet Information</h2>
                             </div>
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Dị ứng thực phẩm (nếu có)
+                                Food allergies (if any)
                                 </label>
                                 <input
                                     type="text"
                                     value={dietInfo.allergies}
                                     onChange={(e) => setDietInfo({ ...dietInfo, allergies: e.target.value })}
-                                    placeholder="Ví dụ: Hải sản, sữa, đậu phộng..."
+                                    placeholder="Example: seafood, milk, peanuts..."
                                     className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                 />
                             </div>
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Sở thích ăn uống (nếu có)
+                                Food preferences (if any)
                                 </label>
                                 <input
                                     type="text"
                                     value={dietInfo.preferences}
                                     onChange={(e) => setDietInfo({ ...dietInfo, preferences: e.target.value })}
-                                    placeholder="Ví dụ: Ưa thích rau củ, không ăn thịt đỏ..."
+                                    placeholder="Example: prefer vegetables, avoid red meat..."
                                     className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                 />
                             </div>
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-3">
-                                    Số bữa ăn trong ngày <span className="text-red-500">*</span>
+                                Meals per day <span className="text-red-500">*</span>
                                 </label>
                                 <div className="grid grid-cols-3 gap-4">
                                     {[3, 4, 5].map((num) => (
@@ -555,7 +562,7 @@ export default function CreatePlanPage() {
                                                 : 'border-gray-300 hover:border-blue-300'
                                                 }`}
                                         >
-                                            {num} bữa
+                                            {num} meals
                                         </button>
                                     ))}
                                 </div>
@@ -565,7 +572,7 @@ export default function CreatePlanPage() {
                                 <div className="mt-4">
                                     <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                                         <Calendar className="w-5 h-5 text-blue-600" />
-                                        Giờ ăn cụ thể
+                                        Meal times
                                     </label>
 
                                     <div className="space-y-3">
@@ -603,13 +610,13 @@ export default function CreatePlanPage() {
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                                     <DollarSign className="w-5 h-5 text-green-600" />
-                                    Ngân sách mỗi ngày (VNĐ - nếu có)
+                                    Daily budget (VND)
                                 </label>
                                 <input
                                     type="number"
                                     value={dietInfo.budget || ''}
                                     onChange={(e) => setDietInfo({ ...dietInfo, budget: Number(e.target.value) })}
-                                    placeholder="Ví dụ: 150000"
+                                    placeholder="Example: 150000"
                                     className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                 />
                             </div>
@@ -620,12 +627,12 @@ export default function CreatePlanPage() {
                         <div className="space-y-6 animate-fade-in">
                             <div className="flex items-center gap-3 mb-6">
                                 <FileText className="w-6 h-6 text-blue-600" />
-                                <h2 className="text-2xl font-bold text-gray-800">Yêu Cầu Về Thực Đơn</h2>
+                                <h2 className="text-2xl font-bold text-gray-800">Meal Plan Requirements</h2>
                             </div>
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-3">
-                                    Loại hình thức <span className="text-red-500">*</span>
+                                Cooking style <span className="text-red-500">*</span>
                                 </label>
                                 <div className="grid grid-cols-3 gap-4">
                                     {cookingStyles.map((style) => (
@@ -647,7 +654,7 @@ export default function CreatePlanPage() {
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-3">
-                                    Số ngày muốn lên kế hoạch mẫu <span className="text-red-500">*</span>
+                                Number of template days <span className="text-red-500">*</span>
                                 </label>
                                 <div className="grid grid-cols-4 gap-4">
                                     {[2, 3, 4, 5].map((days) => (
@@ -659,30 +666,30 @@ export default function CreatePlanPage() {
                                                 : 'border-gray-300 hover:border-blue-300'
                                                 }`}
                                         >
-                                            {days} ngày
+                                            {days} days
                                         </button>
                                     ))}
                                 </div>
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Ghi chú thêm (nếu có)</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Additional notes</label>
                                 <textarea
                                     value={planRequirements.notes}
                                     onChange={(e) => setPlanRequirements({ ...planRequirements, notes: e.target.value })}
-                                    placeholder="Ví dụ: Muốn món ăn đa dạng, không lặp lại..."
+                                    placeholder="Example: prefer variety, avoid repetition..."
                                     rows={4}
                                     className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                 />
                             </div>
 
                             <div className="bg-green-50 border border-green-200 rounded-xl p-4">
-                                <h3 className="font-semibold text-green-900 mb-2">✅ Tóm tắt kế hoạch:</h3>
+                                <h3 className="font-semibold text-green-900 mb-2">✅ Plan summary:</h3>
                                 <ul className="text-sm text-green-800 space-y-1">
-                                    <li>• Mục tiêu: {goals.goal === 'lose' ? 'Giảm cân' : goals.goal === 'gain' ? 'Tăng cân' : 'Duy trì'}</li>
-                                    <li>• Số bữa/ngày: {dietInfo.mealsPerDay} bữa</li>
-                                    <li>• Hình thức: {planRequirements.cookingStyle === 'homeCook' ? 'Tự nấu' : planRequirements.cookingStyle === 'eatOut' ? 'Ăn ngoài' : 'Kết hợp'}</li>
-                                    <li>• Kế hoạch: {planRequirements.planDays} ngày</li>
+                                    <li>• Goal: {goals.goal === 'lose' ? 'Lose weight' : goals.goal === 'gain' ? 'Gain weight' : 'Duy trì'}</li>
+                                    <li>• Meals/day: {dietInfo.mealsPerDay} bữa</li>
+                                    <li>• Cooking style: {planRequirements.cookingStyle === 'homeCook' ? 'Home cooked' : planRequirements.cookingStyle === 'eatOut' ? 'Eat out' : 'Mixed'}</li>
+                                    <li>• Days planned: {planRequirements.planDays} ngày</li>
                                 </ul>
                             </div>
                         </div>
@@ -698,7 +705,7 @@ export default function CreatePlanPage() {
                             : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                             }`}
                     >
-                        <ChevronLeft className="w-5 h-5" /> Quay lại
+                        <ChevronLeft className="w-5 h-5" />Back
                     </button>
                     {currentStep < 4 ? (
                         <button
@@ -721,7 +728,7 @@ export default function CreatePlanPage() {
                                     : 'bg-gradient-to-r from-blue-500 to-cyan-600 text-white hover:shadow-lg'
                                 }`}
                         >
-                            Tiếp tục <ChevronRight className="w-5 h-5" />
+                            Next <ChevronRight className="w-5 h-5" />
                         </button>
                     ) : (
                         <button
@@ -742,7 +749,7 @@ export default function CreatePlanPage() {
                                 </>
                             ) : (
                                 <>
-                                    <Check className="w-5 h-5" /> Hoàn thành
+                                    <Check className="w-5 h-5" /> Finish
                                 </>
                             )}
                         </button>
@@ -753,19 +760,19 @@ export default function CreatePlanPage() {
                     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50">
                         <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-lg relative animate-fade-in">
                             <h2 className="text-2xl font-bold text-blue-700 mb-4 flex items-center gap-2">
-                                <Check className="w-6 h-6 text-green-600" /> Kết quả phân tích dinh dưỡng
+                                <Check className="w-6 h-6 text-green-600" /> Nutrition Analysis Result
                             </h2>
 
                             <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
                                 <ul className="text-sm text-blue-800 space-y-1">
                                     <li>• BMR: {nutritionData.nutrition.BMR}</li>
                                     <li>• TDEE: {nutritionData.nutrition.TDEE}</li>
-                                    <li>• Hệ số hoạt động: {nutritionData.nutrition.activityFactor}</li>
-                                    <li>• Mục tiêu: {nutritionData.nutrition.goalType}</li>
-                                    <li>• Thay đổi cân nặng: {nutritionData.nutrition.weightChangeKg} kg</li>
-                                    <li>• Thời gian: {nutritionData.nutrition.durationDays} ngày</li>
-                                    <li>• Chênh lệch calo mỗi ngày: {nutritionData.nutrition.dailyCalorieChange}</li>
-                                    <li>• Lượng calo đề xuất: {nutritionData.nutrition.calories}</li>
+                                    <li>• Activity factor: {nutritionData.nutrition.activityFactor}</li>
+                                    <li>• Goal: {nutritionData.nutrition.goalType}</li>
+                                    <li>• Weight change: {nutritionData.nutrition.weightChangeKg} kg</li>
+                                    <li>• Duration: {nutritionData.nutrition.durationDays} ngày</li>
+                                    <li>• Daily calorie change: {nutritionData.nutrition.dailyCalorieChange}</li>
+                                    <li>• Recommended calories: {nutritionData.nutrition.calories}</li>
                                     <li>• Protein: {nutritionData.nutrition.protein}g</li>
                                     <li>• Fat: {nutritionData.nutrition.fat}g</li>
                                     <li>• Carbs: {nutritionData.nutrition.carbs}g</li>
@@ -779,7 +786,7 @@ export default function CreatePlanPage() {
                                     onClick={() => setShowNutritionModal(false)}
                                     className="px-5 py-2 rounded-xl bg-gray-200 hover:bg-gray-300 font-semibold text-gray-700"
                                 >
-                                    Hủy
+                                    Cancel
                                 </button>
                                 <button
                                     onClick={handleConfirmMealPlan}
@@ -791,11 +798,11 @@ export default function CreatePlanPage() {
                                 >
                                     {creatingPlan ? (
                                         <>
-                                            <Loader2 className="w-5 h-5 animate-spin" /> Đang tạo lịch mẫu...
+                                            <Loader2 className="w-5 h-5 animate-spin" /> Creating plan...
                                         </>
                                     ) : (
                                         <>
-                                            <Check className="w-5 h-5" /> Tạo lịch mẫu
+                                            <Check className="w-5 h-5" /> Creating plan
                                         </>
                                     )}
                                 </button>

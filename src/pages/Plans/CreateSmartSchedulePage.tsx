@@ -5,11 +5,13 @@ import { useSelector, useDispatch } from "react-redux";
 import { RootState, AppDispatch } from "../../redux/store";
 import { getAiAdviceThunk } from "../../redux/slices/aiSlice";
 import { planApi } from "../../services/api";
+import { useNotify } from "../../components/notifications/NotificationsProvider";
 
 export default function CreateSmartSchedulePage() {
     const { state } = useLocation();
     const meals = state?.meals || [];
     const [aiResult, setAiResult] = useState<any>(null);
+    const notify = useNotify();
 
     const navigate = useNavigate();
     const dispatch = useDispatch<AppDispatch>();
@@ -23,8 +25,8 @@ export default function CreateSmartSchedulePage() {
         age: profile?.DOB ? new Date().getFullYear() - new Date(profile.DOB).getFullYear() : 25,
         gender: profile?.gender === "MALE" ? "nam" :
             profile?.gender === "FEMALE" ? "nữ" : "nam",
-        goal: "giảm cân",
-        activity: "vừa",
+        goal: "",
+        activity: "",
     });
 
     const [showModal, setShowModal] = useState(false);
@@ -38,7 +40,7 @@ export default function CreateSmartSchedulePage() {
     const [kgChange, setKgChange] = useState<number>(1);
     const [weeks, setWeeks] = useState<number>(1);
 
-    const [targetWeeks, setTargetWeeks] = useState<number | null>(1);
+    const [targetWeeks, setTargetWeeks] = useState<number>(1);
     const [timeWarning, setTimeWarning] = useState<string>("");
 
     const [timeError, setTimeError] = useState("");
@@ -103,42 +105,53 @@ export default function CreateSmartSchedulePage() {
     };
 
     const handleSubmitSchedule = async () => {
-        const totalDays = targetWeeks! * 7;
-
-        const mergedGoal =
-            userInfo.goal === "giảm cân"
-                ? `giảm ${kgChange}kg trong ${totalDays} ngày`
-                : `tăng ${kgChange}kg trong ${totalDays} ngày`;
-
-        const cleanUserInfo = {
-            userId: profile?._id,
-            gender: userInfo.gender,
-            age: typeof userInfo.age === "string" ? getAgeFromDOB(userInfo.age) : Number(userInfo.age),
-            weight: Number(userInfo.weight),
-            height: Number(userInfo.height),
-            activity: userInfo.activity,
-            goal: mergedGoal,
-        };
-
-        const userSchedule = mealSelections.map((day, dayIndex) => ({
-            dateID: `Day ${dayIndex + 1}`,
-            meals: day.map((mealItems, mealIndex) => ({
-                name: mealItems.join(", "),
-                type: mealTypes[mealIndex] ?? "khác",
-                time: `${7 + mealIndex * 5}:00`,
-            })),
-        }));
-
-        const result = await dispatch(
-            getAiAdviceThunk({
-                userId: cleanUserInfo.userId,
-                userInfo: cleanUserInfo,
-                userSchedule,
-            })
-        ).unwrap();
-
-        setAiResult(result);
-    };
+        if (!isFormValid()) {
+            notify.warning("⚠️ Vui lòng điền đầy đủ thông tin trước khi phân tích bằng AI!");
+            return;
+        }
+    
+        try {
+            const weeksNum = Number(targetWeeks || 0);
+            const totalDays = weeksNum * 7;
+    
+            const mergedGoal =
+                userInfo.goal === "giảm cân"
+                    ? `giảm ${kgChange}kg trong ${totalDays} ngày`
+                    : `tăng ${kgChange}kg trong ${totalDays} ngày`;
+    
+            const cleanUserInfo = {
+                userId: profile?._id,
+                gender: userInfo.gender,
+                age: typeof userInfo.age === "string" ? getAgeFromDOB(userInfo.age) : Number(userInfo.age),
+                weight: Number(userInfo.weight),
+                height: Number(userInfo.height),
+                activity: userInfo.activity,
+                goal: mergedGoal,
+            };
+    
+            const userSchedule = mealSelections.map((day, dayIndex) => ({
+                dateID: `Day ${dayIndex + 1}`,
+                meals: day.map((mealItems, mealIndex) => ({
+                    name: mealItems.join(", "),
+                    type: mealTypes[mealIndex] ?? "khác",
+                    time: `${7 + mealIndex * 5}:00`,
+                })),
+            }));
+    
+            const result = await dispatch(
+                getAiAdviceThunk({
+                    userId: cleanUserInfo.userId,
+                    userInfo: cleanUserInfo,
+                    userSchedule,
+                })
+            ).unwrap();
+    
+            setAiResult(result);
+            notify.success("🎉 AI đã phân tích dữ liệu của bạn!");
+        } catch (err) {
+            notify.error("❌ Lỗi khi phân tích bằng AI. Vui lòng thử lại!");
+        }
+    };    
 
     const mealTypeMap = ["sáng", "trưa", "chiều", "tối", "phụ tối"];
     const handleCreateSchedule = async (customName: string, customDate: string) => {
@@ -199,7 +212,7 @@ export default function CreateSmartSchedulePage() {
             navigate("/plans");
         } catch (err: any) {
             console.log("❌ Lỗi tạo lịch:", err);
-            alert(err.response?.data?.message || "Không thể tạo lịch!");
+            notify.error(err.response?.data?.message || "❌ Không thể tạo lịch!");
         }
     };
 
@@ -214,6 +227,27 @@ export default function CreateSmartSchedulePage() {
             label: d.toLocaleDateString("vi-VN"),
         };
     });
+
+    const isFormValid = () => {
+        if (!userInfo.gender) return false;
+        if (!userInfo.age || userInfo.age < 10 || userInfo.age > 80) return false;
+        if (!userInfo.weight || userInfo.weight < 20 || userInfo.weight > 300) return false;
+        if (!userInfo.height || userInfo.height < 100 || userInfo.height > 250) return false;
+        if (!userInfo.goal) return false;
+        if (userInfo.goal !== "duy trì vóc dáng" && !kgChange) return false;
+        if (!targetWeeks) return false;
+        if (!userInfo.activity) return false;
+
+        if (!mealCount || mealCount < 3 || mealCount > 5) return false;
+        if (!scheduleDays || scheduleDays < 1) return false;
+
+        // Phải có ít nhất 1 món ăn trong ngày đầu tiên
+        const firstDayMeals = mealSelections[0] ?? [];
+        const hasFood = firstDayMeals.some((meal) => meal.length > 0);
+        if (!hasFood) return false;
+
+        return true;
+    };
 
     return (
         <div className="fixed inset-0 bg-gradient-to-br from-blue-600 via-cyan-500 to-teal-500 overflow-hidden">
@@ -351,6 +385,7 @@ export default function CreateSmartSchedulePage() {
                                                     })
                                                 }
                                             >
+                                                <option value="" disabled hidden>-- Hãy chọn mục tiêu của bạn --</option>
                                                 <option>giảm cân</option>
                                                 <option>tăng cân</option>
                                                 <option>duy trì vóc dáng</option>
@@ -375,6 +410,7 @@ export default function CreateSmartSchedulePage() {
                                                     type="number"
                                                     className="w-full border-2 border-gray-200 rounded-xl p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 hover:border-blue-300"
                                                     value={kgChange}
+                                                    placeholder="Nhập số kg muốn thay đổi..."
                                                     onChange={(e) => {
                                                         let val = Number(e.target.value);
                                                         if (isNaN(val) || val <= 0) val = 1;
@@ -410,8 +446,8 @@ export default function CreateSmartSchedulePage() {
                                             </label>
 
                                             <select
-                                                className="w-full border-2 border-gray-200 rounded-xl p-2.5 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all duration-300 hover:border-cyan-300 bg-white"
-                                                value={targetWeeks ?? ""}
+                                                className="w-full border-2 border-gray-200 rounded-xl p-2.5"
+                                                value={targetWeeks}
                                                 onChange={(e) => {
                                                     const val = Number(e.target.value);
                                                     setTargetWeeks(val);
@@ -461,6 +497,7 @@ export default function CreateSmartSchedulePage() {
                                                     })
                                                 }
                                             >
+                                                <option value="" disabled hidden>-- Chọn mức độ hoạt động --</option>
                                                 <option>ít</option>
                                                 <option>nhẹ</option>
                                                 <option>vừa</option>
@@ -740,7 +777,7 @@ export default function CreateSmartSchedulePage() {
 
                     <button
                         onClick={handleSubmitSchedule}
-                        disabled={aiLoading}
+                        disabled={aiLoading || !isFormValid()}
                         className="relative group/btn px-6 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl flex items-center gap-2 disabled:opacity-50 hover:from-blue-700 hover:to-cyan-700 font-medium transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl disabled:hover:scale-100 overflow-hidden"
                     >
                         <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-cyan-400 opacity-0 group-hover/btn:opacity-100 transition-opacity blur"></div>
@@ -758,7 +795,7 @@ export default function CreateSmartSchedulePage() {
 
                             const hasActive = await checkActiveSchedule();
                             if (hasActive) {
-                                alert("⚠️ Bạn đã có lịch đang hoạt động. Hãy hoàn thành trước khi tạo lịch mới!");
+                                notify.warning("⚠️ Bạn đã có lịch đang hoạt động. Hãy hoàn thành trước khi tạo lịch mới!");
                                 return;
                             }
 
@@ -836,8 +873,8 @@ export default function CreateSmartSchedulePage() {
 
                                 <button
                                     onClick={() => {
-                                        if (!scheduleName.trim()) return alert("Tên lịch không được bỏ trống!");
-                                        if (!startDateSelect) return alert("Vui lòng chọn ngày bắt đầu!");
+                                        if (!scheduleName.trim()) return notify.warning("Tên lịch không được bỏ trống!");
+                                        if (!startDateSelect) return notify.warning("Vui lòng chọn ngày bắt đầu!");                                        
 
                                         handleCreateSchedule(scheduleName, startDateSelect);
                                         setShowModal(false);

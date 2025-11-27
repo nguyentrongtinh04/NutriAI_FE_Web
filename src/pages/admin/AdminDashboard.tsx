@@ -39,6 +39,8 @@ import { useDispatch, useSelector } from "react-redux";
 import { CleanRootState, AppDispatch } from "../../redux/store";
 import AddAdminModal from "./AddAdminModal";
 import AdminListModal from "./AdminListModal";
+import { useNotify } from "../../components/notifications/NotificationsProvider";
+
 
 import {
   fetchAllServiceStats,
@@ -52,6 +54,7 @@ import { clearUser } from "../../redux/slices/userSlice";
 export default function AdminDashboard() {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
+  const notify = useNotify();
 
   const [activeTab, setActiveTab] = useState<"user" | "system">("user");
   const [activeUserMenu, setActiveUserMenu] = useState<
@@ -66,22 +69,27 @@ export default function AdminDashboard() {
   const [showAdminList, setShowAdminList] = useState(false);
 
   useEffect(() => {
-    dispatch(fetchAllServiceStats());
-    dispatch(fetchRequestLogsStats());
+    dispatch(fetchAllServiceStats())
+      .unwrap()
+      .catch(() => notify.error("Không tải được thống kê hệ thống!"));
+  
+    dispatch(fetchRequestLogsStats())
+      .unwrap()
+      .catch(() => notify.error("Không tải được logs yêu cầu!"));
   }, [dispatch]);
+  
   const handleLogout = () => {
-    // Xóa token
+    notify.success("Đăng xuất thành công!");
+  
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
     localStorage.removeItem("persist:root");
-
-    // Xóa redux
+  
     dispatch(clearAuth());
     dispatch(clearUser());
-
-    // Chuyển hướng
+  
     navigate("/login");
-  };
+  };  
 
   if (loading || !serviceStats || !requestLogs) {
     return (

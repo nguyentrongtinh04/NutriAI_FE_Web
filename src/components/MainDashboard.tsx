@@ -10,17 +10,18 @@ import { fetchRecentMealsThunk } from "../redux/slices/mealSlice";
 export default function MainDashboard() {
     const dispatch = useDispatch<AppDispatch>();
     const { profile } = useSelector((state: RootState) => state.user);
+
     const displayName =
-    profile?.fullname ||
-    profile?.email?.split("@")[0] ||
-    profile?.phone ||
-    "User";
-  
+        profile?.fullname ||
+        profile?.email?.split("@")[0] ||
+        profile?.phone ||
+        "User";
+
     const token =
         useSelector((state: RootState) => state.auth.accessToken) ||
         localStorage.getItem("accessToken");
 
-    const { nextMeal, loading, error,schedules } = useSelector((state: RootState) => state.plan);
+    const { nextMeal, loading, error, schedules } = useSelector((state: RootState) => state.plan);
 
     useEffect(() => {
         if (token) {
@@ -29,6 +30,7 @@ export default function MainDashboard() {
             dispatch(fetchSchedulesThunk());
         }
     }, [dispatch, token]);
+
     const navigate = useNavigate();
     const { recentMeals } = useSelector((state: RootState) => state.meal);
 
@@ -36,7 +38,7 @@ export default function MainDashboard() {
         {
             id: 'scan',
             title: 'Scan Meal',
-            description: 'Chụp ảnh để phân tích',
+            description: 'Take a photo to analyze nutrition',
             icon: Camera,
             gradient: 'from-green-500 to-emerald-600',
             glowColor: 'from-green-400 to-emerald-500',
@@ -46,16 +48,16 @@ export default function MainDashboard() {
         {
             id: 'searchFood',
             title: 'Search Food',
-            description: 'Tìm món ăn theo Nutritionix',
+            description: 'Find foods using Nutritionix',
             icon: Apple,
             gradient: 'from-green-400/30 to-emerald-400/30',
             iconColor: 'text-green-500',
-            onClick: () => navigate('/search-food') // ✅ điều hướng
+            onClick: () => navigate('/search-food')
         },
         {
             id: 'goals',
             title: 'Goals',
-            description: 'Thiết lập mục tiêu mới',
+            description: 'Set new health goals',
             icon: Target,
             gradient: 'from-blue-400/30 to-cyan-400/30',
             iconColor: 'text-blue-500',
@@ -63,8 +65,8 @@ export default function MainDashboard() {
         },
         {
             id: 'viewPlan',
-            title: 'ListMealsScan',
-            description: 'Xem danh sách món ăn đã scan',
+            title: 'Scanned Meals List',
+            description: 'View list of scanned meals',
             icon: Calendar,
             gradient: 'from-teal-400/30 to-green-400/30',
             iconColor: 'text-teal-500',
@@ -92,6 +94,7 @@ export default function MainDashboard() {
 
     return (
         <main className="relative z-20 w-full px-4 py-10 pt-[105px]">
+
             {/* Welcome Section */}
             <div className="mb-8 relative">
                 <div className="absolute -inset-4 bg-gradient-to-r from-blue-400/20 via-cyan-400/30 to-blue-400/20 rounded-3xl blur-2xl animate-pulse"></div>
@@ -102,7 +105,7 @@ export default function MainDashboard() {
                             Welcome back, {displayName}!
                         </span>
                     </h1>
-                    <p className="text-blue-200 text-lg animate-fade-in">Today is a great day to maintain a healthy diet</p>
+                    <p className="text-blue-200 text-lg animate-fade-in">Today is a great day to stay healthy!</p>
                 </div>
             </div>
 
@@ -110,17 +113,18 @@ export default function MainDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
                 {actionCards.map((card, index) => {
                     const Icon = card.icon;
-                    const isClickable = !!card.onClick;
-
                     return (
                         <div
                             key={card.id}
-                            className="relative group"
                             onClick={card.onClick}
-                            style={{ cursor: isClickable ? 'pointer' : 'default' }}
+                            className="relative group cursor-pointer"
                         >
-                            <div className={`absolute -inset-2 bg-gradient-to-r ${card.gradient} rounded-2xl blur-lg animate-pulse opacity-0 group-hover:opacity-100 transition-all duration-500`} style={{ animationDelay: `${index * 200}ms` }}></div>
-                            <div className="relative bg-white/90 backdrop-blur-sm rounded-2xl p-6 border border-blue-200 shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:scale-105 hover:-translate-y-1">
+                            <div
+                                className={`absolute -inset-2 bg-gradient-to-r ${card.gradient} rounded-2xl blur-lg animate-pulse opacity-0 group-hover:opacity-100 transition-all duration-500`}
+                                style={{ animationDelay: `${index * 200}ms` }}
+                            ></div>
+
+                            <div className="relative bg-white/90 backdrop-blur-sm rounded-2xl p-6 border border-blue-200 shadow-xl hover:shadow-2xl hover:scale-105 transition-all">
                                 <Icon className={`w-10 h-10 ${card.iconColor || 'text-gray-600'} mb-4 group-hover:animate-bounce`} />
                                 <h3 className="text-lg font-bold text-gray-800 mb-2">{card.title}</h3>
                                 <p className="text-gray-600 text-sm">{card.description}</p>
@@ -132,6 +136,7 @@ export default function MainDashboard() {
 
             {/* Nutrition Overview */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+
                 {/* Meal Schedule Overview */}
                 <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 border border-blue-200 shadow-xl">
                     <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
@@ -140,7 +145,7 @@ export default function MainDashboard() {
                     </h2>
 
                     {loading ? (
-                        <p className="text-gray-500 italic">Đang tải dữ liệu...</p>
+                        <p className="text-gray-500 italic">Loading data...</p>
                     ) : error ? (
                         <div className="text-red-500 flex items-center gap-2">
                             <AlertCircle className="w-5 h-5" />
@@ -148,53 +153,50 @@ export default function MainDashboard() {
                         </div>
                     ) : nextMeal ? (
                         <>
-                            {/* 🧠 Thông báo tổng quan */}
+                            {/* Overview Message */}
                             <p className="text-gray-700 text-lg font-medium">{nextMeal.message}</p>
 
-                            {/* 📋 Có thông tin lịch trình */}
+                            {/* Schedule Information */}
                             {nextMeal.scheduleInfo && (
                                 <div className="bg-blue-50 border border-blue-200 p-4 rounded-xl mt-4">
                                     <p className="font-semibold text-blue-700">
-                                        📋 Kế hoạch: {nextMeal.scheduleInfo.nameSchedule}
+                                        📋 Plan: {nextMeal.scheduleInfo.nameSchedule}
                                     </p>
                                     <p className="text-sm text-gray-600">
-                                        🎯 Mục tiêu: {nextMeal.scheduleInfo.goal}
-                                        {nextMeal.scheduleInfo.kgGoal
-                                            ? ` (${nextMeal.scheduleInfo.kgGoal} kg)`
-                                            : ""}
+                                        🎯 Goal: {nextMeal.scheduleInfo.goal}
+                                        {nextMeal.scheduleInfo.kgGoal ? ` (${nextMeal.scheduleInfo.kgGoal} kg)` : ""}
                                     </p>
                                 </div>
                             )}
 
-                            {/* 🍽️ Có bữa ăn sắp tới */}
+                            {/* Next Meal */}
                             {nextMeal.meal && (
                                 <div className="relative bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-2xl p-5 mt-5 shadow-md hover:shadow-lg transition-all duration-300">
                                     <div className="flex items-center gap-6">
-                                        {/* 🕒 Thời gian & loại bữa */}
+                                        {/* Time */}
                                         <div className="text-center min-w-[90px]">
-                                            <div className="text-3xl font-extrabold text-green-700 leading-tight drop-shadow-sm">
+                                            <div className="text-3xl font-extrabold text-green-700">
                                                 {nextMeal.meal.mealTime || "--:--"}
                                             </div>
-                                            <div
-                                                className="inline-block mt-2 px-3 py-1 rounded-full text-sm font-semibold text-white bg-gradient-to-r from-green-500 to-emerald-600 shadow-sm"
-                                            >
+                                            <div className="mt-2 px-3 py-1 rounded-full text-sm font-semibold text-white bg-gradient-to-r from-green-500 to-emerald-600">
                                                 {nextMeal.meal.mealType
                                                     ? nextMeal.meal.mealType.charAt(0).toUpperCase() +
-                                                    nextMeal.meal.mealType.slice(1)
-                                                    : "Không rõ"}
+                                                      nextMeal.meal.mealType.slice(1)
+                                                    : "Unknown"}
                                             </div>
                                         </div>
 
-                                        {/* 🍽️ Món ăn */}
+                                        {/* Meal Info */}
                                         <div className="flex-1">
                                             <h3 className="text-xl font-bold text-green-800">
-                                                {nextMeal.meal.mealName || nextMeal.meal.nameMeals || "Chưa có tên món"}
+                                                {nextMeal.meal.mealName || nextMeal.meal.nameMeals || "Unnamed meal"}
                                             </h3>
+
                                             {nextMeal.meal.description && (
                                                 <p className="text-gray-600 text-sm mt-1">{nextMeal.meal.description}</p>
                                             )}
 
-                                            {/* 🔹 Nutrition info */}
+                                            {/* Nutrition Data */}
                                             {nextMeal.meal.CPFCa && (
                                                 <div className="flex flex-wrap gap-3 text-sm text-gray-600 mt-3">
                                                     <span className="font-medium text-green-600">
@@ -210,37 +212,34 @@ export default function MainDashboard() {
                                 </div>
                             )}
 
-
-                            {/* 📅 Ngày thực hiện */}
+                            {/* Actual Date */}
                             {nextMeal.actualDate && (
                                 <p className="text-gray-600 text-sm mt-2">
-                                    📅 Ngày thực hiện: {nextMeal.actualDate} (Ngày {nextMeal.dayOrder})
+                                    📅 Actual date: {nextMeal.actualDate} (Day {nextMeal.dayOrder})
                                 </p>
                             )}
 
-                            {/* 🎉 Hoàn thành lịch */}
+                            {/* Finished */}
                             {nextMeal.done && (
                                 <div className="text-green-600 font-semibold mt-3">
-                                    🎉 Bạn đã hoàn thành lịch trình ăn uống!
+                                    🎉 You have completed this meal plan!
                                 </div>
                             )}
 
-                            {/* 🔘 Nút điều hướng */}
+                            {/* Buttons */}
                             <div className="mt-6 text-center">
                                 {nextMeal.hasSchedule === false ? (
                                     <button
                                         onClick={() => navigate("/plans")}
-                                        className="bg-gradient-to-r from-blue-500 to-cyan-600 text-white px-6 py-3 rounded-xl hover:shadow-lg transition-all duration-300 flex items-center gap-2 mx-auto"
+                                        className="bg-gradient-to-r from-blue-500 to-cyan-600 text-white px-6 py-3 rounded-xl hover:shadow-lg transition-all flex items-center gap-2 mx-auto"
                                     >
                                         <Plus className="w-5 h-5" />
-                                        Tạo lịch trình mới
+                                        Create New Plan
                                     </button>
                                 ) : (
                                     <button
                                         onClick={() => {
                                             const name = nextMeal?.scheduleInfo?.nameSchedule;
-
-                                            // ✅ Dò kế hoạch trong Redux (đã lấy ở trên)
                                             const foundSchedule = schedules.find(
                                                 (s) => s.nameSchedule === name || s.status === "active"
                                             );
@@ -248,23 +247,23 @@ export default function MainDashboard() {
                                             if (foundSchedule?._id) {
                                                 navigate(`/plan/${foundSchedule._id}`);
                                             } else {
-                                                alert(
-                                                    "Không tìm thấy kế hoạch phù hợp, vui lòng vào trang 'My Plan' để xem chi tiết!"
-                                                );
+                                                alert("Plan not found. Please check 'My Plan' page!");
                                             }
                                         }}
-                                        className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-3 rounded-xl hover:shadow-lg transition-all duration-300 flex items-center gap-2 mx-auto"
+                                        className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-3 rounded-xl hover:shadow-lg transition-all flex items-center gap-2 mx-auto"
                                     >
                                         <Calendar className="w-5 h-5" />
-                                        Xem chi tiết kế hoạch
+                                        View Plan Details
                                     </button>
                                 )}
                             </div>
                         </>
                     ) : (
-                        <p className="text-gray-500 italic">Không có dữ liệu lịch trình</p>
+                        <p className="text-gray-500 italic">No schedule data available</p>
                     )}
                 </div>
+
+                {/* Recent Meals */}
                 <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 border border-blue-200 shadow-xl">
                     <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
                         <Clock className="w-6 h-6 text-blue-600" />
@@ -280,7 +279,7 @@ export default function MainDashboard() {
                                 const style = getColorClasses(color);
 
                                 const nutrition = meal.nutrition || {};
-                                const mealTime = new Date(meal.time).toLocaleTimeString("vi-VN", {
+                                const mealTime = new Date(meal.time).toLocaleTimeString("en-US", {
                                     hour: "2-digit",
                                     minute: "2-digit",
                                 });
@@ -288,7 +287,7 @@ export default function MainDashboard() {
                                 return (
                                     <div
                                         key={index}
-                                        className={`p-4 rounded-xl border ${style.bg} ${style.border} hover:shadow-lg transition-all duration-300`}
+                                        className={`p-4 rounded-xl border ${style.bg} ${style.border} hover:shadow-lg transition-all`}
                                     >
                                         <div className="flex items-center gap-4">
                                             <div className={`w-12 h-12 rounded-full bg-gradient-to-r ${style.iconBg} flex items-center justify-center`}>
@@ -311,15 +310,15 @@ export default function MainDashboard() {
                                 );
                             })
                         ) : (
-                            <p className="text-gray-500 italic">Chưa có món ăn nào được quét gần đây</p>
+                            <p className="text-gray-500 italic">No recent scanned meals</p>
                         )}
                     </div>
 
                     <button
                         onClick={() => navigate("/scan-meal")}
-                        className="w-full mt-6 bg-gradient-to-r from-green-500 to-emerald-600 text-white py-3 rounded-xl hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2 group"
+                        className="w-full mt-6 bg-gradient-to-r from-green-500 to-emerald-600 text-white py-3 rounded-xl hover:shadow-lg transition-all flex items-center justify-center gap-2"
                     >
-                        <Camera className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                        <Camera className="w-5 h-5" />
                         Scan Meal
                     </button>
                 </div>
