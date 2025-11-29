@@ -32,11 +32,12 @@ export default function PlansPage() {
     };
 
     const onScheduleClick = async (schedule: any) => {
-        if (schedule.status === "active") {
+        // ➤ Nếu là draft hoặc active → vào thẳng detail
+        if (schedule.status === "draft" || schedule.status === "active") {
             navigate(`/plan/${schedule._id}`);
             return;
         }
-
+        // ➤ Completed → kiểm tra xem đã đánh giá chưa
         try {
             await scheduleResultService.check(schedule._id);
             navigate(`/plan/${schedule._id}`);
@@ -49,6 +50,7 @@ export default function PlansPage() {
             }
         }
     };
+    
 
     useEffect(() => {
         if (token) dispatch(fetchSchedulesThunk());
