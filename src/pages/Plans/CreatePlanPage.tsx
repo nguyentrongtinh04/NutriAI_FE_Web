@@ -35,6 +35,7 @@ export default function CreatePlanPage() {
     const [nutritionData, setNutritionData] = useState<any>(null);
     const { profile } = useSelector((state: RootState) => state.user);
     const notify = useNotify();
+    const [loadingNutrition, setLoadingNutrition] = useState(false);
 
     const [personalInfo, setPersonalInfo] = useState({
         height: Number(profile?.height) || 170,
@@ -167,8 +168,9 @@ export default function CreatePlanPage() {
 
     const handleGenerateNutrition = async () => {
         try {
+            setLoadingNutrition(true);
             const baseInfo = buildUserInfo();
-    
+
             const detailedGoal =
                 goals.goal === "lose"
                     ? `giảm ${goals.change || 0} kg`
@@ -179,30 +181,30 @@ export default function CreatePlanPage() {
                             : goals.goal === "improve"
                                 ? "cải thiện sức khỏe"
                                 : "hỗ trợ bệnh lý";
-    
+
             const userInfo = {
                 ...baseInfo,
                 goal: detailedGoal,
                 day: goals.deadline ? Number(goals.deadline) * 7 : 30,
             };
-    
+
             const result = await dispatch(generateNutritionThunk(userInfo)).unwrap();
-    
+
             setNutritionData(result);
             setShowNutritionModal(true);
-    
+
             notify.success("🎉 Nutrition calculation successful!");
         } catch (err: any) {
             notify.error("❌ Failed to calculate nutrition. Please try again!");
         }
-    };    
+    };
 
     const handleConfirmMealPlan = async () => {
         try {
             setCreatingPlan(true);
-    
+
             const baseInfo = buildUserInfo();
-    
+
             const detailedGoal =
                 goals.goal === "lose"
                     ? `giảm ${goals.change || 0} kg`
@@ -213,28 +215,28 @@ export default function CreatePlanPage() {
                             : goals.goal === "improve"
                                 ? "cải thiện sức khỏe"
                                 : "hỗ trợ bệnh lý";
-    
+
             const userInfo = {
                 ...baseInfo,
                 goal: detailedGoal,
                 day: goals.deadline ? Number(goals.deadline) * 7 : 30,
             };
-    
+
             await dispatch(
                 generateMealPlanThunk({ userInfo, nutrition: nutritionData })
             ).unwrap();
-    
+
             notify.success("🎯 Nutrition plan created successfully!");
-    
+
             navigate("/plan-result", { state: { userInfo } });
-    
+
         } catch (err: any) {
             notify.error("❌ Failed to create plan. Please try again!");
         } finally {
             setCreatingPlan(false);
         }
     };
-    
+
     const StepIndicator = ({ step, label }: { step: number; label: string }) => {
         const isActive = currentStep === step;
         const isCompleted = currentStep > step;
@@ -390,7 +392,7 @@ export default function CreatePlanPage() {
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-3">
-                                What is your goal? <span className="text-red-500">*</span>
+                                    What is your goal? <span className="text-red-500">*</span>
                                 </label>
                                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                                     {goalOptions.map((option) => (
@@ -423,7 +425,7 @@ export default function CreatePlanPage() {
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            Weight change {goals.goal === "lose" ? "giảm" : "tăng"} (kg)
+                                                Weight change {goals.goal === "lose" ? "giảm" : "tăng"} (kg)
                                                 <span className="text-red-500">*</span>
                                             </label>
                                             <input
@@ -432,10 +434,23 @@ export default function CreatePlanPage() {
                                                 onChange={(e) => {
                                                     const val = Number(e.target.value);
                                                     if (val < 0) return;
-                                                    if (val > 15) {
-                                                        alert("⚠️ The target change should not exceed 15 kg for safety!");
-                                                        return;
+
+                                                    const weeks = Number(goals.deadline || 0);
+
+                                                    if (weeks > 0) {
+                                                        const maxAllowed =
+                                                            goals.goal === "lose" ? weeks * 1 : weeks * 0.75;
+
+                                                        if (val > maxAllowed) {
+                                                            notify.warning(
+                                                                `⚠️ Với ${weeks} tuần, bạn chỉ có thể ${goals.goal === "lose" ? "giảm" : "tăng"
+                                                                } tối đa ${maxAllowed.toFixed(1)} kg.`
+                                                            );
+                                                            setGoals({ ...goals, change: Number(maxAllowed.toFixed(1)) });
+                                                            return;
+                                                        }
                                                     }
+
                                                     setGoals({ ...goals, change: val });
                                                 }}
                                                 placeholder={`Enter weight to ${goals.goal === "lose" ? "giảm" : "tăng"}`}
@@ -445,7 +460,7 @@ export default function CreatePlanPage() {
 
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            Weekly change (kg/Weekly)
+                                                Weekly change (kg/Weekly)
                                             </label>
                                             <input
                                                 type="number"
@@ -464,19 +479,45 @@ export default function CreatePlanPage() {
                                     Target duration <span className="text-red-500">*</span>
                                 </label>
                                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                                    {[1, 2, 3, 4, 5].map((w) => (
-                                        <button
-                                            key={w}
-                                            onClick={() => setGoals({ ...goals, deadline: `${w}` })}
-                                            className={`py-3 rounded-xl border-2 font-semibold transition-all ${goals.deadline === `${w}`
-                                                ? "border-blue-500 bg-blue-50 text-blue-700 shadow-md"
-                                                : "border-gray-300 hover:border-blue-300"
-                                                }`}
-                                        >
-                                            {w} weeks
-                                        </button>
-                                    ))}
+                                    {[1, 2, 3, 4, 5].map((w) => {
+                                        const safeMax = goals.goal === "lose"
+                                            ? w * 1            // giảm cân tối đa 1kg/tuần
+                                            : w * 0.75;        // tăng cân tối đa 0.75kg/tuần
+
+                                        return (
+                                            <button
+                                                key={w}
+                                                onClick={() => {
+                                                    let updatedChange = goals.change;
+
+                                                    // Nếu người dùng nhập số kg không hợp lệ trong số tuần này → chỉnh lại
+                                                    if (goals.goal === "lose" || goals.goal === "gain") {
+                                                        if (updatedChange > safeMax) {
+                                                            notify.warning(
+                                                                `⚠️ Với ${w} tuần, bạn chỉ có thể ${goals.goal === "lose" ? "giảm" : "tăng"
+                                                                } tối đa ${safeMax.toFixed(1)} kg.`
+                                                            );
+                                                            updatedChange = Number(safeMax.toFixed(1));
+                                                        }
+                                                    }
+
+                                                    setGoals({
+                                                        ...goals,
+                                                        deadline: `${w}`,
+                                                        change: updatedChange,
+                                                    });
+                                                }}
+                                                className={`py-3 rounded-xl border-2 font-semibold transition-all ${goals.deadline === `${w}`
+                                                    ? "border-blue-500 bg-blue-50 text-blue-700 shadow-md"
+                                                    : "border-gray-300 hover:border-blue-300"
+                                                    }`}
+                                            >
+                                                {w} weeks
+                                            </button>
+                                        );
+                                    })}
                                 </div>
+
                             </div>
 
                             {goals.deadline && (
@@ -517,7 +558,7 @@ export default function CreatePlanPage() {
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Food allergies (if any)
+                                    Food allergies (if any)
                                 </label>
                                 <input
                                     type="text"
@@ -530,7 +571,7 @@ export default function CreatePlanPage() {
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Food preferences (if any)
+                                    Food preferences (if any)
                                 </label>
                                 <input
                                     type="text"
@@ -543,7 +584,7 @@ export default function CreatePlanPage() {
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-3">
-                                Meals per day <span className="text-red-500">*</span>
+                                    Meals per day <span className="text-red-500">*</span>
                                 </label>
                                 <div className="grid grid-cols-3 gap-4">
                                     {[3, 4, 5].map((num) => (
@@ -632,7 +673,7 @@ export default function CreatePlanPage() {
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-3">
-                                Cooking style <span className="text-red-500">*</span>
+                                    Cooking style <span className="text-red-500">*</span>
                                 </label>
                                 <div className="grid grid-cols-3 gap-4">
                                     {cookingStyles.map((style) => (
@@ -654,7 +695,7 @@ export default function CreatePlanPage() {
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-3">
-                                Number of template days <span className="text-red-500">*</span>
+                                    Number of template days <span className="text-red-500">*</span>
                                 </label>
                                 <div className="grid grid-cols-4 gap-4">
                                     {[2, 3, 4, 5].map((days) => (
@@ -736,16 +777,17 @@ export default function CreatePlanPage() {
                                 if (!canProceedStep4) return;   // ⛔ NGĂN BẤM KHI CHƯA CHỌN
                                 handleGenerateNutrition();
                             }}
-                            disabled={!canProceedStep4 || loading}
+                            disabled={!canProceedStep4 || loadingNutrition}
                             className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all
-            ${!canProceedStep4 || loading
+        ${!canProceedStep4 || loadingNutrition
                                     ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                                     : "bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:shadow-lg"
                                 }`}
                         >
-                            {loading ? (
+                            {loadingNutrition ? (
                                 <>
-                                    <Loader2 className="w-5 h-5 animate-spin" /> Đang tính...
+                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                    Loading...
                                 </>
                             ) : (
                                 <>
@@ -758,55 +800,103 @@ export default function CreatePlanPage() {
 
                 {showNutritionModal && nutritionData && (
                     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50">
-                        <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-lg relative animate-fade-in">
-                            <h2 className="text-2xl font-bold text-blue-700 mb-4 flex items-center gap-2">
-                                <Check className="w-6 h-6 text-green-600" /> Nutrition Analysis Result
+                        <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-xl relative animate-fade-in 
+                    max-h-[95vh] overflow-y-auto">
+
+                            <h2 className="text-xl font-bold text-blue-700 mb-2 flex items-center gap-2">
+                                <Check className="w-5 h-5 text-green-600" /> Nutrition Analysis Result
                             </h2>
 
-                            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
-                                <ul className="text-sm text-blue-800 space-y-1">
-                                    <li>• BMR: {nutritionData.nutrition.BMR}</li>
-                                    <li>• TDEE: {nutritionData.nutrition.TDEE}</li>
-                                    <li>• Activity factor: {nutritionData.nutrition.activityFactor}</li>
-                                    <li>• Goal: {nutritionData.nutrition.goalType}</li>
-                                    <li>• Weight change: {nutritionData.nutrition.weightChangeKg} kg</li>
-                                    <li>• Duration: {nutritionData.nutrition.durationDays} ngày</li>
-                                    <li>• Daily calorie change: {nutritionData.nutrition.dailyCalorieChange}</li>
-                                    <li>• Recommended calories: {nutritionData.nutrition.calories}</li>
-                                    <li>• Protein: {nutritionData.nutrition.protein}g</li>
-                                    <li>• Fat: {nutritionData.nutrition.fat}g</li>
-                                    <li>• Carbs: {nutritionData.nutrition.carbs}g</li>
-                                </ul>
+                            <div className="grid grid-cols-1 gap-3 mb-4">
+
+                                {/* Hàng 1 */}
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="p-3 rounded-xl bg-blue-50 border border-blue-200 shadow-sm">
+                                        <p className="text-xs text-blue-700 font-medium">BMR</p>
+                                        <p className="text-xl font-extrabold text-blue-900">{nutritionData.nutrition.BMR}</p>
+                                    </div>
+                                    <div className="p-3 rounded-xl bg-cyan-50 border border-cyan-200 shadow-sm">
+                                        <p className="text-xs text-cyan-700 font-medium">TDEE</p>
+                                        <p className="text-xl font-extrabold text-cyan-900">{nutritionData.nutrition.TDEE}</p>
+                                    </div>
+                                </div>
+
+                                {/* Hàng 2 */}
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="p-3 rounded-xl bg-purple-50 border border-purple-200 shadow-sm">
+                                        <p className="text-xs text-purple-700 font-medium">Activity</p>
+                                        <p className="text-lg font-bold text-purple-900">{nutritionData.nutrition.activityFactor}</p>
+                                    </div>
+                                    <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 shadow-sm">
+                                        <p className="text-xs text-amber-700 font-medium">Goal</p>
+                                        <p className="text-sm font-bold text-amber-900">{nutritionData.nutrition.goalType}</p>
+                                    </div>
+                                </div>
+
+                                {/* Hàng 3 */}
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 shadow-sm">
+                                        <p className="text-xs text-rose-700 font-medium">Weight change</p>
+                                        <p className="text-lg font-bold text-rose-900">{nutritionData.nutrition.weightChangeKg} kg</p>
+                                    </div>
+                                    <div className="p-3 rounded-xl bg-green-50 border border-green-200 shadow-sm">
+                                        <p className="text-xs text-green-700 font-medium">Duration</p>
+                                        <p className="text-lg font-bold text-green-900">{nutritionData.nutrition.durationDays} ngày</p>
+                                    </div>
+                                </div>
+
+                                {/* Calories */}
+                                <div className="p-4 rounded-xl bg-orange-50 border border-orange-200 shadow">
+                                    <p className="text-xs text-orange-700 font-medium">Calories</p>
+                                    <p className="text-2xl font-extrabold text-orange-900">
+                                        {nutritionData.nutrition.calories} kcal
+                                    </p>
+                                </div>
+
+                                {/* Macro */}
+                                <div className="grid grid-cols-3 gap-3">
+                                    <div className="p-3 rounded-xl bg-blue-50 border border-blue-200 text-center shadow-sm">
+                                        <p className="text-xs text-blue-600 font-medium">Protein</p>
+                                        <p className="text-xl font-extrabold text-blue-800">{nutritionData.nutrition.protein}g</p>
+                                    </div>
+                                    <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-center shadow-sm">
+                                        <p className="text-xs text-amber-600 font-medium">Carbs</p>
+                                        <p className="text-xl font-extrabold text-amber-800">{nutritionData.nutrition.carbs}g</p>
+                                    </div>
+                                    <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-center shadow-sm">
+                                        <p className="text-xs text-red-600 font-medium">Fat</p>
+                                        <p className="text-xl font-extrabold text-red-800">{nutritionData.nutrition.fat}g</p>
+                                    </div>
+                                </div>
+
                             </div>
 
-                            <p className="text-gray-700 text-sm leading-relaxed mb-6">{nutritionData.nutrition.notes}</p>
+                            <p className="text-gray-700 text-xs leading-relaxed mb-4">
+                                {nutritionData.nutrition.notes}
+                            </p>
 
                             <div className="flex justify-end gap-3">
                                 <button
                                     onClick={() => setShowNutritionModal(false)}
-                                    className="px-5 py-2 rounded-xl bg-gray-200 hover:bg-gray-300 font-semibold text-gray-700"
+                                    className="px-4 py-2 rounded-xl bg-gray-200 hover:bg-gray-300 font-semibold text-gray-700 text-sm"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     onClick={handleConfirmMealPlan}
                                     disabled={creatingPlan}
-                                    className={`flex items-center gap-2 px-5 py-2 rounded-xl font-semibold transition-all ${creatingPlan
-                                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                        : 'bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:shadow-md'
+                                    className={`flex items-center gap-2 px-4 py-2 rounded-xl font-semibold text-sm ${creatingPlan
+                                            ? 'bg-gray-300 text-gray-500'
+                                            : 'bg-gradient-to-r from-green-500 to-emerald-600 text-white'
                                         }`}
                                 >
-                                    {creatingPlan ? (
-                                        <>
-                                            <Loader2 className="w-5 h-5 animate-spin" /> Creating plan...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Check className="w-5 h-5" /> Creating plan
-                                        </>
-                                    )}
+                                    {creatingPlan
+                                        ? <><Loader2 className="w-4 h-4 animate-spin" /> Creating...</>
+                                        : <><Check className="w-4 h-4" /> Create plan</>
+                                    }
                                 </button>
                             </div>
+
                         </div>
                     </div>
                 )}

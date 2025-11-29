@@ -42,6 +42,11 @@ export default function ScanMealPage() {
     setError("");
   };
 
+  const hasScannedBefore = async (userId: string, foodName: string) => {
+    const history = await mealService.getScannedHistory(userId);
+    return history.some((item: any) => item.food_en === foodName);
+  };
+  
   return (
     <div className="min-h-screen w-full relative overflow-hidden bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900">
       {/* Enhanced Aurora Background Effects */}
@@ -382,9 +387,16 @@ export default function ScanMealPage() {
                                 const userId = profile?._id;
                                 if (!userId) {
                                   notify.warning("⚠️ Bạn cần đăng nhập để lưu món ăn!");
-                                  navigate("/login?redirect=/", { replace: true });
+                                  dispatch(clearMeal());
+                                  navigate("/login?redirect=/scan-meal", { replace: true });
                                   return;
                                 }
+                                
+                                // ❗ Check trùng trước khi lưu
+                                if (await hasScannedBefore(userId, result.food_en)) {
+                                  notify.info("ℹ️ Món này bạn đã lưu trước đó!");
+                                  return;
+                                }                              
 
                                 const payload = {
                                   userId,

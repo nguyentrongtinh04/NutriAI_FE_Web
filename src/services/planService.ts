@@ -33,7 +33,14 @@ export const planService = {
   enrichSchedule: async (scheduleData: any) =>
     (await planApi.post("/prepare-schedule", scheduleData)).data,
 
-
+  stopSchedule: async (scheduleId: string) =>
+    (await planApi.patch(`/stop/${scheduleId}`)).data,
+  
+  completeSchedule: async (scheduleId: string) =>
+    (await planApi.patch(`/complete/${scheduleId}`)).data,
+  
+  deleteSchedule: async (scheduleId: string) =>
+    (await planApi.delete(`/delete/${scheduleId}`)).data,
   // ========================
   // 🔹 Optional: Sharing
   // ========================

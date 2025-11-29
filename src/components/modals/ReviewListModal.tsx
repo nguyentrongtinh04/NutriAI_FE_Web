@@ -19,8 +19,6 @@ export default function ReviewListModal({ open, onClose }: any) {
         setResults(res.results);
 
         notify.success("📊 Review list loaded successfully!");
-      } catch (err: any) {
-        notify.warning("No reviewed schedules found.");
       } finally {
         setLoading(false);
       }

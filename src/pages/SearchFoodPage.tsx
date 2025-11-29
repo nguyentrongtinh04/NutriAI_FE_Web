@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import { mealService } from "../services/mealService";
 import { useNotify } from "../components/notifications/NotificationsProvider";
+import { clearMeal } from "../redux/slices/mealSlice";
 
 export default function SearchFoodPage() {
     const [query, setQuery] = useState("");
@@ -39,6 +40,11 @@ export default function SearchFoodPage() {
         if (e.key === "Enter") {
             handleSearch();
         }
+    };
+
+    const hasSavedBefore = async (userId: string, foodName: string) => {
+        const history = await mealService.getScannedHistory(userId);
+        return history.some((item: any) => item.food_en === foodName);
     };
 
     return (
@@ -274,9 +280,13 @@ export default function SearchFoodPage() {
                                                             const userId = profile?._id;
                                                             if (!userId) {
                                                                 notify.warning("⚠️ Bạn cần đăng nhập để lưu món ăn!");
-                                                                navigate("/login?redirect=/", { replace: true });
+
+                                                                // XÓA food detail modal + item đang xem
+                                                                dispatch(clearFood());
+
+                                                                navigate("/login?redirect=/search-food", { replace: true });
                                                                 return;
-                                                            }                                                            
+                                                            }
 
                                                             const normalizePhoto = (photo: string | undefined) => {
                                                                 if (!photo) return "";
@@ -298,9 +308,22 @@ export default function SearchFoodPage() {
                                                                 image_url: normalizePhoto(detail.photo),
                                                             };
 
+                                                            if (!userId) {
+                                                                notify.warning("⚠️ Bạn cần đăng nhập để lưu món ăn!");
+                                                                dispatch(clearFood());
+                                                                navigate("/login?redirect=/search-food", { replace: true });
+                                                                return;
+                                                            }
+
+                                                            // ❗ Check trùng trước khi lưu
+                                                            if (await hasSavedBefore(userId, detail.name_en || detail.name)) {
+                                                                notify.info("ℹ️ Món này bạn đã lưu trước đó!");
+                                                                return;
+                                                            }
+
                                                             await mealService.saveScannedMeal(data);
                                                             notify.success("✅ Món ăn đã được lưu vào lịch sử!");
-                                                            dispatch(clearFood()); // đóng modal sau khi lưu
+                                                            dispatch(clearFood());
                                                             dispatch(getRandomFoods(30));
                                                         } catch (error: any) {
                                                             console.error("❌ Save meal error:", error);

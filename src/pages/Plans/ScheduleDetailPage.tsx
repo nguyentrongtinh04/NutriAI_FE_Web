@@ -28,35 +28,33 @@ export default function ScheduleDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // 🧠 Fetch chi tiết lịch trình
+  // Fetch schedule detail
   useEffect(() => {
     const fetchDetail = async () => {
       try {
         const data = await planService.getFullSchedule(id!);
         setSchedule(data);
-  
-        // 📆 Tự động focus ngày hiện tại
+
+        // Auto focus current day
         const todayStr = new Date().toISOString().split("T")[0];
         const todayIndex = data.fullPlan.findIndex(
           (d: any) => d.actualDate === todayStr
         );
-  
-        // Nếu có ngày trùng hôm nay -> chọn ngày đó
-        if (todayIndex !== -1) setSelectedDay(todayIndex);
-        else setSelectedDay(0); // fallback nếu không khớp
+
+        setSelectedDay(todayIndex !== -1 ? todayIndex : 0);
       } catch (err: any) {
-        setError(err.message || "Không thể tải chi tiết lịch trình");
+        setError(err.message || "Failed to load schedule details");
       } finally {
         setLoading(false);
       }
     };
     if (token && id) fetchDetail();
-  }, [id, token]);  
+  }, [id, token]);
 
   if (loading)
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 via-cyan-500 to-teal-400">
-        <p className="text-white text-lg animate-pulse">Đang tải chi tiết...</p>
+        <p className="text-white text-lg animate-pulse">Loading details...</p>
       </div>
     );
 
@@ -64,13 +62,13 @@ export default function ScheduleDetailPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-500 to-orange-400">
         <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-8 text-center shadow-xl">
-          <p className="text-red-600 text-lg font-semibold mb-2">Lỗi khi tải lịch trình</p>
+          <p className="text-red-600 text-lg font-semibold mb-2">Error loading schedule</p>
           <p className="text-gray-600 mb-6">{error}</p>
           <button
             onClick={() => navigate(-1)}
             className="bg-gradient-to-r from-blue-500 to-cyan-600 text-white px-6 py-3 rounded-xl hover:shadow-lg transition-all"
           >
-            Quay lại
+            Go Back
           </button>
         </div>
       </div>
@@ -81,23 +79,24 @@ export default function ScheduleDetailPage() {
       <div className="min-h-screen bg-gradient-to-br from-blue-500 via-cyan-500 to-teal-400 flex items-center justify-center">
         <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-8 text-center shadow-xl">
           <Info className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600 text-lg">Không tìm thấy lịch trình này.</p>
+          <p className="text-gray-600 text-lg">Schedule not found.</p>
           <button
             onClick={() => navigate("/plans")}
             className="mt-6 bg-gradient-to-r from-blue-500 to-cyan-600 text-white px-6 py-3 rounded-xl hover:shadow-lg transition-all duration-300"
           >
-            Trở về danh sách
+            Back to list
           </button>
         </div>
       </div>
     );
 
-  // 📆 Lấy ngày và giờ hiện tại
+  // Current date
   const now = new Date();
   const currentDateStr = now.toISOString().split("T")[0];
   const currentHour = now.getHours();
 
   const currentDay = schedule.fullPlan[selectedDay];
+
   const totalNutrition = currentDay.meals.reduce(
     (acc: any, meal: any) => ({
       calories: acc.calories + (meal.CPFCa?.[0] || 0),
@@ -111,46 +110,42 @@ export default function ScheduleDetailPage() {
   const toggleMealFlip = (mealIndex: number) => {
     setFlippedMeals((prev) => {
       const newSet = new Set(prev);
-      if (newSet.has(mealIndex)) newSet.delete(mealIndex);
-      else newSet.add(mealIndex);
+      newSet.has(mealIndex) ? newSet.delete(mealIndex) : newSet.add(mealIndex);
       return newSet;
     });
   };
 
   const getMealTypeInfo = (type: string) => {
     const lower = type.toLowerCase();
-    if (["breakfast", "sáng"].includes(lower)) {
+    if (["breakfast", "sáng"].includes(lower))
       return {
-        label: "Bữa sáng",
+        label: "Breakfast",
         icon: ChefHat,
         gradient: "from-orange-400 to-red-500",
         bg: "bg-orange-50",
         border: "border-orange-200",
         text: "text-orange-600",
       };
-    }
-    if (["lunch", "trưa"].includes(lower)) {
+    if (["lunch", "trưa"].includes(lower))
       return {
-        label: "Bữa trưa",
+        label: "Lunch",
         icon: Drumstick,
         gradient: "from-green-400 to-emerald-500",
         bg: "bg-green-50",
         border: "border-green-200",
         text: "text-green-600",
       };
-    }
-    if (["dinner", "chiều", "tối"].includes(lower)) {
+    if (["dinner", "chiều", "tối"].includes(lower))
       return {
-        label: "Bữa tối",
+        label: "Dinner",
         icon: ChefHat,
         gradient: "from-pink-400 to-rose-500",
         bg: "bg-pink-50",
         border: "border-pink-200",
         text: "text-pink-600",
       };
-    }
     return {
-      label: "Khác",
+      label: "Other",
       icon: ChefHat,
       gradient: "from-blue-400 to-cyan-500",
       bg: "bg-blue-50",
@@ -162,38 +157,40 @@ export default function ScheduleDetailPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-500 via-cyan-500 to-teal-400 py-8 px-4">
       <div className="max-w-6xl mx-auto">
-        {/* 🔙 Header */}
+
+        {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <button
             onClick={() => navigate("/plans")}
             className="flex items-center gap-2 text-white hover:text-blue-100 transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
-            <span>Quay lại</span>
+            <span>Back</span>
           </button>
           <h1 className="text-3xl font-bold text-white">{schedule.nameSchedule}</h1>
         </div>
 
-        {/* 🌟 Tiêu đề */}
+        {/* Title */}
         <div className="text-center mb-10">
           <h1 className="text-4xl font-bold text-white mb-2 flex justify-center items-center gap-3">
             <CheckCircle2 className="w-10 h-10 animate-bounce" />
             <span className="bg-gradient-to-r from-white via-cyan-200 to-white bg-clip-text text-transparent">
-              Chi Tiết Kế Hoạch Ăn Uống
+              Meal Plan Details
             </span>
           </h1>
           <p className="text-blue-100 text-lg">
-            Mục tiêu: {schedule.goal} – {schedule.kgGoal}kg
+            Goal: {schedule.goal} – {schedule.kgGoal}kg
           </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 mb-8">
-          {/* 📅 Danh sách ngày */}
+
+          {/* Day list */}
           <div className="lg:col-span-1">
             <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 border border-blue-200 shadow-xl sticky top-4">
               <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
                 <Calendar className="w-6 h-6 text-blue-600" />
-                Chọn ngày
+                Select Day
               </h2>
 
               <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-blue-400 scrollbar-track-transparent">
@@ -222,25 +219,24 @@ export default function ScheduleDetailPage() {
                               selectedDay === index ? "text-white" : "text-gray-800"
                             }`}
                           >
-                            Ngày {index + 1}
+                            Day {index + 1}
                           </div>
                           <div
                             className={`text-xs ${
                               selectedDay === index ? "text-blue-100" : "text-gray-500"
                             }`}
                           >
-                            {new Date(day.actualDate).toLocaleDateString("vi-VN", {
+                            {new Date(day.actualDate).toLocaleDateString("en-US", {
                               weekday: "short",
-                              day: "2-digit",
                               month: "2-digit",
+                              day: "2-digit",
                             })}
                           </div>
                         </div>
-                        {isPast && (
-                          <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                        )}
+
+                        {isPast && <CheckCircle2 className="w-5 h-5 text-green-600" />}
                         {isToday && !isPast && (
-                          <Clock className="w-5 h-5 text-blue-600 animate-pulse flex-shrink-0" />
+                          <Clock className="w-5 h-5 text-blue-600 animate-pulse" />
                         )}
                       </div>
                     </button>
@@ -248,12 +244,13 @@ export default function ScheduleDetailPage() {
                 })}
               </div>
 
-              {/* Tổng dinh dưỡng */}
+              {/* Nutrition summary */}
               <div className="mt-6 pt-6 border-t border-gray-200">
                 <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
                   <Target className="w-5 h-5 text-blue-600" />
-                  Tổng dinh dưỡng
+                  Daily Nutrition
                 </h3>
+
                 <div className="space-y-3 text-sm">
                   <div className="flex justify-between">
                     <span>🔥 Calories</span>
@@ -284,16 +281,16 @@ export default function ScheduleDetailPage() {
             </div>
           </div>
 
-          {/* 🍽️ Danh sách bữa ăn */}
+          {/* Meals */}
           <div className="lg:col-span-2 space-y-6">
             {currentDay.meals.map((meal: any, index: number) => {
               const mealInfo = getMealTypeInfo(meal.mealType);
               const Icon = mealInfo.icon;
               const isFlipped = flippedMeals.has(index);
 
-              // 💡 Tính trạng thái bữa ăn tự động
               const mealHour = parseInt(meal.mealTime.split(":")[0]);
               const isTodayMeal = currentDay.actualDate === currentDateStr;
+
               let mealStatus = "upcoming";
               if (isTodayMeal) {
                 if (mealHour < currentHour) mealStatus = "done";
@@ -321,7 +318,7 @@ export default function ScheduleDetailPage() {
                     }`}
                     style={{ transformStyle: "preserve-3d" }}
                   >
-                    {/* Mặt trước */}
+                    {/* Front */}
                     <div
                       className={`absolute inset-0 bg-white/90 rounded-2xl p-6 border-2 ${mealInfo.border} shadow-lg hover:shadow-2xl transition-shadow`}
                       style={{ backfaceVisibility: "hidden" }}
@@ -355,7 +352,7 @@ export default function ScheduleDetailPage() {
                       </div>
                     </div>
 
-                    {/* Mặt sau */}
+                    {/* Back */}
                     <div
                       className={`absolute inset-0 bg-white/25 rounded-2xl p-6 border-2 ${mealInfo.border} shadow-lg`}
                       style={{
@@ -370,10 +367,12 @@ export default function ScheduleDetailPage() {
                           >
                             <Icon className="w-6 h-6 text-white" />
                           </div>
+
                           <p className="text-gray-600 text-lg mb-4 font-bold">
                             {meal.description}
                           </p>
                         </div>
+
                         <div className="grid grid-cols-4 gap-2">
                           {["Calories", "Protein", "Fat", "Carbs"].map((label, idx) => (
                             <div
@@ -393,12 +392,15 @@ export default function ScheduleDetailPage() {
                           ))}
                         </div>
                       </div>
+
                     </div>
+
                   </div>
                 </div>
               );
             })}
           </div>
+
         </div>
       </div>
     </div>

@@ -20,6 +20,9 @@ import {
 } from "../../../redux/actions/authActions";
 import { useNotify } from "../../../components/notifications/NotificationsProvider";
 
+import logo from "../../../assets/logo.png";
+import MedicalIllustration from "../../../assets/login_left_image.png";
+
 export default function ChangePassword() {
   const [method, setMethod] = useState<"phone" | "email">("phone");
   const [input, setInput] = useState("");
@@ -112,23 +115,23 @@ export default function ChangePassword() {
 
     if (method === "phone") {
       try {
-        await checkAvailability(input)();
+        await dispatch(checkAvailability(input));
         notify.error("❌ Phone number not registered");
       } catch (err: any) {
-        if (err.message === "Phone or Email already exists") {
+        if (err?.response?.data?.message === "Phone or Email already exists") {
           await sendOtpFirebase(input);
           notify.success("📲 OTP has been sent to your phone!");
         } else {
           notify.error("❌ Something went wrong");
         }
-      }
+      }      
     } else {
       try {
-        await checkAvailability(undefined, input)();
+        await dispatch(checkAvailability(undefined, input));
         notify.error("❌ Email not registered");
       } catch (err: any) {
-        if (err.message === "Phone or Email already exists") {
-          await sendEmailVerification(input)();
+        if (err?.response?.data?.message === "Phone or Email already exists") {
+          await dispatch(sendEmailVerification(input));
           notify.success("📩 Verification code sent to your email!");
           setShowOtpModal(true);
           setTimer(60);
@@ -230,8 +233,7 @@ export default function ChangePassword() {
           <div className="absolute -inset-3 bg-gradient-to-r from-cyan-400 via-blue-500 to-cyan-400 rounded-3xl blur-xl opacity-60 animate-pulse"></div>
           <div className="relative bg-white/90 backdrop-blur-3xl rounded-3xl p-8 shadow-2xl border border-blue-200/60 shadow-cyan-500/20">
             <div className="flex items-center gap-4 mb-8">
-              <img
-                src="/src/assets/logo.png"
+              <img src={logo}
                 alt="NutriAI Logo"
                 className="relative w-25 h-20 object-contain rounded-full drop-shadow-2xl"
               />
@@ -324,8 +326,7 @@ export default function ChangePassword() {
 
         {/* Right Image */}
         <div className="hidden md:flex justify-center items-center w-full md:w-1/2 px-8">
-          <img
-            src="/src/assets/login_left_image.png"
+        <img src={MedicalIllustration}
             alt="Medical Illustration"
             className="max-w-full h-auto object-contain drop-shadow-2xl rounded-2xl"
           />
@@ -355,7 +356,7 @@ export default function ChangePassword() {
                   key={i}
                   ref={(el: HTMLInputElement | null) => {
                     inputRefs.current[i] = el!;
-                  }}                  
+                  }}
                   type="text"
                   maxLength={1}
                   value={digit}

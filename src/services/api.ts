@@ -18,7 +18,7 @@ export const IP_PLAN = `${DEPLOY}/schedule`;
 export const IP_AI = `${DEPLOY}/schedule/Ai-schedule`;
 export const IP_ADMIN = `${DEPLOY}/admin`;
 export const IP_CHATBOT = `${DEPLOY}/chatbot`;
-export const IP_SCHEDULE_RESULT = `${DEPLOY}/schedule/schedule-result`;
+export const IP_SCHEDULE_RESULT = `${DEPLOY}/schedule/result`;
 
 // -------------------------------
 // 🟢 Tạo axios instance giống FE cũ

@@ -90,39 +90,56 @@ export default function ForgotPassword() {
     }
 
     setError("");
+    if (method === "phone") {
+      try {
+        await dispatch(checkAvailability(input, undefined));  // kiểm tra phone
+    
+        notify.error("❌ Số điện thoại chưa được đăng ký");
+        return;
+      } catch (err: any) {
+        const msg = err?.response?.data?.message;
+    
+        if (msg === "Phone or Email already exists") {
+          // Số điện thoại đã đăng ký → gửi OTP qua Firebase
+          await sendOtpFirebase(input);
+          return;
+        } else {
+          notify.error("❌ Có lỗi không xác định khi kiểm tra số điện thoại.");
+          return;
+        }
+      }
+    }    
 
     if (method === "email") {
       try {
-        // ⚠️ phải gọi thêm () để thực thi hàm async
-        const res = await checkAvailability(undefined, input)();
+        await dispatch(checkAvailability(undefined, input));
         notify.error("❌ Email chưa được đăng ký");
       } catch (err: any) {
-        if (err.message === "Phone or Email already exists") {
+        const msg = err?.response?.data?.message;
+
+        if (msg === "Phone or Email already exists") {
+          // Email đã đăng ký → gửi mã xác minh
           try {
-            // ✅ thêm () ở cuối
-            const res = await sendEmailVerification(input)();
+            const res = await dispatch(sendEmailVerification(input));
             notify.success(res.message);
-    
-            if (res.success) {
-              setShowOtpModal(true);
-              setTimer(60);
-              setCanResend(false);
-              setOtp(["", "", "", "", "", ""]);
-            }
+
+            setShowOtpModal(true);
+            setTimer(60);
+            setCanResend(false);
+            setOtp(["", "", "", "", "", ""]);
           } catch (err2: any) {
-            const msg =
-              err2.response?.data?.message ||
+            const e2 =
+              err2?.response?.data?.message ||
               err2.message ||
               "⚠️ Gửi mã xác thực thất bại.";
-            setError(msg);
-            notify.error(msg);
-            setShowOtpModal(false);
+            setError(e2);
+            notify.error(e2);
           }
         } else {
           notify.error("❌ Có lỗi không xác định khi kiểm tra email.");
         }
       }
-    }        
+    }
   };
 
   const handleOtpChange = (value: string, index: number) => {
@@ -154,10 +171,10 @@ export default function ForgotPassword() {
         notify.success("✅ OTP verified!");
         navigate("/reset-password", { state: { phone: input, from: "forgot" } });
       } else {
-        const res = await verifyEmail(input, code);
+        await dispatch(verifyEmail(input, code));
         notify.success("✅ Email verified!");
         navigate("/reset-password", { state: { email: input, from: "forgot" } });
-      }      
+      }
     } catch (err) {
       console.error("verifyOtp error:", err);
       notify.error("❌ OTP không đúng");
@@ -198,7 +215,7 @@ export default function ForgotPassword() {
           setError(msg);
           notify.error(msg);
         });
-    }      
+    }
   }
 
   return (
@@ -276,7 +293,7 @@ export default function ForgotPassword() {
               <div className="relative">
                 <div className="absolute -inset-2 bg-gradient-to-r from-blue-400/40 via-cyan-300/50 to-blue-500/40 rounded-full blur-xl animate-pulse"></div>
                 <div className="absolute -inset-1 bg-white/30 rounded-full blur-lg animate-pulse delay-500"></div>
-               <img src={logo}
+                <img src={logo}
                   alt="NutriAI Logo"
                   className="relative w-25 h-20 object-contain rounded-full drop-shadow-2xl filter brightness-110 contrast-110 saturate-110"
                 />

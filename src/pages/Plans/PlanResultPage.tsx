@@ -1,3 +1,5 @@
+// 🔥 FILE ĐÃ SỬA HOÀN CHỈNH — CHỈ VIỆC COPY & REPLACE
+
 import React, { useState } from "react";
 import {
   ChefHat,
@@ -12,6 +14,8 @@ import {
   CheckCircle2,
   Info,
   CalendarPlus,
+  CalendarCheck,
+  Edit3,
 } from "lucide-react";
 import { useSelector } from "react-redux";
 import type { RootState } from "../../redux/store";
@@ -35,12 +39,15 @@ export default function PlanResultPage() {
     useSelector((state: RootState) => state.auth.accessToken) ||
     localStorage.getItem("accessToken");
 
-  // 🟢 State modal
+  // Modal
   const [showModal, setShowModal] = useState(false);
   const [scheduleName, setScheduleName] = useState("");
   const [startDate, setStartDate] = useState<string>("");
   const location = useLocation();
   const userInfo = location.state?.userInfo;
+
+  // ⭐ FIX STATUS FROM BACKEND OR FALLBACK
+  const currentStatus = mealPlan?.status || "draft";
 
   const toggleMealFlip = (mealIndex: number) => {
     setFlippedMeals((prev) => {
@@ -51,10 +58,41 @@ export default function PlanResultPage() {
     });
   };
 
+  const getStatusUI = (status: string) => {
+    switch (status) {
+      case "draft":
+        return {
+          label: "Draft",
+          color: "bg-yellow-100 text-yellow-700 border-yellow-300",
+          icon: <Edit3 className="w-5 h-5 text-yellow-600" />
+        };
+      case "active":
+        return {
+          label: "Active",
+          color: "bg-green-100 text-green-700 border-green-300",
+          icon: <CheckCircle2 className="w-5 h-5 text-green-600" />
+        };
+      case "completed":
+        return {
+          label: "Completed",
+          color: "bg-blue-100 text-blue-700 border-blue-300",
+          icon: <CalendarCheck className="w-5 h-5 text-blue-600" />
+        };
+      default:
+        return {
+          label: "Unknown",
+          color: "bg-gray-100 text-gray-700 border-gray-300",
+          icon: <Info className="w-5 h-5 text-gray-600" />
+        };
+    }
+  };
+
+  const statusUI = getStatusUI(currentStatus);
+
   if (loading)
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 via-cyan-500 to-teal-400">
-        <p className="text-white text-lg animate-pulse">Đang tải kế hoạch...</p>
+        <p className="text-white text-lg animate-pulse">Loading your plan...</p>
       </div>
     );
 
@@ -62,13 +100,13 @@ export default function PlanResultPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-500 to-orange-400">
         <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-8 text-center shadow-xl">
-          <p className="text-red-600 text-lg font-semibold mb-2">Lỗi khi tải kế hoạch</p>
+          <p className="text-red-600 text-lg font-semibold mb-2">Failed to load plan</p>
           <p className="text-gray-600 mb-6">{error}</p>
           <button
             onClick={() => navigate("/create-plan")}
             className="bg-gradient-to-r from-blue-500 to-cyan-600 text-white px-6 py-3 rounded-xl hover:shadow-lg transition-all"
           >
-            Quay lại tạo kế hoạch
+            Back to Create Plan
           </button>
         </div>
       </div>
@@ -80,11 +118,8 @@ export default function PlanResultPage() {
         <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-8 text-center shadow-xl">
           <Info className="w-16 h-16 text-gray-400 mx-auto mb-4" />
           <p className="text-gray-600 text-lg">
-            Chưa có kế hoạch nào — hãy tạo kế hoạch trước.
+            No plan found — please create a plan first.
           </p>
-          <button className="mt-6 bg-gradient-to-r from-blue-500 to-cyan-600 text-white px-6 py-3 rounded-xl hover:shadow-lg transition-all duration-300">
-            Tạo kế hoạch ngay
-          </button>
         </div>
       </div>
     );
@@ -104,7 +139,7 @@ export default function PlanResultPage() {
 
     if (["breakfast", "sáng"].includes(lower))
       return {
-        label: "Bữa sáng",
+        label: "Breakfast",
         icon: ChefHat,
         gradient: "from-orange-400 to-red-500",
         bg: "bg-orange-50",
@@ -114,7 +149,7 @@ export default function PlanResultPage() {
 
     if (["lunch", "trưa"].includes(lower))
       return {
-        label: "Bữa trưa",
+        label: "Lunch",
         icon: Drumstick,
         gradient: "from-green-400 to-emerald-500",
         bg: "bg-green-50",
@@ -124,7 +159,7 @@ export default function PlanResultPage() {
 
     if (["dinner", "chiều", "tối"].includes(lower))
       return {
-        label: "Bữa tối",
+        label: "Dinner",
         icon: ChefHat,
         gradient: "from-pink-400 to-rose-500",
         bg: "bg-pink-50",
@@ -133,7 +168,7 @@ export default function PlanResultPage() {
       };
 
     return {
-      label: "Khác",
+      label: "Other",
       icon: ChefHat,
       gradient: "from-blue-400 to-cyan-500",
       bg: "bg-blue-50",
@@ -142,49 +177,10 @@ export default function PlanResultPage() {
     };
   };
 
-
-  function convertToTemplateFormat(schedule: any[]) {
-    return schedule.map((day: any) => {
-      const obj: any = {};
-
-      day.meals.forEach((m: any) => {
-        const type = m.mealType?.toLowerCase?.() || "";
-
-        if (type.includes("sáng") || type.includes("breakfast")) {
-          obj.breakfast = {
-            name: m.mealName || m.nameMeals,
-            description: m.description,
-            mealTime: m.mealTime,
-            CPFCa: m.CPFCa
-          };
-        }
-
-        if (type.includes("trưa") || type.includes("lunch")) {
-          obj.lunch = {
-            name: m.mealName || m.nameMeals,
-            description: m.description,
-            mealTime: m.mealTime,
-            CPFCa: m.CPFCa
-          };
-        }
-
-        if (type.includes("tối") || type.includes("chiều") || type.includes("dinner")) {
-          obj.dinner = {
-            name: m.mealName || m.nameMeals,
-            description: m.description,
-            mealTime: m.mealTime,
-            CPFCa: m.CPFCa
-          };
-        }
-      });
-
-      return obj;
-    });
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-500 via-cyan-500 to-teal-400 py-8 px-4">
       <div className="max-w-6xl mx-auto">
+
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <button
@@ -192,21 +188,33 @@ export default function PlanResultPage() {
             onClick={() => navigate(-1)}
           >
             <ArrowLeft className="w-5 h-5" />
-            <span>Quay lại</span>
+            <span>Back</span>
           </button>
-          <button
-            onClick={() => {
-              if (!token) {
-                notify.warning("⚠️ Bạn cần đăng nhập để tạo lịch!");
-                return;
-              }
-              setShowModal(true);
-            }}
-            className="flex items-center gap-2 bg-white/90 backdrop-blur-sm text-blue-600 px-6 py-3 rounded-xl font-semibold hover:bg-white hover:shadow-xl transition-all duration-300 border-2 border-white/50 hover:scale-105"
+
+          <div
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl border ${statusUI.color}`}
           >
-            <CalendarPlus className="w-5 h-5" />
-            <span>Tạo lịch</span>
-          </button>
+            {statusUI.icon}
+            <span className="font-semibold">{statusUI.label}</span>
+          </div>
+
+          {currentStatus !== "completed" && (
+            <button
+              onClick={() => {
+                if (!token) {
+                  notify.warning("⚠️ You need to be logged in to create a schedule!");
+                  return;
+                }
+                setShowModal(true);
+              }}
+              className="flex items-center gap-2 bg-white/90 backdrop-blur-sm text-blue-600 px-6 py-3 rounded-xl font-semibold hover:bg-white hover:shadow-xl transition-all duration-300 border-2 border-white/50 hover:scale-105"
+            >
+              <CalendarPlus className="w-5 h-5" />
+              <span>
+                {currentStatus === "draft" ? "Continue Editing Draft" : "Create Schedule"}
+              </span>
+            </button>
+          )}
         </div>
 
         {/* Title */}
@@ -214,48 +222,55 @@ export default function PlanResultPage() {
           <h1 className="text-4xl font-bold text-white mb-2 flex justify-center items-center gap-3">
             <CheckCircle2 className="w-10 h-10 animate-bounce" />
             <span className="bg-gradient-to-r from-white via-cyan-200 to-white bg-clip-text text-transparent">
-              Kế Hoạch Ăn Uống Của Bạn
+              Your Personalized Meal Plan
             </span>
           </h1>
+
           <p className="text-blue-100 text-lg">
-            Thực đơn được thiết kế riêng cho mục tiêu của bạn
+            A customized meal schedule designed for your goals
           </p>
         </div>
 
         {/* Main content */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+
           {/* Sidebar */}
           <div className="lg:col-span-1">
             <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 border border-blue-200 shadow-xl sticky top-4">
               <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
                 <Calendar className="w-6 h-6 text-blue-600" />
-                Chọn ngày
+                Select Day
               </h2>
+
               <div className="space-y-3">
                 {mealPlan.schedule.map((day: any, index: number) => (
                   <button
                     key={index}
                     onClick={() => setSelectedDay(index)}
-                    className={`w-full p-4 rounded-xl text-left transition-all duration-300 border-2 ${selectedDay === index
-                      ? "bg-gradient-to-r from-blue-500 to-cyan-600 text-white border-white shadow-lg scale-105"
-                      : "bg-white border-gray-200 hover:border-blue-300 hover:shadow-md"
-                      }`}
+                    className={`w-full p-4 rounded-xl text-left transition-all duration-300 border-2 ${
+                      selectedDay === index
+                        ? "bg-gradient-to-r from-blue-500 to-cyan-600 text-white border-white shadow-lg scale-105"
+                        : "bg-white border-gray-200 hover:border-blue-300 hover:shadow-md"
+                    }`}
                   >
                     <div className="flex items-center justify-between">
                       <div>
                         <div
-                          className={`font-semibold ${selectedDay === index ? "text-white" : "text-gray-800"
-                            }`}
+                          className={`font-semibold ${
+                            selectedDay === index ? "text-white" : "text-gray-800"
+                          }`}
                         >
-                          Ngày {index + 1}
+                          Day {index + 1}
                         </div>
+
                         <div
-                          className={`text-sm ${selectedDay === index ? "text-blue-100" : "text-gray-600"
-                            }`}
+                          className={`text-sm ${
+                            selectedDay === index ? "text-blue-100" : "text-gray-600"
+                          }`}
                         >
                           {new Date(
                             Date.now() + index * 24 * 60 * 60 * 1000
-                          ).toLocaleDateString("vi-VN", {
+                          ).toLocaleDateString("en-US", {
                             weekday: "long",
                             day: "2-digit",
                             month: "2-digit",
@@ -263,6 +278,7 @@ export default function PlanResultPage() {
                           })}
                         </div>
                       </div>
+
                       {selectedDay === index && (
                         <CheckCircle2 className="w-6 h-6 text-white" />
                       )}
@@ -271,11 +287,13 @@ export default function PlanResultPage() {
                 ))}
               </div>
 
+              {/* Nutrition Summary */}
               <div className="mt-6 pt-6 border-t border-gray-200">
                 <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
                   <Target className="w-5 h-5 text-blue-600" />
-                  Tổng dinh dưỡng
+                  Daily Nutrition
                 </h3>
+
                 <div className="space-y-3 text-sm">
                   <div className="flex justify-between">
                     <span>🔥 Calories</span>
@@ -283,18 +301,21 @@ export default function PlanResultPage() {
                       {totalNutrition.calories} kcal
                     </span>
                   </div>
+
                   <div className="flex justify-between">
                     <span>🍗 Protein</span>
                     <span className="font-semibold text-red-600">
                       {totalNutrition.protein}g
                     </span>
                   </div>
+
                   <div className="flex justify-between">
                     <span>💧 Fat</span>
                     <span className="font-semibold text-yellow-600">
                       {totalNutrition.fat}g
                     </span>
                   </div>
+
                   <div className="flex justify-between">
                     <span>🌾 Carbs</span>
                     <span className="font-semibold text-green-600">
@@ -306,12 +327,13 @@ export default function PlanResultPage() {
             </div>
           </div>
 
-          {/* Meals */}
+          {/* Meals Section */}
           <div className="lg:col-span-2 space-y-6">
             {currentDay.meals.map((meal: any, index: number) => {
               const mealInfo = getMealTypeInfo(meal.mealType);
               const Icon = mealInfo.icon;
               const isFlipped = flippedMeals.has(index);
+
               return (
                 <div
                   key={index}
@@ -320,11 +342,12 @@ export default function PlanResultPage() {
                   onClick={() => toggleMealFlip(index)}
                 >
                   <div
-                    className={`relative w-full h-full transition-transform duration-700 ${isFlipped ? "[transform:rotateY(180deg)]" : ""
-                      }`}
+                    className={`relative w-full h-full transition-transform duration-700 ${
+                      isFlipped ? "[transform:rotateY(180deg)]" : ""
+                    }`}
                     style={{ transformStyle: "preserve-3d" }}
                   >
-                    {/* Mặt trước */}
+                    {/* Front */}
                     <div
                       className={`absolute inset-0 bg-white/90 rounded-2xl p-6 border-2 ${mealInfo.border} shadow-lg hover:shadow-2xl transition-shadow`}
                       style={{ backfaceVisibility: "hidden" }}
@@ -335,11 +358,13 @@ export default function PlanResultPage() {
                         >
                           <Icon className="w-8 h-8 text-white" />
                         </div>
+
                         <div className="flex-1">
                           <div className="flex items-center justify-between mb-2">
                             <h3 className="text-xl font-bold text-gray-800">
                               {meal.nameMeals}
                             </h3>
+
                             <div className="flex items-center gap-2 text-gray-600">
                               <Clock className="w-4 h-4" />
                               <span className="text-sm font-medium">
@@ -347,6 +372,7 @@ export default function PlanResultPage() {
                               </span>
                             </div>
                           </div>
+
                           <span
                             className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${mealInfo.bg} ${mealInfo.text}`}
                           >
@@ -356,7 +382,7 @@ export default function PlanResultPage() {
                       </div>
                     </div>
 
-                    {/* Mặt sau */}
+                    {/* Back */}
                     <div
                       className={`absolute inset-0 bg-white/25 rounded-2xl p-6 border-2 ${mealInfo.border} shadow-lg`}
                       style={{
@@ -371,6 +397,7 @@ export default function PlanResultPage() {
                           >
                             <Icon className="w-6 h-6 text-white" />
                           </div>
+
                           <p className="text-gray-600 text-lg mb-4 font-bold">
                             {meal.description}
                           </p>
@@ -402,6 +429,7 @@ export default function PlanResultPage() {
                                   className={`w-4 h-4 mx-auto mb-1 ${mealInfo.text}`}
                                 />
                               )}
+
                               <div
                                 className={`flex items-baseline justify-center gap-1 text-base font-bold ${mealInfo.text}`}
                               >
@@ -415,6 +443,7 @@ export default function PlanResultPage() {
                         </div>
                       </div>
                     </div>
+
                   </div>
                 </div>
               );
@@ -422,55 +451,56 @@ export default function PlanResultPage() {
           </div>
         </div>
 
-        {/* 🟢 Modal tạo lịch */}
+        {/* Modal Create Schedule */}
         {showModal && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
             <div className="bg-white rounded-2xl p-6 w-[90%] max-w-md shadow-2xl animate-fadeIn">
               <h2 className="text-2xl font-bold text-center mb-4 text-gray-800">
-                🗓️ Tạo lịch ăn uống
+                🗓️ Create Meal Schedule
               </h2>
+
               <div className="bg-gray-50 rounded-lg p-3 mb-4 text-sm text-gray-700">
                 <p>
-                  🎯 <span className="font-semibold">Mục tiêu:</span>{" "}
-                  {userInfo?.goal || "Không xác định"}
+                  🎯 <span className="font-semibold">Goal:</span>{" "}
+                  {userInfo?.goal || "Unknown"}
                 </p>
                 <p>
-                  ⚖️ Cân nặng: {userInfo?.weight || "-"} kg | Chiều cao:{" "}
+                  ⚖️ Weight: {userInfo?.weight || "-"} kg | Height:{" "}
                   {userInfo?.height || "-"} cm
                 </p>
                 <p>
-                  👤 Giới tính:{" "}
+                  👤 Gender:{" "}
                   {userInfo?.gender === "male"
-                    ? "Nam"
+                    ? "Male"
                     : userInfo?.gender === "female"
-                      ? "Nữ"
-                      : "Khác"}
+                      ? "Female"
+                      : "Other"}
                 </p>
               </div>
 
-              {/* Nhập tên lịch */}
+              {/* Schedule Name Input */}
               <label className="block mb-2 text-sm font-semibold text-gray-700">
-                Tên lịch
+                Schedule Name
               </label>
+
               <input
                 type="text"
                 value={scheduleName}
                 onChange={(e) => setScheduleName(e.target.value)}
-                placeholder="Nhập tên kế hoạch..."
+                placeholder="Enter schedule name..."
                 className="w-full mb-4 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
               />
 
-              {/* Chọn ngày bắt đầu */}
+              {/* Start Date */}
               <label className="block mb-2 text-sm font-semibold text-gray-700">
-                Ngày bắt đầu
+                Start Date
               </label>
+
               <input
                 type="date"
                 value={startDate}
                 min={new Date().toISOString().split("T")[0]}
-                max={new Date(
-                  Date.now() + 3 * 24 * 60 * 60 * 1000
-                )
+                max={new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
                   .toISOString()
                   .split("T")[0]}
                 onChange={(e) => setStartDate(e.target.value)}
@@ -478,22 +508,24 @@ export default function PlanResultPage() {
               />
 
               <div className="flex justify-between mt-4">
+                {/* Cancel */}
                 <button
                   onClick={() => setShowModal(false)}
                   className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold"
                 >
-                  Hủy
+                  Cancel
                 </button>
 
+                {/* Confirm Create */}
                 <button
                   onClick={async () => {
                     if (!scheduleName.trim()) {
-                      notify.warning("⚠️ Vui lòng nhập tên kế hoạch!");
+                      notify.warning("⚠️ Please enter a schedule name!");
                       return;
                     }
 
                     if (!startDate) {
-                      notify.warning("⚠️ Vui lòng chọn ngày bắt đầu!");
+                      notify.warning("⚠️ Please select a start date!");
                       return;
                     }
 
@@ -501,12 +533,12 @@ export default function PlanResultPage() {
                       const t = type.toLowerCase();
 
                       if (t.includes("breakfast") || t.includes("sáng")) return "sáng";
+                      if (t.includes("phu") || t.includes("phụ") || t.includes("snack"))
+                        return "phụ sáng";
                       if (t.includes("lunch") || t.includes("trưa")) return "trưa";
-                      if (t.includes("dinner") || t.includes("tối")) return "tối";
                       if (t.includes("chiều") || t.includes("evening")) return "chiều";
-                      if (t.includes("phu") || t.includes("snack") || t.includes("phụ")) return "phụ sáng";
-
-                      return "sáng";
+                      if (t.includes("dinner") || t.includes("tối")) return "tối";
+                      return "tối";
                     }
 
                     const formattedSchedule = mealPlan.schedule.map((day: any, i: number) => ({
@@ -529,7 +561,7 @@ export default function PlanResultPage() {
                       userId: profile?._id,
                       height: Number(userInfo?.height),
                       weight: Number(userInfo?.weight),
-                      gender: mealPlan.userInfo?.gender === "male" ? "nam" : "nữ",
+                      gender: mealPlan.userInfo?.gender === "nam" ? "nam" : "nữ",
                       age: Number(userInfo?.age),
                       goal: userInfo?.goal,
                       kgGoal: userInfo?.kgGoal ?? 0,
@@ -539,25 +571,32 @@ export default function PlanResultPage() {
                       idTemplate: mealPlan.userInfo?.dateTemplate ?? null,
                       nameSchedule: scheduleName,
                       private: true,
+
+                      // ⭐ MOST IMPORTANT: SEND STATUS BACK TO BACKEND
+                      status: currentStatus,
                     };
 
                     try {
                       await dispatch(createScheduleThunk(finalData)).unwrap();
-                      notify.success("🎉 Tạo lịch thành công!");
+                      notify.success("🎉 Schedule created successfully!");
                       setShowModal(false);
                       navigate("/plans");
                     } catch (err: any) {
-                      notify.error("❌ Lỗi khi lưu lịch! " + (err?.response?.data?.message || ""));
+                      notify.error(
+                        "❌ Failed to save schedule! " +
+                        (err?.response?.data?.message || "")
+                      );
                     }
                   }}
+                  className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-lg"
                 >
-                  Tạo lịch
+                  {currentStatus === "draft" ? "Save Draft" : "Create"}
                 </button>
-
               </div>
             </div>
           </div>
         )}
+
       </div>
     </div>
   );

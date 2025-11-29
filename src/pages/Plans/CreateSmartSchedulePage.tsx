@@ -109,16 +109,16 @@ export default function CreateSmartSchedulePage() {
             notify.warning("⚠️ Vui lòng điền đầy đủ thông tin trước khi phân tích bằng AI!");
             return;
         }
-    
+
         try {
             const weeksNum = Number(targetWeeks || 0);
             const totalDays = weeksNum * 7;
-    
+
             const mergedGoal =
                 userInfo.goal === "giảm cân"
                     ? `giảm ${kgChange}kg trong ${totalDays} ngày`
                     : `tăng ${kgChange}kg trong ${totalDays} ngày`;
-    
+
             const cleanUserInfo = {
                 userId: profile?._id,
                 gender: userInfo.gender,
@@ -128,7 +128,7 @@ export default function CreateSmartSchedulePage() {
                 activity: userInfo.activity,
                 goal: mergedGoal,
             };
-    
+
             const userSchedule = mealSelections.map((day, dayIndex) => ({
                 dateID: `Day ${dayIndex + 1}`,
                 meals: day.map((mealItems, mealIndex) => ({
@@ -137,7 +137,7 @@ export default function CreateSmartSchedulePage() {
                     time: `${7 + mealIndex * 5}:00`,
                 })),
             }));
-    
+
             const result = await dispatch(
                 getAiAdviceThunk({
                     userId: cleanUserInfo.userId,
@@ -145,13 +145,13 @@ export default function CreateSmartSchedulePage() {
                     userSchedule,
                 })
             ).unwrap();
-    
+
             setAiResult(result);
             notify.success("🎉 AI đã phân tích dữ liệu của bạn!");
         } catch (err) {
             notify.error("❌ Lỗi khi phân tích bằng AI. Vui lòng thử lại!");
         }
-    };    
+    };
 
     const mealTypeMap = ["sáng", "trưa", "chiều", "tối", "phụ tối"];
     const handleCreateSchedule = async (customName: string, customDate: string) => {
@@ -242,9 +242,14 @@ export default function CreateSmartSchedulePage() {
         if (!scheduleDays || scheduleDays < 1) return false;
 
         // Phải có ít nhất 1 món ăn trong ngày đầu tiên
-        const firstDayMeals = mealSelections[0] ?? [];
-        const hasFood = firstDayMeals.some((meal) => meal.length > 0);
-        if (!hasFood) return false;
+        for (let d = 0; d < mealSelections.length; d++) {
+            for (let m = 0; m < mealSelections[d].length; m++) {
+                if (mealSelections[d][m].length === 0) {
+                    console.warn(`Ngày ${d + 1}, bữa ${m + 1} trống`);
+                    return false;
+                }
+            }
+        }
 
         return true;
     };
@@ -263,7 +268,7 @@ export default function CreateSmartSchedulePage() {
                                 <Calendar className="w-8 h-8 text-blue-600 animate-bounce" />
                                 <Sparkles className="w-4 h-4 text-cyan-400 absolute -top-1 -right-1 animate-pulse" />
                             </div>
-                            Tạo lịch ăn thông minh
+                            Create Smart Meal Schedule
                         </h2>
                     </div>
                     <button
@@ -285,7 +290,7 @@ export default function CreateSmartSchedulePage() {
                                             <Target className="w-6 h-6 text-white" />
                                         </div>
                                         <h3 className="font-bold text-xl bg-gradient-to-r from-blue-700 to-cyan-700 bg-clip-text text-transparent">
-                                            Thông tin cá nhân
+                                            Personal Information
                                         </h3>
                                     </div>
 
@@ -294,7 +299,7 @@ export default function CreateSmartSchedulePage() {
                                             <div className="group/input">
                                                 <label className="block font-semibold mb-2 text-sm text-gray-700 flex items-center gap-2">
                                                     <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse"></span>
-                                                    Giới tính
+                                                    Gender
                                                 </label>
                                                 <select
                                                     className="w-full border-2 border-gray-200 rounded-xl p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 hover:border-blue-300 bg-white"
@@ -306,15 +311,15 @@ export default function CreateSmartSchedulePage() {
                                                         })
                                                     }
                                                 >
-                                                    <option value="nam">Nam</option>
-                                                    <option value="nữ">Nữ</option>
+                                                    <option value="nam">Male</option>
+                                                    <option value="nữ">Female</option>
                                                 </select>
                                             </div>
 
                                             <div className="group/input">
                                                 <label className="block font-semibold mb-2 text-sm text-gray-700 flex items-center gap-2">
                                                     <span className="w-1.5 h-1.5 bg-cyan-500 rounded-full animate-pulse"></span>
-                                                    Tuổi
+                                                    Age
                                                 </label>
                                                 <input
                                                     type="number"
@@ -336,7 +341,7 @@ export default function CreateSmartSchedulePage() {
                                             <div className="group/input">
                                                 <label className="block font-semibold mb-2 text-sm text-gray-700 flex items-center gap-2">
                                                     <span className="w-1.5 h-1.5 bg-teal-500 rounded-full animate-pulse"></span>
-                                                    Cân nặng (kg)
+                                                    Weight (kg)
                                                 </label>
                                                 <input
                                                     type="number"
@@ -354,7 +359,7 @@ export default function CreateSmartSchedulePage() {
                                             <div className="group/input">
                                                 <label className="block font-semibold mb-2 text-sm text-gray-700 flex items-center gap-2">
                                                     <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
-                                                    Chiều cao (cm)
+                                                    Height (cm)
                                                 </label>
                                                 <input
                                                     type="number"
@@ -369,11 +374,34 @@ export default function CreateSmartSchedulePage() {
                                                 />
                                             </div>
                                         </div>
+                                        <div className="group/input">
+                                            <label className="block font-semibold mb-2 text-sm text-gray-700 flex items-center gap-2">
+                                                <Activity className="w-4 h-4 text-teal-600" />
+                                                Activity Level
+                                            </label>
+                                            <select
+                                                className="w-full border-2 border-gray-200 rounded-xl p-2.5 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-300 hover:border-teal-300 bg-white"
+                                                value={userInfo.activity}
+                                                onChange={(e) =>
+                                                    setUserInfo({
+                                                        ...userInfo,
+                                                        activity: e.target.value,
+                                                    })
+                                                }
+                                            >
+                                                <option value="" disabled hidden>-- Select your Activity Level --</option>
+                                                <option>low</option>
+                                                <option>light</option>
+                                                <option>moderate</option>
+                                                <option>high</option>
+                                                <option>very high</option>
+                                            </select>
+                                        </div>
 
                                         <div className="group/input">
                                             <label className="block font-semibold mb-2 text-sm text-gray-700 flex items-center gap-2">
                                                 <Target className="w-4 h-4 text-blue-600" />
-                                                Mục tiêu
+                                                Goal
                                             </label>
                                             <select
                                                 className="w-full border-2 border-gray-200 rounded-xl p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 hover:border-blue-300 bg-white"
@@ -385,12 +413,12 @@ export default function CreateSmartSchedulePage() {
                                                     })
                                                 }
                                             >
-                                                <option value="" disabled hidden>-- Hãy chọn mục tiêu của bạn --</option>
-                                                <option>giảm cân</option>
-                                                <option>tăng cân</option>
-                                                <option>duy trì vóc dáng</option>
-                                                <option>cải thiện sức khỏe</option>
-                                                <option>hỗ trợ bệnh lý</option>
+                                                <option value="" disabled hidden>-- Select your goal --</option>
+                                                <option>lose weight</option>
+                                                <option>gain weight</option>
+                                                <option>maintain weight</option>
+                                                <option>health improvement</option>
+                                                <option>medical support</option>
                                             </select>
                                         </div>
 
@@ -403,14 +431,14 @@ export default function CreateSmartSchedulePage() {
                                                         <TrendingUp className="w-4 h-4 text-green-600" />
                                                     )}
                                                     {userInfo.goal === "giảm cân"
-                                                        ? "Muốn giảm bao nhiêu kg?"
-                                                        : "Muốn tăng bao nhiêu kg?"}
+                                                        ? "How many kg do you want to lose?"
+                                                        : "How many kg do you want to gain?"}
                                                 </label>
                                                 <input
                                                     type="number"
                                                     className="w-full border-2 border-gray-200 rounded-xl p-2.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 hover:border-blue-300"
                                                     value={kgChange}
-                                                    placeholder="Nhập số kg muốn thay đổi..."
+                                                    placeholder="Enter number kg change"
                                                     onChange={(e) => {
                                                         let val = Number(e.target.value);
                                                         if (isNaN(val) || val <= 0) val = 1;
@@ -442,7 +470,7 @@ export default function CreateSmartSchedulePage() {
                                         <div className="group/input">
                                             <label className="font-semibold mb-2 flex items-center gap-2 text-sm text-gray-700">
                                                 <Calendar className="w-4 h-4 text-cyan-600" />
-                                                Thời gian muốn đạt mục tiêu
+                                                Target duration
                                             </label>
 
                                             <select
@@ -469,10 +497,10 @@ export default function CreateSmartSchedulePage() {
                                                     }
                                                 }}
                                             >
-                                                <option value={1}>1 tuần</option>
-                                                <option value={2}>2 tuần</option>
-                                                <option value={3}>3 tuần</option>
-                                                <option value={4}>4 tuần</option>
+                                                <option value={1}>1 weeks</option>
+                                                <option value={2}>2 weeks</option>
+                                                <option value={3}>3 weeks</option>
+                                                <option value={4}>4 weeks</option>
                                             </select>
 
                                             {timeWarning && (
@@ -480,30 +508,6 @@ export default function CreateSmartSchedulePage() {
                                                     <p className="text-red-600 text-xs font-medium">{timeWarning}</p>
                                                 </div>
                                             )}
-                                        </div>
-
-                                        <div className="group/input">
-                                            <label className="block font-semibold mb-2 text-sm text-gray-700 flex items-center gap-2">
-                                                <Activity className="w-4 h-4 text-teal-600" />
-                                                Mức độ hoạt động
-                                            </label>
-                                            <select
-                                                className="w-full border-2 border-gray-200 rounded-xl p-2.5 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-300 hover:border-teal-300 bg-white"
-                                                value={userInfo.activity}
-                                                onChange={(e) =>
-                                                    setUserInfo({
-                                                        ...userInfo,
-                                                        activity: e.target.value,
-                                                    })
-                                                }
-                                            >
-                                                <option value="" disabled hidden>-- Chọn mức độ hoạt động --</option>
-                                                <option>ít</option>
-                                                <option>nhẹ</option>
-                                                <option>vừa</option>
-                                                <option>cao</option>
-                                                <option>rất cao</option>
-                                            </select>
                                         </div>
 
                                         <div className="group/input">
@@ -569,7 +573,7 @@ export default function CreateSmartSchedulePage() {
                                                 <Sparkles className="w-6 h-6 text-white" />
                                             </div>
                                             <h3 className="font-bold text-xl bg-gradient-to-r from-green-700 to-emerald-700 bg-clip-text text-transparent">
-                                                Lựa chọn bữa ăn
+                                                Meal Selection
                                             </h3>
                                         </div>
 
@@ -585,7 +589,7 @@ export default function CreateSmartSchedulePage() {
                                             <div className="relative group/day">
                                                 <div className="absolute -inset-1 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-xl blur opacity-50 group-hover/day:opacity-75 transition-opacity"></div>
                                                 <div className="relative px-6 py-1 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl font-bold text-lg shadow-lg whitespace-nowrap">
-                                                    Ngày {currentDayIndex + 1} / {scheduleDays}
+                                                    Day {currentDayIndex + 1} / {scheduleDays}
                                                 </div>
                                             </div>
 
@@ -618,7 +622,7 @@ export default function CreateSmartSchedulePage() {
                                                         value=""
                                                         onChange={(e) => handleAddMeal(currentDayIndex, mealIndex, e.target.value)}
                                                     >
-                                                        <option value="">-- Chọn món từ scan --</option>
+                                                        <option value="">-- Choose from scanned meals --</option>
                                                         {meals.map((m: any) => (
                                                             <option key={m._id} value={m.food_vi}>
                                                                 {m.food_vi} ({m.nutrition.calories} kcal)
@@ -628,7 +632,7 @@ export default function CreateSmartSchedulePage() {
 
                                                     <input
                                                         type="text"
-                                                        placeholder="Nhập món thủ công và nhấn Enter..."
+                                                        placeholder="Enter custom food and press Enter..."
                                                         className="w-full border-2 border-green-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-300 hover:border-green-300 bg-white/80 backdrop-blur-sm"
                                                         onKeyDown={(e) => {
                                                             if (e.key === "Enter" && e.currentTarget.value.trim() !== "") {
@@ -686,7 +690,7 @@ export default function CreateSmartSchedulePage() {
                                             <Brain className="w-6 h-6 text-white animate-pulse" />
                                         </div>
                                         <h3 className="font-bold text-xl bg-gradient-to-r from-pink-700 to-rose-700 bg-clip-text text-transparent">
-                                            Kết quả phân tích AI
+                                            AI Analysis Result
                                         </h3>
                                     </div>
 
@@ -699,7 +703,7 @@ export default function CreateSmartSchedulePage() {
                                                         <Brain className="w-16 h-16 text-gray-300 mx-auto relative" />
                                                     </div>
                                                     <p className="text-gray-500 italic px-4">
-                                                        Nhập thông tin & chọn món ăn rồi bấm "Phân tích bằng AI"
+                                                        Enter information & choose meals then click "Analyze with AI"
                                                     </p>
                                                 </div>
                                             </div>
@@ -710,7 +714,7 @@ export default function CreateSmartSchedulePage() {
                                                     <div className="relative p-4 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl border-2 border-blue-200 hover:shadow-lg transition-all duration-300">
                                                         <p className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
                                                             <Target className="w-4 h-4 text-blue-600" />
-                                                            Hoàn thành mục tiêu:
+                                                            Goal Achievement:
                                                         </p>
                                                         <p className="text-lg font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
                                                             {aiResult?.advice?.advice?.goalCheck}
@@ -723,7 +727,7 @@ export default function CreateSmartSchedulePage() {
                                                     <div className="relative p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border-2 border-green-200 hover:shadow-lg transition-all duration-300">
                                                         <p className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
                                                             <Sparkles className="w-4 h-4 text-green-600" />
-                                                            Tỉ lệ đạt:
+                                                            Completion rate:
                                                         </p>
                                                         <p className="text-lg font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
                                                             {aiResult?.advice?.advice?.percentFinish}%
@@ -734,7 +738,7 @@ export default function CreateSmartSchedulePage() {
                                                 <div className="relative group/card">
                                                     <div className="absolute -inset-0.5 bg-gradient-to-r from-gray-300 to-slate-300 rounded-xl blur opacity-0 group-hover/card:opacity-100 transition-opacity duration-300"></div>
                                                     <div className="relative p-4 bg-gradient-to-br from-gray-50 to-slate-50 rounded-xl border-2 border-gray-200 hover:shadow-lg transition-all duration-300">
-                                                        <p className="text-sm font-semibold text-gray-700 mb-2">Lý do:</p>
+                                                        <p className="text-sm font-semibold text-gray-700 mb-2">Reason:</p>
                                                         <p className="text-gray-800 text-sm leading-relaxed">{aiResult?.advice?.advice?.reason}</p>
                                                     </div>
                                                 </div>
@@ -744,7 +748,7 @@ export default function CreateSmartSchedulePage() {
                                                     <div className="relative p-4 bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl border-2 border-orange-200 hover:shadow-lg transition-all duration-300">
                                                         <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
                                                             <Sparkles className="w-4 h-4 text-orange-600" />
-                                                            Gợi ý cải thiện:
+                                                            Suggestions:
                                                         </h4>
                                                         <ul className="space-y-2">
                                                             {aiResult?.advice?.advice?.mealSuggestion?.map(
@@ -772,7 +776,7 @@ export default function CreateSmartSchedulePage() {
                         onClick={() => navigate(-1)}
                         className="px-6 py-2.5 bg-gradient-to-r from-gray-200 to-gray-300 text-gray-700 rounded-xl hover:from-gray-300 hover:to-gray-400 font-medium transition-all duration-300 hover:scale-105 shadow-md hover:shadow-lg"
                     >
-                        Hủy
+                        Cancel
                     </button>
 
                     <button
@@ -786,7 +790,7 @@ export default function CreateSmartSchedulePage() {
                         ) : (
                             <Brain className="w-5 h-5 relative z-10 group-hover/btn:animate-pulse" />
                         )}
-                        <span className="relative z-10">Phân tích bằng AI</span>
+                        <span className="relative z-10">Analyze with AI</span>
                     </button>
 
                     <button
@@ -811,7 +815,7 @@ export default function CreateSmartSchedulePage() {
                             <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-emerald-400 opacity-0 group-hover/btn:opacity-100 transition-opacity blur"></div>
                         )}
                         <span className="relative z-10 text-xl">✓</span>
-                        <span className="relative z-10">Tạo lịch</span>
+                        <span className="relative z-10">Create Schedule</span>
                     </button>
                 </div>
             </div>
@@ -826,19 +830,19 @@ export default function CreateSmartSchedulePage() {
                                     <Calendar className="w-6 h-6 text-white" />
                                 </div>
                                 <h3 className="text-2xl font-bold bg-gradient-to-r from-blue-700 to-cyan-700 bg-clip-text text-transparent">
-                                    Xác nhận thông tin lịch ăn uống
+                                Confirm Meal Schedule
                                 </h3>
                             </div>
 
                             <div className="mb-5">
                                 <label className="font-semibold mb-2 flex items-center gap-2 text-gray-700">
                                     <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
-                                    Tên lịch
+                                    Schedule name
                                 </label>
                                 <input
                                     type="text"
                                     className="w-full border-2 border-blue-200 p-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 hover:border-blue-300"
-                                    placeholder="Nhập tên lịch..."
+                                    placeholder="Enter schedule name..."
                                     value={scheduleName}
                                     onChange={(e) => setScheduleName(e.target.value)}
                                 />
@@ -847,14 +851,14 @@ export default function CreateSmartSchedulePage() {
                             <div className="mb-6">
                                 <label className="font-semibold mb-2 flex items-center gap-2 text-gray-700">
                                     <span className="w-2 h-2 bg-cyan-500 rounded-full animate-pulse"></span>
-                                    Ngày bắt đầu
+                                    Start date
                                 </label>
                                 <select
                                     className="w-full border-2 border-cyan-200 p-3 rounded-xl focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all duration-300 hover:border-cyan-300 bg-white"
                                     value={startDateSelect}
                                     onChange={(e) => setStartDateSelect(e.target.value)}
                                 >
-                                    <option value="">-- Chọn ngày --</option>
+                                    <option value="">-- Select date --</option>
                                     {dateOptions.map((opt, i) => (
                                         <option key={i} value={opt.value}>
                                             {opt.label}
@@ -868,13 +872,13 @@ export default function CreateSmartSchedulePage() {
                                     onClick={() => setShowModal(false)}
                                     className="px-5 py-2.5 bg-gradient-to-r from-gray-200 to-gray-300 rounded-xl hover:from-gray-300 hover:to-gray-400 font-medium transition-all duration-300 hover:scale-105 shadow-md"
                                 >
-                                    Hủy
+                                    Cancel
                                 </button>
 
                                 <button
                                     onClick={() => {
                                         if (!scheduleName.trim()) return notify.warning("Tên lịch không được bỏ trống!");
-                                        if (!startDateSelect) return notify.warning("Vui lòng chọn ngày bắt đầu!");                                        
+                                        if (!startDateSelect) return notify.warning("Vui lòng chọn ngày bắt đầu!");
 
                                         handleCreateSchedule(scheduleName, startDateSelect);
                                         setShowModal(false);
@@ -882,7 +886,7 @@ export default function CreateSmartSchedulePage() {
                                     className="relative group/confirm px-5 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl hover:from-blue-700 hover:to-cyan-700 font-medium transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl overflow-hidden"
                                 >
                                     <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-cyan-400 opacity-0 group-hover/confirm:opacity-100 transition-opacity blur"></div>
-                                    <span className="relative z-10">Xác nhận</span>
+                                    <span className="relative z-10">Confirm</span>
                                 </button>
                             </div>
                         </div>
