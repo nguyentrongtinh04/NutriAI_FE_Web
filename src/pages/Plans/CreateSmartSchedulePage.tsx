@@ -422,15 +422,15 @@ export default function CreateSmartSchedulePage() {
                                             </select>
                                         </div>
 
-                                        {(userInfo.goal === "giảm cân" || userInfo.goal === "tăng cân") && (
+                                        {(userInfo.goal === "lose weight" || userInfo.goal === "gain weight") && (
                                             <div className="group/input">
                                                 <label className="block font-semibold mb-2 text-sm text-gray-700 flex items-center gap-2">
-                                                    {userInfo.goal === "giảm cân" ? (
+                                                    {userInfo.goal === "lose weight" ? (
                                                         <TrendingDown className="w-4 h-4 text-red-600" />
                                                     ) : (
                                                         <TrendingUp className="w-4 h-4 text-green-600" />
                                                     )}
-                                                    {userInfo.goal === "giảm cân"
+                                                    {userInfo.goal === "lose weight"
                                                         ? "How many kg do you want to lose?"
                                                         : "How many kg do you want to gain?"}
                                                 </label>

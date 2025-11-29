@@ -1,5 +1,3 @@
-// 🔥 FILE ĐÃ SỬA HOÀN CHỈNH — CHỈ VIỆC COPY & REPLACE
-
 import React, { useState } from "react";
 import {
   ChefHat,
@@ -14,8 +12,6 @@ import {
   CheckCircle2,
   Info,
   CalendarPlus,
-  CalendarCheck,
-  Edit3,
 } from "lucide-react";
 import { useSelector } from "react-redux";
 import type { RootState } from "../../redux/store";
@@ -46,9 +42,6 @@ export default function PlanResultPage() {
   const location = useLocation();
   const userInfo = location.state?.userInfo;
 
-  // ⭐ FIX STATUS FROM BACKEND OR FALLBACK
-  const currentStatus = mealPlan?.status || "draft";
-
   const toggleMealFlip = (mealIndex: number) => {
     setFlippedMeals((prev) => {
       const newSet = new Set(prev);
@@ -57,37 +50,6 @@ export default function PlanResultPage() {
       return newSet;
     });
   };
-
-  const getStatusUI = (status: string) => {
-    switch (status) {
-      case "draft":
-        return {
-          label: "Draft",
-          color: "bg-yellow-100 text-yellow-700 border-yellow-300",
-          icon: <Edit3 className="w-5 h-5 text-yellow-600" />
-        };
-      case "active":
-        return {
-          label: "Active",
-          color: "bg-green-100 text-green-700 border-green-300",
-          icon: <CheckCircle2 className="w-5 h-5 text-green-600" />
-        };
-      case "completed":
-        return {
-          label: "Completed",
-          color: "bg-blue-100 text-blue-700 border-blue-300",
-          icon: <CalendarCheck className="w-5 h-5 text-blue-600" />
-        };
-      default:
-        return {
-          label: "Unknown",
-          color: "bg-gray-100 text-gray-700 border-gray-300",
-          icon: <Info className="w-5 h-5 text-gray-600" />
-        };
-    }
-  };
-
-  const statusUI = getStatusUI(currentStatus);
 
   if (loading)
     return (
@@ -120,6 +82,9 @@ export default function PlanResultPage() {
           <p className="text-gray-600 text-lg">
             No plan found — please create a plan first.
           </p>
+          <button className="mt-6 bg-gradient-to-r from-blue-500 to-cyan-600 text-white px-6 py-3 rounded-xl hover:shadow-lg transition-all duration-300">
+            Create plan now
+          </button>
         </div>
       </div>
     );
@@ -133,7 +98,6 @@ export default function PlanResultPage() {
     }),
     { calories: 0, protein: 0, fat: 0, carbs: 0 }
   );
-
   const getMealTypeInfo = (type?: string) => {
     const lower = (type || "").toLowerCase();
 
@@ -180,7 +144,7 @@ export default function PlanResultPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-500 via-cyan-500 to-teal-400 py-8 px-4">
       <div className="max-w-6xl mx-auto">
-
+        
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <button
@@ -191,30 +155,19 @@ export default function PlanResultPage() {
             <span>Back</span>
           </button>
 
-          <div
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl border ${statusUI.color}`}
+          <button
+            onClick={() => {
+              if (!token) {
+                notify.warning("⚠️ You need to be logged in to create a schedule!");
+                return;
+              }
+              setShowModal(true);
+            }}
+            className="flex items-center gap-2 bg-white/90 backdrop-blur-sm text-blue-600 px-6 py-3 rounded-xl font-semibold hover:bg-white hover:shadow-xl transition-all duration-300 border-2 border-white/50 hover:scale-105"
           >
-            {statusUI.icon}
-            <span className="font-semibold">{statusUI.label}</span>
-          </div>
-
-          {currentStatus !== "completed" && (
-            <button
-              onClick={() => {
-                if (!token) {
-                  notify.warning("⚠️ You need to be logged in to create a schedule!");
-                  return;
-                }
-                setShowModal(true);
-              }}
-              className="flex items-center gap-2 bg-white/90 backdrop-blur-sm text-blue-600 px-6 py-3 rounded-xl font-semibold hover:bg-white hover:shadow-xl transition-all duration-300 border-2 border-white/50 hover:scale-105"
-            >
-              <CalendarPlus className="w-5 h-5" />
-              <span>
-                {currentStatus === "draft" ? "Continue Editing Draft" : "Create Schedule"}
-              </span>
-            </button>
-          )}
+            <CalendarPlus className="w-5 h-5" />
+            <span>Create Schedule</span>
+          </button>
         </div>
 
         {/* Title */}
@@ -326,7 +279,6 @@ export default function PlanResultPage() {
               </div>
             </div>
           </div>
-
           {/* Meals Section */}
           <div className="lg:col-span-2 space-y-6">
             {currentDay.meals.map((meal: any, index: number) => {
@@ -473,8 +425,8 @@ export default function PlanResultPage() {
                   {userInfo?.gender === "male"
                     ? "Male"
                     : userInfo?.gender === "female"
-                      ? "Female"
-                      : "Other"}
+                    ? "Female"
+                    : "Other"}
                 </p>
               </div>
 
@@ -506,7 +458,6 @@ export default function PlanResultPage() {
                 onChange={(e) => setStartDate(e.target.value)}
                 className="w-full mb-6 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400 outline-none"
               />
-
               <div className="flex justify-between mt-4">
                 {/* Cancel */}
                 <button
@@ -531,15 +482,26 @@ export default function PlanResultPage() {
 
                     function mapMealType(type: string) {
                       const t = type.toLowerCase();
-
+                    
+                      // Bữa sáng
                       if (t.includes("breakfast") || t.includes("sáng")) return "sáng";
+                    
+                      // Bữa phụ sáng
                       if (t.includes("phu") || t.includes("phụ") || t.includes("snack"))
                         return "phụ sáng";
+                    
+                      // Bữa trưa
                       if (t.includes("lunch") || t.includes("trưa")) return "trưa";
+                    
+                      // Bữa chiều
                       if (t.includes("chiều") || t.includes("evening")) return "chiều";
+                    
+                      // Bữa tối
                       if (t.includes("dinner") || t.includes("tối")) return "tối";
+                    
+                      // Mặc định
                       return "tối";
-                    }
+                    }                                       
 
                     const formattedSchedule = mealPlan.schedule.map((day: any, i: number) => ({
                       dateID: `Day ${i + 1}`,
@@ -561,7 +523,8 @@ export default function PlanResultPage() {
                       userId: profile?._id,
                       height: Number(userInfo?.height),
                       weight: Number(userInfo?.weight),
-                      gender: mealPlan.userInfo?.gender === "nam" ? "nam" : "nữ",
+                      gender:
+                        mealPlan.userInfo?.gender === "nam" ? "nam" : "nữ",
                       age: Number(userInfo?.age),
                       goal: userInfo?.goal,
                       kgGoal: userInfo?.kgGoal ?? 0,
@@ -571,9 +534,6 @@ export default function PlanResultPage() {
                       idTemplate: mealPlan.userInfo?.dateTemplate ?? null,
                       nameSchedule: scheduleName,
                       private: true,
-
-                      // ⭐ MOST IMPORTANT: SEND STATUS BACK TO BACKEND
-                      status: currentStatus,
                     };
 
                     try {
@@ -584,19 +544,18 @@ export default function PlanResultPage() {
                     } catch (err: any) {
                       notify.error(
                         "❌ Failed to save schedule! " +
-                        (err?.response?.data?.message || "")
+                          (err?.response?.data?.message || "")
                       );
                     }
                   }}
                   className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-lg"
                 >
-                  {currentStatus === "draft" ? "Save Draft" : "Create"}
+                  Create
                 </button>
               </div>
             </div>
           </div>
         )}
-
       </div>
     </div>
   );
