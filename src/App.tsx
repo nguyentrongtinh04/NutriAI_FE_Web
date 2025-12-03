@@ -60,6 +60,7 @@ function App() {
           <Route path="/notificationpages" element={<PrivateRoute><NotificationsPage /></PrivateRoute>} />
           <Route path="/demo" element={<ProfilePage />} />
         </Routes>
+        
       </NotificationsProvider>
     </AuthProvider>
   );

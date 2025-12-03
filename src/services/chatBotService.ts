@@ -4,7 +4,7 @@ export const chatBotService = {
   sendMessageToBot: async (message: string) => {
     try {
       // POST tới Gateway: /chatbot/
-      const res = await chatbotApi.post("/", { message });
+      const res = await chatbotApi.post("/question", { message });
 
       return res.data.reply;
     } catch (err) {
