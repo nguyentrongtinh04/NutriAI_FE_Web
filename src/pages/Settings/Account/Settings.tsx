@@ -138,7 +138,7 @@ export default function Settings() {
                     <Mail className="w-6 h-6 text-green-600" />
                   </div>
                 </div>
-                <h3 className="text-2xl font-bold text-gray-800">Email Management</h3>
+                <h3 className="text-2xl font-bold text-gray-800">Login Management</h3>
               </div>
 
               <div className="space-y-4">
@@ -153,8 +153,8 @@ export default function Settings() {
                     </div>
                   </div>
                   <div className="flex-1 text-left">
-                    <p className="font-semibold text-gray-800">Manage Emails</p>
-                    <p className="text-sm text-gray-600">Add or remove email addresses</p>
+                    <p className="font-semibold text-gray-800">Manage Login</p>
+                    <p className="text-sm text-gray-600">Add or remove method Login</p>
                   </div>
                   <Edit3 className="w-5 h-5 text-green-600 group-hover:animate-pulse" />
                 </button>

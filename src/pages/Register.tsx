@@ -18,7 +18,6 @@ declare global {
         google: any;
     }
 }
-
 export default function Register() {
     const navigate = useNavigate();
     const dispatch = useDispatch<AppDispatch>();
@@ -208,6 +207,7 @@ export default function Register() {
                 },
             );
             notify.success("🎉 Tạo tài khoản thành công!");
+            navigate("/login");
         } catch (err: any) {
             notify.error("❌ OTP không hợp lệ hoặc đăng ký thất bại");
         }

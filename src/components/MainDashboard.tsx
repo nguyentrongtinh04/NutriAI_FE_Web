@@ -93,7 +93,7 @@ export default function MainDashboard() {
     };
 
     return (
-        <main className="relative z-20 w-full px-4 py-10 pt-[105px]">
+        <main className="relative z-0 w-full px-4 py-10 pt-[105px]">
 
             {/* Welcome Section */}
             <div className="mb-8 relative">

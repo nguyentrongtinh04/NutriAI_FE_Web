@@ -114,10 +114,17 @@ export default function CreateSmartSchedulePage() {
             const weeksNum = Number(targetWeeks || 0);
             const totalDays = weeksNum * 7;
 
-            const mergedGoal =
-                userInfo.goal === "giảm cân"
-                    ? `giảm ${kgChange}kg trong ${totalDays} ngày`
-                    : `tăng ${kgChange}kg trong ${totalDays} ngày`;
+            let mergedGoal = "";
+
+            if (userInfo.goal === "giảm cân") {
+                mergedGoal = `giảm ${kgChange}kg trong ${totalDays} ngày`;
+            }
+            else if (userInfo.goal === "tăng cân") {
+                mergedGoal = `tăng ${kgChange}kg trong ${totalDays} ngày`;
+            }
+            else if (userInfo.goal === "duy trì") {
+                mergedGoal = "duy trì cân nặng hiện tại";
+            }
 
             const cleanUserInfo = {
                 userId: profile?._id,
@@ -414,23 +421,21 @@ export default function CreateSmartSchedulePage() {
                                                 }
                                             >
                                                 <option value="" disabled hidden>-- Select your goal --</option>
-                                                <option>lose weight</option>
-                                                <option>gain weight</option>
-                                                <option>maintain weight</option>
-                                                <option>health improvement</option>
-                                                <option>medical support</option>
+                                                <option>giảm cân</option>
+                                                <option>tăng cân</option>
+                                                <option>duy trì</option>
                                             </select>
                                         </div>
 
-                                        {(userInfo.goal === "lose weight" || userInfo.goal === "gain weight") && (
+                                        {(userInfo.goal === "giảm cân" || userInfo.goal === "tâng cân") && (
                                             <div className="group/input">
                                                 <label className="block font-semibold mb-2 text-sm text-gray-700 flex items-center gap-2">
-                                                    {userInfo.goal === "lose weight" ? (
+                                                    {userInfo.goal === "giảm cân" ? (
                                                         <TrendingDown className="w-4 h-4 text-red-600" />
                                                     ) : (
                                                         <TrendingUp className="w-4 h-4 text-green-600" />
                                                     )}
-                                                    {userInfo.goal === "lose weight"
+                                                    {userInfo.goal === "giảm cân"
                                                         ? "How many kg do you want to lose?"
                                                         : "How many kg do you want to gain?"}
                                                 </label>
@@ -685,13 +690,19 @@ export default function CreateSmartSchedulePage() {
                             <div className="relative group h-full">
                                 <div className="absolute -inset-1 bg-gradient-to-r from-pink-400 via-rose-400 to-red-400 rounded-2xl blur-lg opacity-50 group-hover:opacity-75 animate-pulse transition-all duration-500"></div>
                                 <div className="relative bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-6 border border-pink-200/50 h-full flex flex-col">
-                                    <div className="flex items-center gap-3 border-b border-pink-100 pb-4 mb-5">
-                                        <div className="p-2 bg-gradient-to-br from-pink-500 to-rose-600 rounded-xl">
-                                            <Brain className="w-6 h-6 text-white animate-pulse" />
+                                    <div className="border-b border-pink-100 pb-4 mb-5">
+                                        <div className="flex items-center gap-3 mb-1">
+                                            <div className="p-2 bg-gradient-to-br from-pink-500 to-rose-600 rounded-xl">
+                                                <Brain className="w-6 h-6 text-white animate-pulse" />
+                                            </div>
+                                            <h3 className="font-bold text-xl bg-gradient-to-r from-pink-700 to-rose-700 bg-clip-text text-transparent">
+                                                AI Analysis Result
+                                            </h3>
                                         </div>
-                                        <h3 className="font-bold text-xl bg-gradient-to-r from-pink-700 to-rose-700 bg-clip-text text-transparent">
-                                            AI Analysis Result
-                                        </h3>
+
+                                        <p className="text-sm text-red-500 italic">
+                                            AI-generated results may contain inaccuracies. Please use discretion and verify before following any recommendations.
+                                        </p>
                                     </div>
 
                                     <div className="flex-1 overflow-y-auto">
@@ -830,7 +841,7 @@ export default function CreateSmartSchedulePage() {
                                     <Calendar className="w-6 h-6 text-white" />
                                 </div>
                                 <h3 className="text-2xl font-bold bg-gradient-to-r from-blue-700 to-cyan-700 bg-clip-text text-transparent">
-                                Confirm Meal Schedule
+                                    Confirm Meal Schedule
                                 </h3>
                             </div>
 

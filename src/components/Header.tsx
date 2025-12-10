@@ -40,24 +40,9 @@ export default function Header() {
     navigate('/settings');
   };
 
-  const handleNotificationSettingsClick = () => {
-    navigate('/notifications');
-    setShowSettingsMenu(false);
-  };
-
   const handleAIChatClick = () => {
     setShowChatBot(true);
     setShowSettingsMenu(false);
-  };
-
-  const handleSupportClick = () => {
-    navigate('/support');
-    setShowSettingsMenu(false);
-  };
-
-  // New function to handle notification bell click
-  const handleNotificationClick = () => {
-    navigate('/notificationpages');
   };
 
   return (
@@ -80,29 +65,6 @@ export default function Header() {
 
           {/* User Actions */}
           <div className="flex items-center gap-4">
-            {/* Enhanced Notification Bell */}
-            <div className="relative group">
-              {/* Animated Glow Effect */}
-              <div className="absolute -inset-2 bg-gradient-to-r from-blue-400/20 via-cyan-400/30 to-blue-500/20 rounded-full blur-lg opacity-0 group-hover:opacity-100 transition-all duration-500 animate-pulse"></div>
-
-              <div
-                className="relative p-2 rounded-full cursor-pointer transition-all duration-300 transform hover:scale-110 hover:bg-blue-50"
-                onClick={handleNotificationClick}
-              >
-                <Bell className="w-6 h-6 text-blue-600 group-hover:text-blue-800 transition-colors duration-300 group-hover:animate-pulse" />
-                {/* Enhanced notification dot with animation */}
-                <div className="absolute -top-1 -right-1">
-                  <div className="relative">
-                    <div className="w-4 h-4 bg-gradient-to-r from-red-500 to-pink-500 rounded-full animate-pulse shadow-lg"></div>
-                    <div className="absolute inset-0 bg-gradient-to-r from-red-400 to-pink-400 rounded-full animate-ping opacity-75"></div>
-                    <span className="absolute inset-0 flex items-center justify-center text-[10px] text-white font-bold">
-                      2
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
             {/* Settings Menu */}
             <div className="relative">
               {/* Settings Button with Special Effects */}
@@ -161,17 +123,6 @@ export default function Header() {
                         <span className="text-gray-700 font-medium">Account Settings</span>
                       </button>
 
-                      {/* Notification Settings */}
-                      <button
-                        className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-blue-50 rounded-xl transition-all duration-300 group transform hover:scale-[1.02]"
-                        onClick={handleNotificationSettingsClick}
-                      >
-                        <div className="w-8 h-8 bg-gradient-to-r from-purple-400/20 to-indigo-400/20 rounded-lg flex items-center justify-center group-hover:from-purple-400/30 group-hover:to-indigo-400/30 transition-all duration-300 group-hover:animate-pulse">
-                          <BellRing className="w-4 h-4 text-purple-600" />
-                        </div>
-                        <span className="text-gray-700 font-medium">Notification Settings</span>
-                      </button>
-
                       {/* AI Chat */}
                       <button
                         className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-blue-50 rounded-xl transition-all duration-300 group transform hover:scale-[1.02]"
@@ -181,17 +132,6 @@ export default function Header() {
                           <MessageCircle className="w-4 h-4 text-cyan-600" />
                         </div>
                         <span className="text-gray-700 font-medium">AI Chat</span>
-                      </button>
-
-                      {/* User Support */}
-                      <button
-                        className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-blue-50 rounded-xl transition-all duration-300 group transform hover:scale-[1.02]"
-                        onClick={handleSupportClick}
-                      >
-                        <div className="w-8 h-8 bg-gradient-to-r from-orange-400/20 to-amber-400/20 rounded-lg flex items-center justify-center group-hover:from-orange-400/30 group-hover:to-amber-400/30 transition-all duration-300 group-hover:animate-pulse">
-                          <HelpCircle className="w-4 h-4 text-orange-600" />
-                        </div>
-                        <span className="text-gray-700 font-medium">User Support</span>
                       </button>
 
                       {/* Divider */}

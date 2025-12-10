@@ -17,8 +17,6 @@ export default function ReviewListModal({ open, onClose }: any) {
       try {
         const res = await scheduleResultService.list();
         setResults(res.results);
-
-        notify.success("📊 Review list loaded successfully!");
       } finally {
         setLoading(false);
       }

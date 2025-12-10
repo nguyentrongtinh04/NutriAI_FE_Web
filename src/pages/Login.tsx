@@ -19,8 +19,8 @@ declare global {
 }
 
 export default function Login() {
-  const [username, setUsername] = useState("0388654152");
-  const [password, setPassword] = useState("gacon001");
+  const [username, setUsername] = useState("0379664711");
+  const [password, setPassword] = useState("nam123");
   const [errorMsg, setErrorMsg] = useState("");
   const [showUserDetail, setShowUserDetail] = useState(false);
   const [showPassword, setShowPassword] = useState(false);

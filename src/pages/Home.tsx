@@ -6,21 +6,15 @@ import MainDashboard from '../components/MainDashboard';
 
 export default function Home() {
   return (
-    <div className="min-h-screen w-full relative overflow-hidden">
-      {/* Aurora Background Layer */}
+    <div className="w-full relative overflow-x-hidden">
       <AuroraBackground />
-      
-      {/* Floating Icons Layer */}
       <FloatingIcons />
-      
-      {/* Main Content Layer */}
-      <div className="relative z-30 min-h-screen flex flex-col">
-        {/* Header */}
+
+      <div className="relative z-30 flex flex-col">
         <Header />
-        
-        {/* Main Dashboard Content */}
         <MainDashboard />
       </div>
     </div>
   );
 }
+
