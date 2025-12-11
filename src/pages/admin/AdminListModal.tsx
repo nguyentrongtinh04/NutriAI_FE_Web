@@ -12,9 +12,9 @@ export default function AdminListModal({ onClose }: any) {
     const fetchAdmins = async () => {
         try {
             const res = await adminService.getAdmins();
-            setAdmins(res.admins || []);
+            setAdmins(res.users || []);
 
-            if (!res.admins || res.admins.length === 0) {
+            if (!res.users || res.users.length === 0) {
                 notify.warning("No admin accounts found!");
             }
         } catch (e) {
@@ -80,17 +80,30 @@ export default function AdminListModal({ onClose }: any) {
                                 hover:border-emerald-500/40 transition-all duration-300"
                         >
                             <div>
-                                <p className="text-white font-bold">{ad.displayName}</p>
-                                <p className="text-slate-400 text-sm">{ad.email}</p>
-                            </div>
+                                <p className="text-white font-bold">
+                                    {ad.displayName || ad.email || ad.phone || "No name"}
+                                </p>
 
-                            <button
-                                onClick={() => deleteAdmin(ad._id)}
-                                className="p-2.5 rounded-xl bg-red-500/20 text-red-400 border border-red-500/30
-                                    hover:bg-red-500/30 hover:scale-105 transition-all"
-                            >
-                                <Trash2 className="w-5 h-5" />
-                            </button>
+                                <p className="text-slate-400 text-sm">
+                                    {ad.email || ad.phone || "No contact info"}
+                                </p>
+                            </div>
+                            {ad.isSuperAdmin && (
+                                <span className="text-xs px-2 py-1 ml-2 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                                    Super Admin
+                                </span>
+                            )}
+
+
+                            {!ad.isSuperAdmin && (
+                                <button
+                                    onClick={() => deleteAdmin(ad._id)}
+                                    className="p-2.5 rounded-xl bg-red-500/20 text-red-400 border border-red-500/30
+        hover:bg-red-500/30 hover:scale-105 transition-all"
+                                >
+                                    <Trash2 className="w-5 h-5" />
+                                </button>
+                            )}
                         </div>
                     ))}
                 </div>

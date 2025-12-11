@@ -40,7 +40,9 @@ import { CleanRootState, AppDispatch } from "../../redux/store";
 import AddAdminModal from "./AddAdminModal";
 import AdminListModal from "./AdminListModal";
 import { useNotify } from "../../components/notifications/NotificationsProvider";
-
+import dayjs from "dayjs";
+import isoWeek from "dayjs/plugin/isoWeek";
+dayjs.extend(isoWeek);
 
 import {
   fetchAllServiceStats,
@@ -72,25 +74,25 @@ export default function AdminDashboard() {
     dispatch(fetchAllServiceStats())
       .unwrap()
       .catch(() => notify.error("Không tải được thống kê hệ thống!"));
-  
+
     dispatch(fetchRequestLogsStats())
       .unwrap()
       .catch(() => notify.error("Không tải được logs yêu cầu!"));
   }, [dispatch]);
-  
+
   const handleLogout = () => {
     notify.success("Đăng xuất thành công!");
-  
+
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
     localStorage.removeItem("persist:root");
-  
+
     dispatch(clearAuth());
     dispatch(clearUser());
-  
-    navigate("/login");
-  };  
 
+    navigate("/login");
+  };
+ 
   if (loading || !serviceStats || !requestLogs) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
@@ -102,7 +104,7 @@ export default function AdminDashboard() {
           <p className="text-white text-xl font-semibold tracking-wide">
             Loading Dashboard...
           </p>
-          <p className="text-slate-400 text-sm mt-2">Đang tải dữ liệu thống kê</p>
+          <p className="text-slate-400 text-sm mt-2">Loading statistics…</p>
         </div>
       </div>
     );
@@ -162,7 +164,7 @@ export default function AdminDashboard() {
                   }`}
               >
                 <Users className="w-5 h-5" strokeWidth={2.5} />
-                Thống kê Người dùng
+                User Statistics
               </button>
 
               {/* TAB 2 */}
@@ -175,7 +177,7 @@ export default function AdminDashboard() {
                   }`}
               >
                 <Server className="w-5 h-5" strokeWidth={2.5} />
-                Thống kê Hệ thống
+                System Statistics
               </button>
 
               {/* ⚙️ SETTINGS DROPDOWN */}
@@ -187,7 +189,7 @@ export default function AdminDashboard() {
       shadow-violet-500/30 hover:scale-105 transition-all"
                 >
                   <Settings className="w-5 h-5" />
-                  Cài đặt
+                  Settings
                 </button>
 
                 {showSettings && (
@@ -199,14 +201,14 @@ export default function AdminDashboard() {
                           onClick={() => { setShowSettings(false); setShowAddAdmin(true); }}
                           className="w-full text-left px-5 py-3 hover:bg-slate-700 text-slate-200 flex items-center gap-2"
                         >
-                          <UserCheck className="w-4 h-4" /> Thêm Admin
+                          <UserCheck className="w-4 h-4" /> Add Admin
                         </button>
 
                         <button
                           onClick={() => { setShowSettings(false); setShowAdminList(true); }}
                           className="w-full text-left px-5 py-3 hover:bg-slate-700 text-slate-200 flex items-center gap-2"
                         >
-                          <Users className="w-4 h-4" /> Danh sách Admin
+                          <Users className="w-4 h-4" /> Admin List
                         </button>
 
                         <button
@@ -216,7 +218,7 @@ export default function AdminDashboard() {
                           }}
                           className="w-full text-left px-5 py-3 hover:bg-red-600/20 text-red-400 flex items-center gap-2 border-t border-slate-700/50"
                         >
-                          <XCircle className="w-4 h-4" /> Đăng xuất
+                          <XCircle className="w-4 h-4" /> Logout
                         </button>
 
                       </div>
@@ -238,7 +240,7 @@ export default function AdminDashboard() {
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-blue-600 flex items-center justify-center">
                   <ClipboardList className="w-5 h-5 text-white" strokeWidth={2.5} />
                 </div>
-                Danh mục thống kê
+                Statistics Menu
               </h3>
 
               <div className="space-y-2">
@@ -386,21 +388,21 @@ function AuthView({ data }: any) {
       {/* ----- CỤM 1: 3 StatCard ----- */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         <StatCard
-          title="Tổng tài khoản"
+          title="Total accounts"
           value={data.totalAccounts}
           icon={Users}
           color="emerald"
         />
 
         <StatCard
-          title="1 phương thức đăng nhập"
+          title="1 login method"
           value={data.usersWith1LoginMethod}
           icon={UserCheck}
           color="blue"
         />
 
         <StatCard
-          title="2 phương thức đăng nhập"
+          title="2 login method"
           value={data.usersWith2LoginMethods}
           icon={TrendingUp}
           color="violet"
@@ -411,13 +413,13 @@ function AuthView({ data }: any) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         <StatCard
-          title="Email chưa link Google"
+          title="Email not linked with Google"
           value={data.emailVerifiedButNotLinkedGoogle}
           icon={Mail}
           color="amber"
         />
 
-        <ChartCard title="10 User gần nhất" icon={Users}>
+        <ChartCard title="10 Latest Users" icon={Users}>
           <div className="space-y-2 max-h-80 overflow-y-auto custom-scrollbar">
             {data.recent10Ids.map((id: string, idx: number) => (
               <div
@@ -459,14 +461,14 @@ function UserDetailView({ data }: any) {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">
 
-        <StatCard title="Tổng Users" value={data.totalUsers} icon={Users} color="emerald" />
+        <StatCard title="Total Users" value={data.totalUsers} icon={Users} color="emerald" />
 
-        <StatCard title="BMI tốt" value={data.goodBMIUsers} icon={UserCheck} color="blue" />
+        <StatCard title="Good BMI Users" value={data.goodBMIUsers} icon={UserCheck} color="blue" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
         {/* PIE CHART - Gender */}
-        <ChartCard title="Giới tính" icon={Users}>
+        <ChartCard title="Gender" icon={Users}>
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
               <Pie
@@ -500,7 +502,9 @@ function UserDetailView({ data }: any) {
 }
 
 function MealStatsView({ data }: any) {
-  const daysData = data.templatesByDays.map((d: any) => ({
+  const days = data?.templatesByDays || [];
+
+  const daysData = days.map((d: any) => ({
     name: `${d._id} ngày`,
     value: d.count,
   }));
@@ -509,15 +513,12 @@ function MealStatsView({ data }: any) {
     <div className="space-y-6">
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-
-        <StatCard title="Tổng templates" value={data.totalTemplates} icon={FileText} color="emerald" />
-
-        <StatCard title="Nhiều nhất" value={data.mostUsedDuration} icon={TrendingUp} color="violet" />
-
-        <StatCard title="Tổng món scan" value={data.totalScannedMeals} icon={Activity} color="blue" />
+        <StatCard title="Total templates" value={data.totalTemplates} icon={FileText} color="emerald" />
+        <StatCard title="Most used duration" value={data.mostUsedDuration} icon={TrendingUp} color="violet" />
+        <StatCard title="Total scanned meals" value={data.totalScannedMeals} icon={Activity} color="blue" />
       </div>
 
-      <ChartCard title="Templates theo số ngày" icon={Calendar}>
+      <ChartCard title="Templates by days" icon={Calendar}>
         <ResponsiveContainer width="100%" height={280}>
           <LineChart data={daysData}>
             <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.3} />
@@ -536,9 +537,9 @@ function MealStatsView({ data }: any) {
         </ResponsiveContainer>
       </ChartCard>
 
-      <ChartCard title="3 scan gần nhất" icon={Activity}>
+      <ChartCard title="Latest 3 scans" icon={Activity}>
         <div className="space-y-3">
-          {data.latestScans.map((scan: any, idx: number) => (
+          {(data?.latestScans || []).map((scan: any, idx: number) => (
             <div key={scan._id} className="p-4 rounded-xl bg-slate-700/30 border border-slate-600/30 hover:border-emerald-500/50 transition-all duration-300">
               <div className="flex items-start justify-between mb-2">
                 <div className="flex items-center gap-3">
@@ -562,21 +563,21 @@ function MealStatsView({ data }: any) {
 
 function ScheduleStatsView({ data }: any) {
   const totals = [
-    { name: "Hôm nay", value: data.totals.today },
-    { name: "Tuần này", value: data.totals.thisWeek },
-    { name: "Tháng này", value: data.totals.thisMonth },
+    { name: "Today", value: data.totals.today },
+    { name: "This week", value: data.totals.thisWeek },
+    { name: "This month", value: data.totals.thisMonth },
   ];
 
   return (
     <div className="space-y-6">
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-        <StatCard title="Hôm nay" value={data.totals.today} icon={Calendar} color="emerald" />
-        <StatCard title="Tuần này" value={data.totals.thisWeek} icon={Calendar} color="blue" />
-        <StatCard title="Tháng này" value={data.totals.thisMonth} icon={Calendar} color="violet" />
+        <StatCard title="Today" value={data.totals.today} icon={Calendar} color="emerald" />
+        <StatCard title="This week" value={data.totals.thisWeek} icon={Calendar} color="blue" />
+        <StatCard title="This month" value={data.totals.thisMonth} icon={Calendar} color="violet" />
       </div>
 
-      <ChartCard title="Biểu đồ tổng quan" icon={BarChart3}>
+      <ChartCard title="Overview chart" icon={BarChart3}>
         <ResponsiveContainer width="100%" height={280}>
           <BarChart data={totals}>
             <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.3} />
@@ -605,18 +606,36 @@ function ScheduleStatsView({ data }: any) {
 }
 
 function SystemStatsView({ serviceStats, requestLogs }: any) {
+  const daily = requestLogs.dailyStats || [];
+
+  const today = dayjs();
+  const startOfWeek = today.startOf("week").add(1, "day");
+  // vì startOf('week') = Chủ Nhật, +1 ngày = Thứ 2
+
+  const weekData = daily.filter((d: any) => {
+    const date = dayjs(d.date);
+    return date.isAfter(startOfWeek.subtract(1, "day")) && date.isBefore(today.add(1, "day"));
+  });
+
+  const weekTotal = weekData.reduce((sum: number, d: any) => sum + (d.totalRequests || 0), 0);
+  
   return (
     <div className="space-y-6">
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
 
-        <StatCard title="Requests hôm nay" value={requestLogs.today?.total ?? 0}
+        <StatCard title="Today requests" value={requestLogs.today?.total ?? 0}
           icon={Zap} color="emerald" trend="+15%" />
 
-        <StatCard title="Requests tuần" value={requestLogs.week?.total ?? 0}
-          icon={Calendar} color="blue" trend="+9%" />
+        <StatCard
+          title="Requests tuần"
+          value={weekTotal}
+          icon={Calendar}
+          color="blue"
+          trend="+9%"
+        />
 
-        <StatCard title="Requests tháng" value={requestLogs.month?.total ?? 0}
+        <StatCard title="Weekly requests" value={requestLogs.month?.total ?? 0}
           icon={BarChart3} color="violet" trend="+22%" />
 
         <StatCard title="Top API" value={requestLogs.api?.api || "No Data"}
@@ -630,7 +649,7 @@ function SystemStatsView({ serviceStats, requestLogs }: any) {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <TableCard title="Trạng thái dịch vụ" icon={Server}>
+        <TableCard title="Service status" icon={Server}>
           <div className="space-y-3">
             {Object.entries(serviceStats.results || {}).map(
               ([name, st]: any) => (
@@ -640,7 +659,7 @@ function SystemStatsView({ serviceStats, requestLogs }: any) {
           </div>
         </TableCard>
 
-        <ChartCard title="Request Logs theo dịch vụ" icon={FileText}>
+        <ChartCard title="Requests by services" icon={FileText}>
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={requestLogs.services.details || []}>
               <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.3} />

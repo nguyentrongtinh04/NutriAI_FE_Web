@@ -6,10 +6,10 @@ export const adminService = {
     (await authApi.post("/admin-register", payload)).data,
 
   getAdmins: async () =>
-    (await adminApi.get("/admins")).data,
+    (await authApi.get("/admins")).data,
 
   deleteAdmin: async (id: string) =>
-    (await adminApi.delete(`/deleteAD/${id}`)).data,
+    (await authApi.delete(`/admin/${id}`)).data,
 
   getAllServicesStats: async () =>
     (await adminApi.get("/stats-all-services")).data,

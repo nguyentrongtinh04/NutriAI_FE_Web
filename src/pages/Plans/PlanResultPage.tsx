@@ -41,6 +41,7 @@ export default function PlanResultPage() {
   const [startDate, setStartDate] = useState<string>("");
   const location = useLocation();
   const userInfo = location.state?.userInfo;
+  const [showWarning, setShowWarning] = useState(false);
 
   const toggleMealFlip = (mealIndex: number) => {
     setFlippedMeals((prev) => {
@@ -144,7 +145,7 @@ export default function PlanResultPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-500 via-cyan-500 to-teal-400 py-8 px-4">
       <div className="max-w-6xl mx-auto">
-        
+
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <button
@@ -161,8 +162,9 @@ export default function PlanResultPage() {
                 notify.warning("⚠️ You need to be logged in to create a schedule!");
                 return;
               }
-              setShowModal(true);
+              setShowWarning(true); // mở modal cảnh báo
             }}
+
             className="flex items-center gap-2 bg-white/90 backdrop-blur-sm text-blue-600 px-6 py-3 rounded-xl font-semibold hover:bg-white hover:shadow-xl transition-all duration-300 border-2 border-white/50 hover:scale-105"
           >
             <CalendarPlus className="w-5 h-5" />
@@ -200,26 +202,23 @@ export default function PlanResultPage() {
                   <button
                     key={index}
                     onClick={() => setSelectedDay(index)}
-                    className={`w-full p-4 rounded-xl text-left transition-all duration-300 border-2 ${
-                      selectedDay === index
-                        ? "bg-gradient-to-r from-blue-500 to-cyan-600 text-white border-white shadow-lg scale-105"
-                        : "bg-white border-gray-200 hover:border-blue-300 hover:shadow-md"
-                    }`}
+                    className={`w-full p-4 rounded-xl text-left transition-all duration-300 border-2 ${selectedDay === index
+                      ? "bg-gradient-to-r from-blue-500 to-cyan-600 text-white border-white shadow-lg scale-105"
+                      : "bg-white border-gray-200 hover:border-blue-300 hover:shadow-md"
+                      }`}
                   >
                     <div className="flex items-center justify-between">
                       <div>
                         <div
-                          className={`font-semibold ${
-                            selectedDay === index ? "text-white" : "text-gray-800"
-                          }`}
+                          className={`font-semibold ${selectedDay === index ? "text-white" : "text-gray-800"
+                            }`}
                         >
                           Day {index + 1}
                         </div>
 
                         <div
-                          className={`text-sm ${
-                            selectedDay === index ? "text-blue-100" : "text-gray-600"
-                          }`}
+                          className={`text-sm ${selectedDay === index ? "text-blue-100" : "text-gray-600"
+                            }`}
                         >
                           {new Date(
                             Date.now() + index * 24 * 60 * 60 * 1000
@@ -294,9 +293,8 @@ export default function PlanResultPage() {
                   onClick={() => toggleMealFlip(index)}
                 >
                   <div
-                    className={`relative w-full h-full transition-transform duration-700 ${
-                      isFlipped ? "[transform:rotateY(180deg)]" : ""
-                    }`}
+                    className={`relative w-full h-full transition-transform duration-700 ${isFlipped ? "[transform:rotateY(180deg)]" : ""
+                      }`}
                     style={{ transformStyle: "preserve-3d" }}
                   >
                     {/* Front */}
@@ -403,6 +401,39 @@ export default function PlanResultPage() {
           </div>
         </div>
 
+        {showWarning && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-2xl p-6 w-[90%] max-w-md shadow-xl">
+              <h2 className="text-xl font-bold text-gray-800 mb-4">
+                ⚠️ Important Notice
+              </h2>
+
+              <p className="text-gray-700 mb-6 leading-relaxed">
+                AI-generated results may contain inaccuracies. Please use discretion and verify before following any recommendations.
+              </p>
+
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setShowWarning(false)}
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  onClick={() => {
+                    setShowWarning(false);
+                    setShowModal(true); // mở modal nhập lịch
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  OK
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Modal Create Schedule */}
         {showModal && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -425,8 +456,8 @@ export default function PlanResultPage() {
                   {userInfo?.gender === "male"
                     ? "Male"
                     : userInfo?.gender === "female"
-                    ? "Female"
-                    : "Other"}
+                      ? "Female"
+                      : "Other"}
                 </p>
               </div>
 
@@ -482,26 +513,26 @@ export default function PlanResultPage() {
 
                     function mapMealType(type: string) {
                       const t = type.toLowerCase();
-                    
+
                       // Bữa sáng
                       if (t.includes("breakfast") || t.includes("sáng")) return "sáng";
-                    
+
                       // Bữa phụ sáng
                       if (t.includes("phu") || t.includes("phụ") || t.includes("snack"))
                         return "phụ sáng";
-                    
+
                       // Bữa trưa
                       if (t.includes("lunch") || t.includes("trưa")) return "trưa";
-                    
+
                       // Bữa chiều
                       if (t.includes("chiều") || t.includes("evening")) return "chiều";
-                    
+
                       // Bữa tối
                       if (t.includes("dinner") || t.includes("tối")) return "tối";
-                    
+
                       // Mặc định
                       return "tối";
-                    }                                       
+                    }
 
                     const formattedSchedule = mealPlan.schedule.map((day: any, i: number) => ({
                       dateID: `Day ${i + 1}`,
@@ -544,7 +575,7 @@ export default function PlanResultPage() {
                     } catch (err: any) {
                       notify.error(
                         "❌ Failed to save schedule! " +
-                          (err?.response?.data?.message || "")
+                        (err?.response?.data?.message || "")
                       );
                     }
                   }}
