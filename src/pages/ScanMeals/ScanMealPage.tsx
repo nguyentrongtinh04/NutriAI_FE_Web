@@ -37,7 +37,7 @@ export default function ScanMealPage() {
 
   const handleAnalyze = async () => {
     if (!file) {
-      setError("Hãy chọn ảnh món ăn!");
+      setError("Please select a meal image!");
       return;
     }
 
@@ -94,7 +94,7 @@ export default function ScanMealPage() {
               className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-md text-white hover:bg-white/20 rounded-lg transition-all duration-300 border border-white/20 mb-6 group"
             >
               <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-              <span className="font-medium">Quay lại</span>
+              <span className="font-medium">Back</span>
             </button>
 
             {/* Title */}
@@ -109,7 +109,7 @@ export default function ScanMealPage() {
               </div>
               <p className="text-blue-200 flex items-center justify-center gap-2 text-sm sm:text-base">
                 <Sparkles className="w-4 h-4" />
-                Chụp ảnh món ăn để phân tích dinh dưỡng
+                Take a photo of your meal to analyze its nutrition
               </p>
             </div>
           </div>
@@ -126,7 +126,7 @@ export default function ScanMealPage() {
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 flex items-center justify-center">
                     <UploadCloud className="w-5 h-5 text-white" />
                   </div>
-                  <h2 className="text-2xl font-bold text-gray-800">Tải ảnh món ăn</h2>
+                  <h2 className="text-2xl font-bold text-gray-800">Upload Meal Image</h2>
                 </div>
 
                 {/* Upload Area */}
@@ -136,8 +136,12 @@ export default function ScanMealPage() {
                       <div className="w-20 h-20 rounded-full bg-gradient-to-r from-blue-400 to-cyan-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                         <UploadCloud className="w-10 h-10 text-white" />
                       </div>
-                      <p className="text-lg font-semibold text-gray-700 mb-2">Click hoặc kéo ảnh vào đây</p>
-                      <p className="text-sm text-gray-500">Hỗ trợ JPG, PNG, WEBP</p>
+                      <p className="text-lg font-semibold text-gray-700 mb-2">
+                        Click or drag an image here
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        Supports JPG, PNG, WEBP
+                      </p>
                     </div>
                     <input type="file" accept="image/*" className="hidden" onChange={handleSelect} />
                   </label>
@@ -159,7 +163,7 @@ export default function ScanMealPage() {
                       }}
                       className="w-full px-4 py-2 text-red-600 font-medium hover:bg-red-50 rounded-lg transition-all border border-red-200"
                     >
-                      Chọn ảnh khác
+                      Choose another image
                     </button>
                   </div>
                 )}
@@ -173,12 +177,12 @@ export default function ScanMealPage() {
                   {loading ? (
                     <>
                       <Loader2 className="w-5 h-5 animate-spin" />
-                      <span>Đang phân tích...</span>
+                      <span>Analyzing...</span>
                     </>
                   ) : (
                     <>
                       <Sparkles className="w-5 h-5" />
-                      <span>Phân tích món ăn</span>
+                      <span>Analyze Meal</span>
                     </>
                   )}
                 </button>
@@ -197,7 +201,7 @@ export default function ScanMealPage() {
                     className="w-full mt-4 bg-white/80 backdrop-blur-sm text-blue-600 py-3 rounded-xl font-semibold hover:bg-white hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2 border border-blue-200"
                   >
                     <History className="w-5 h-5" />
-                    <span>Xem lịch sử</span>
+                    <span>View History</span>
                   </button>
                 )}
               </div>
@@ -211,7 +215,7 @@ export default function ScanMealPage() {
                       <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 flex items-center justify-center">
                         <Sparkles className="w-5 h-5 text-white" />
                       </div>
-                      <h2 className="text-2xl font-bold text-gray-800">Kết quả phân tích</h2>
+                      <h2 className="text-2xl font-bold text-gray-800">Analysis Result</h2>
                     </div>
                     <p className="text-sm text-red-500 italic">
                       AI-generated results may contain inaccuracies. Please use discretion and verify before following any recommendations.
@@ -283,7 +287,7 @@ export default function ScanMealPage() {
                             <Sparkles className="w-5 h-5 text-white" />
                           </div>
                           <div>
-                            <h3 className="font-bold text-blue-800 mb-2">Gợi ý dinh dưỡng</h3>
+                          <h3 className="font-bold text-blue-800 mb-2">Nutrition Suggestion</h3>
                             <p className="text-gray-700 text-sm leading-relaxed">{result.example.note}</p>
                           </div>
                         </div>
@@ -296,14 +300,14 @@ export default function ScanMealPage() {
                         try {
                           const userId = profile?._id;
                           if (!userId) {
-                            notify.warning("⚠️ Bạn cần đăng nhập để lưu món ăn!");
+                            notify.warning("⚠️ You need to log in to save this meal!");
                             dispatch(clearMeal());
                             navigate("/login?redirect=/scan-meal", { replace: true });
                             return;
                           }
 
                           if (await hasScannedBefore(userId, result.food_en)) {
-                            notify.info("ℹ️ Món này bạn đã lưu trước đó!");
+                            notify.info("ℹ️ This meal has already been saved!");
                             return;
                           }
 
@@ -318,14 +322,14 @@ export default function ScanMealPage() {
                           };
 
                           const res = await mealService.saveScannedMeal(payload);
-                          notify.success("✅ " + res.message);
+                          notify.success("Meal saved successfully!");
                         } catch (err: any) {
-                          notify.error("❌ Lưu thất bại: " + err.message);
+                          notify.error("Failed to save meal. Please try again.");
                         }
                       }}
                       className="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white py-4 rounded-xl font-semibold hover:shadow-xl hover:scale-[1.02] transition-all duration-300"
                     >
-                      💾 Lưu món này
+                      💾 Save This Meal
                     </button>
                   </div>
                 ) : (
@@ -333,8 +337,10 @@ export default function ScanMealPage() {
                     <div className="w-24 h-24 rounded-full bg-gradient-to-r from-gray-200 to-gray-300 flex items-center justify-center mb-6">
                       <Camera className="w-12 h-12 text-gray-400" />
                     </div>
-                    <h3 className="text-2xl font-bold text-gray-400 mb-2">Chưa có kết quả</h3>
-                    <p className="text-gray-400 text-center max-w-md">Tải ảnh lên và phân tích để xem thông tin dinh dưỡng chi tiết</p>
+                    <h3 className="text-2xl font-bold text-gray-400 mb-2">No Results Yet</h3>
+                    <p className="text-gray-400 text-center max-w-md">
+                      Upload a meal image and analyze it to see detailed nutrition information
+                    </p>
                   </div>
                 )}
               </div>

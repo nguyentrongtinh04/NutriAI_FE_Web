@@ -41,7 +41,7 @@ interface GoalsProps {
   previousPageLabel?: string;
 }
 
-export default function Goals({ onBack, previousPageLabel = 'Danh sách lịch trình' }: GoalsProps) {
+export default function Goals({ onBack, previousPageLabel = 'Meal Plans' }: GoalsProps) {
   const navigate = useNavigate();
   const goBack = onBack ?? (() => navigate('/'));
   const location = useLocation();
@@ -62,7 +62,7 @@ export default function Goals({ onBack, previousPageLabel = 'Danh sách lịch t
     if (planMeta?.startDate) setCurrentWeek(new Date(planMeta.startDate));
   }, [planMeta]);
 
-  const dayNames = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'];
+  const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   const timeSlots = [
     { key: 'morning', label: 'Sáng', icon: '🌅' },
     { key: 'afternoon', label: 'Chiều', icon: '☀️' },

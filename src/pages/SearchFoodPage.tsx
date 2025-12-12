@@ -92,7 +92,7 @@ export default function SearchFoodPage() {
                                     }}
 
                                     onKeyPress={handleKeyPress}
-                                    placeholder="Nhập tên món ăn (e.g., chicken rice, pizza, salad...)"
+                                    placeholder="Enter food name (e.g., chicken rice, pizza, salad...)"
                                     className="w-full border-2 border-gray-200 rounded-xl pl-12 pr-4 py-4 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300 text-gray-700 placeholder-gray-400"
                                 />
                             </div>
@@ -279,8 +279,7 @@ export default function SearchFoodPage() {
                                                         try {
                                                             const userId = profile?._id;
                                                             if (!userId) {
-                                                                notify.warning("⚠️ Bạn cần đăng nhập để lưu món ăn!");
-
+                                                                notify.warning("⚠️ You need to log in to save meals.");
                                                                 // XÓA food detail modal + item đang xem
                                                                 dispatch(clearFood());
 
@@ -317,17 +316,17 @@ export default function SearchFoodPage() {
 
                                                             // ❗ Check trùng trước khi lưu
                                                             if (await hasSavedBefore(userId, detail.name_en || detail.name)) {
-                                                                notify.info("ℹ️ Món này bạn đã lưu trước đó!");
+                                                                notify.info("ℹ️ You have already saved this meal.");
                                                                 return;
                                                             }
 
                                                             await mealService.saveScannedMeal(data);
-                                                            notify.success("✅ Món ăn đã được lưu vào lịch sử!");
+                                                            notify.success("✅ Meal saved to your history!");
                                                             dispatch(clearFood());
                                                             dispatch(getRandomFoods(30));
                                                         } catch (error: any) {
                                                             console.error("❌ Save meal error:", error);
-                                                            notify.error("Lưu thất bại, thử lại sau!");
+                                                            notify.error("❌ Failed to save meal. Please try again later.");
                                                         }
                                                     }}
                                                     className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white py-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-2 group"

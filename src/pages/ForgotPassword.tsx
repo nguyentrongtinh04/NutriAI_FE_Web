@@ -56,10 +56,10 @@ export default function ForgotPassword() {
       setTimer(60);
       setCanResend(false);
       setOtp(["", "", "", "", "", ""]);
-      notify.success("📲 Mã OTP đã được gửi đến số điện thoại của bạn!");
+      notify.success("📲 OTP has been sent to your phone number!");
     } catch (err) {
       console.error("sendOtpFirebase error:", err);
-      const msg = "⚠️ Gửi mã OTP thất bại. Vui lòng kiểm tra số điện thoại và thử lại.";
+      const msg = "⚠️ Failed to send OTP. Please check your phone number and try again.";
       setError(msg);
       notify.error(msg);
     }
@@ -94,7 +94,7 @@ export default function ForgotPassword() {
       try {
         await dispatch(checkAvailability(input, undefined));  // kiểm tra phone
     
-        notify.error("❌ Số điện thoại chưa được đăng ký");
+        notify.error("❌ This phone number is not registered.");
         return;
       } catch (err: any) {
         const msg = err?.response?.data?.message;
@@ -104,7 +104,7 @@ export default function ForgotPassword() {
           await sendOtpFirebase(input);
           return;
         } else {
-          notify.error("❌ Có lỗi không xác định khi kiểm tra số điện thoại.");
+          notify.error("❌ An unknown error occurred while checking the phone number.");
           return;
         }
       }
@@ -113,7 +113,7 @@ export default function ForgotPassword() {
     if (method === "email") {
       try {
         await dispatch(checkAvailability(undefined, input));
-        notify.error("❌ Email chưa được đăng ký");
+        notify.error("❌ This email is not registered.");
       } catch (err: any) {
         const msg = err?.response?.data?.message;
 
@@ -131,12 +131,12 @@ export default function ForgotPassword() {
             const e2 =
               err2?.response?.data?.message ||
               err2.message ||
-              "⚠️ Gửi mã xác thực thất bại.";
+              "⚠️ Send email failed. Please try again.";
             setError(e2);
             notify.error(e2);
           }
         } else {
-          notify.error("❌ Có lỗi không xác định khi kiểm tra email.");
+          notify.error("❌ An unknown error occurred while checking the email.");
         }
       }
     }
@@ -177,7 +177,7 @@ export default function ForgotPassword() {
       }
     } catch (err) {
       console.error("verifyOtp error:", err);
-      notify.error("❌ OTP không đúng");
+      notify.error("❌ Invalid OTP code");
     }
   };
 
@@ -211,7 +211,7 @@ export default function ForgotPassword() {
           const msg =
             err?.response?.data?.message ||
             err.message ||
-            "❌ Gửi lại mã xác thực thất bại.";
+            "❌ Failed to resend verification code.";
           setError(msg);
           notify.error(msg);
         });

@@ -159,6 +159,16 @@ export const linkPhone = (phone: string, password: string) => async () => {
   }
 };
 
+// Xác nhận liên kết số điện thoại (OTP)
+export const confirmLinkPhone = (code: string) => async () => {
+  try {
+    return await authService.confirmLinkPhone(code);
+  } catch (err: any) {
+    console.error("Confirm Link Phone Error:", err);
+    throw err;
+  }
+};
+
 // Yêu cầu gỡ liên kết
 export const requestUnlink = (type: "google" | "phone") => async () => {
   try {

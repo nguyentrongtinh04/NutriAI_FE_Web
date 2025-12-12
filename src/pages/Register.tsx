@@ -84,10 +84,10 @@ export default function Register() {
             const appVerifier = window.recaptchaVerifier;
             const confirmationResult = await firebase.auth().signInWithPhoneNumber(phone, appVerifier);
             setConfirmation(confirmationResult);
-            notify.success("📩 OTP đã được gửi!");
+            notify.success("📩 OTP has been sent!");
         } catch (err) {
             console.error("sendOtpFirebase error:", err);
-            notify.error("❌ Gửi OTP thất bại");
+            notify.success("📩 OTP has been sent!");
         }
     };
 
@@ -96,11 +96,11 @@ export default function Register() {
         if (!confirmation) return;
         try {
             await confirmation.confirm(otp);
-            notify.success("✅ OTP hợp lệ!");
+            notify.success("✅ OTP verified successfully!");
             // 👉 tại đây gọi API /register backend
         } catch (err) {
             console.error("verifyOtpFirebase error:", err);
-            notify.error("❌ OTP không đúng");
+            notify.error("❌ Invalid OTP.");
         }
     };
 
@@ -182,7 +182,7 @@ export default function Register() {
             await sendOtpFirebase(normalizedPhone);
             setWaitingForOtp(true);
         } catch (err: any) {
-            notify.error("❌ Gửi OTP thất bại");
+            notify.error("❌ Failed to send OTP.");
         }
     };
 
@@ -206,10 +206,10 @@ export default function Register() {
                     weight: Number(form.weight),
                 },
             );
-            notify.success("🎉 Tạo tài khoản thành công!");
+            notify.success("🎉 Account created successfully!");
             navigate("/login");
         } catch (err: any) {
-            notify.error("❌ OTP không hợp lệ hoặc đăng ký thất bại");
+            notify.error("❌ Invalid OTP or registration failed.");
         }
     };
 
@@ -598,7 +598,7 @@ export default function Register() {
                                         onSuccess={async (credentialResponse) => {
                                             const idToken = credentialResponse.credential; // ✅ ID Token
                                             if (!idToken) {
-                                                notify.error("Không lấy được Google ID token");
+                                                notify.error("Failed to retrieve Google ID token.");
                                                 return;
                                             }
                                             try {

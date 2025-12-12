@@ -47,7 +47,7 @@ export default function Login() {
 
     try {
       if (!username || !password) {
-        const msg = "❌ Username và Password không được để trống.";
+        const msg = "❌ Username and password must not be empty.";
         setErrorMsg(msg);
         notify.error(msg);
         return;
@@ -56,7 +56,7 @@ export default function Login() {
       // Đăng nhập
       const res = await authService.loginWithPassword(username, password);
 
-      notify.success("🎉 Đăng nhập thành công!");
+      notify.success("🎉 Login successful!");
       setErrorMsg("");
 
       // Lưu token
@@ -87,14 +87,14 @@ export default function Login() {
       const message = e.response?.data?.message || e.message;
 
       if (status === 404) {
-        setErrorMsg("❌ Username không tồn tại.");
-        notify.error("❌ Username không tồn tại.");
+        setErrorMsg("❌ Username does not exist.");
+        notify.error("❌ Username does not exist.");
       } else if (status === 401) {
-        setErrorMsg("❌ Sai mật khẩu.");
-        notify.error("❌ Sai mật khẩu.");
+        setErrorMsg("❌ Incorrect password.");
+        notify.error("❌ Incorrect password.");
       } else {
-        setErrorMsg(`❌ Đăng nhập thất bại: ${message}`);
-        notify.error(`❌ Đăng nhập thất bại: ${message}`);
+        setErrorMsg(`❌ Login failed: ${message}`);
+        notify.error(`❌ Login failed: ${message}`);
       }
     }
   };
@@ -289,7 +289,7 @@ export default function Login() {
                     onSuccess={async (credentialResponse) => {
                       const idToken = credentialResponse.credential;
                       if (!idToken) {
-                        notify.error("Không lấy được Google ID token");
+                        notify.error("Failed to retrieve Google ID token.");
                         return;
                       }
 
@@ -299,9 +299,9 @@ export default function Login() {
 
                         // ⚡ Nếu BE trả new_user flag (người mới tạo tài khoản)
                         if (res?.new_user) {
-                          notify.success("🎉 Chào mừng bạn! Tài khoản Google của bạn đã được tạo thành công!");
+                          notify.success("🎉 Welcome! Your Google account has been created successfully!");
                         } else {
-                          notify.success("✅ Đăng nhập Google thành công!");
+                          notify.success("✅ Google login successful!");
                         }
                       } catch (err: any) {
                         console.error("Google login error:", err);
@@ -309,13 +309,13 @@ export default function Login() {
                         const msg =
                           err?.message ||
                           err?.response?.data?.message ||
-                          "❌ Đăng nhập Google thất bại. Vui lòng thử lại.";
+                          "❌ Google login failed. Please try again.";
 
                         // 🧩 Xử lý các thông báo đặc biệt
                         if (msg.includes("not verified")) {
-                          notify.error("🚫 Email Google của bạn chưa được xác thực. Vui lòng xác thực trước khi đăng nhập.");
+                          notify.error("🚫 Your Google email is not verified. Please verify it before logging in.");
                         } else if (msg.includes("Invalid") || msg.includes("expired")) {
-                          notify.error("❌ Mã đăng nhập Google không hợp lệ hoặc đã hết hạn. Vui lòng thử lại.");
+                          notify.error("❌ Invalid or expired Google login token. Please try again.");
                         } else {
                           notify.error(msg);
                         }

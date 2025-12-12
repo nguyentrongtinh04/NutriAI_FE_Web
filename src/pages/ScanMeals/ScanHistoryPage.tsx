@@ -42,7 +42,7 @@ export default function ScanHistoryPage() {
                 const data = await mealService.getScannedHistory(userId);
                 setMeals(data);
             } catch (err) {
-                console.error("Lỗi lấy lịch sử scan:", err);
+                console.error("Error fetching scan history:", err);
             } finally {
                 setLoading(false);
             }
@@ -51,12 +51,12 @@ export default function ScanHistoryPage() {
 
     const categorizeMeals = (list: any[]) => {
         const categories: Record<string, any[]> = {
-            "🥩 Giàu đạm": [],
-            "🍚 Giàu tinh bột": [],
-            "🥑 Giàu chất béo": [],
-            "🍰 Tráng miệng": [],
-            "🍿 Ăn nhẹ": [],
-            "🍱 Khác": [],
+            "🥩 High Protein": [],
+            "🍚 High Carbs": [],
+            "🥑 High Fat": [],
+            "🍰 Desserts": [],
+            "🍿 Snacks": [],
+            "🍱 Others": [],
         };
 
         const proteinKeywords = /(thịt|gà|bò|heo|cá|trứng|tôm|đậu|nem|sườn)/i;
@@ -68,13 +68,13 @@ export default function ScanHistoryPage() {
         list.forEach((m) => {
             const name = (m.food_vi || "").toLowerCase();
 
-            if (dessertKeywords.test(name)) return categories["🍰 Tráng miệng"].push(m);
-            if (snackKeywords.test(name)) return categories["🍿 Ăn nhẹ"].push(m);
-            if (proteinKeywords.test(name)) return categories["🥩 Giàu đạm"].push(m);
-            if (carbKeywords.test(name)) return categories["🍚 Giàu tinh bột"].push(m);
-            if (fatKeywords.test(name)) return categories["🥑 Giàu chất béo"].push(m);
+            if (dessertKeywords.test(name)) return categories["🍰 Desserts"].push(m);
+            if (snackKeywords.test(name)) return categories["🍿 Snacks"].push(m);
+            if (proteinKeywords.test(name)) return categories["🥩 High Protein"].push(m);
+            if (carbKeywords.test(name)) return categories["🍚 High Carbs"].push(m);
+            if (fatKeywords.test(name)) return categories["🥑 High Fat"].push(m);
 
-            categories["🍱 Khác"].push(m);
+            categories["🍱 Others"].push(m);
         });
 
         return categories;
@@ -140,7 +140,7 @@ export default function ScanHistoryPage() {
                 kgGoal: 1,
                 duration: 10,
                 startDate: new Date().toISOString().slice(0, 10),
-                nameSchedule: "lịch mới",
+                nameSchedule: "new schedule",
                 private: true,
 
                 schedule: [
@@ -150,7 +150,7 @@ export default function ScanHistoryPage() {
                             name: items.join(", "),
                             type: mealTypes[idx] || "sáng",
                             time: `${7 + idx * 5}:00`,
-                            description: "Món ăn do người dùng đề xuất",
+                            description: "User suggested meal",
                         })),
                     },
                 ],
@@ -165,8 +165,8 @@ export default function ScanHistoryPage() {
             dispatch(clearAdvice());
 
         } catch (err) {
-            console.error("❌ Lỗi khi tạo lịch:", err);
-            notify.warning("Không thể tạo lịch!");
+            console.error("❌ Error creating schedule:", err);
+            notify.warning("Unable to create schedule!");
         }
     };
 
@@ -175,7 +175,7 @@ export default function ScanHistoryPage() {
         return (
             <div className="min-h-screen flex items-center justify-center bg-slate-900 text-white">
                 <Loader2 className="animate-spin w-10 h-10 text-cyan-300" />
-                <p className="ml-3">Đang tải dữ liệu...</p>
+                <p className="ml-3">Loading data...</p>
             </div>
         );
 
@@ -187,17 +187,17 @@ export default function ScanHistoryPage() {
                         onClick={() => navigate(-1)}
                         className="flex items-center gap-2 px-4 py-2 bg-white/80 text-blue-700 rounded-lg shadow"
                     >
-                        <ArrowLeft /> Quay lại
+                        <ArrowLeft /> Back
                     </button>
                     <h1 className="text-3xl font-bold text-cyan-200 flex items-center gap-2">
                         <History className="text-cyan-300 w-8 h-8 animate-bounce" />
-                        Lịch sử Scan
+                        Scan History
                     </h1>
                     <button
                         onClick={() => navigate("/create-smart-schedule", { state: { meals } })}
                         className="flex items-center gap-2 px-4 py-2 bg-cyan-500 text-white rounded-lg shadow hover:bg-cyan-400"
                     >
-                        <PlusCircle /> Tạo lịch ăn thông minh
+                        <PlusCircle /> Create Smart Schedule
                     </button>
                 </div>
 

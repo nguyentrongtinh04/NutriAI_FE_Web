@@ -97,6 +97,11 @@ export const authService = {
     const res = await authApi.post("/link-phone", { phone, password });
     return res.data;
   },
+  
+  confirmLinkPhone: async (code: string) => {
+    const res = await authApi.post("/confirm-link-phone", { code });
+    return res.data;
+  },  
 
   requestUnlink: async (type: "google" | "phone") => {
     const res = await authApi.post("/request-unlink", { type });
