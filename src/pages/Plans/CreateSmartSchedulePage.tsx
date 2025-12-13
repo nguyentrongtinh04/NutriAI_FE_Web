@@ -261,6 +261,7 @@ export default function CreateSmartSchedulePage() {
         aiResult?.advice?.advice?.goalCheck?.toLowerCase() === "đạt";
     const canCreateSchedule =
         isFormValid() && (aiMode === "OFF" || isGoalAchieved);
+    const adviceData = aiResult?.advice?.advice;
     return (
         <div className="fixed inset-0 bg-gradient-to-br from-blue-600 via-cyan-500 to-teal-500 overflow-hidden">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.1),transparent_50%)] pointer-events-none"></div>
@@ -715,15 +716,109 @@ export default function CreateSmartSchedulePage() {
                                         </div>
 
                                         <div className="flex-1 overflow-y-auto">
-                                            {!aiResult ? (
-                                                <div className="flex items-center justify-center h-full text-gray-500 italic">
-                                                    Enter information & choose meals, then click "Analyze with AI"
-                                                </div>
-                                            ) : (
-                                                <pre className="text-sm whitespace-pre-wrap">
-                                                    {JSON.stringify(aiResult, null, 2)}
-                                                </pre>
-                                            )}
+                                          {!adviceData ? (
+    <div className="flex items-center justify-center h-full text-gray-500 italic">
+        Không có dữ liệu phân tích
+    </div>
+) : (
+    <div className="space-y-6 text-sm text-gray-800">
+
+        {/* ===== Tổng quan ===== */}
+        <div className="p-4 rounded-xl border border-blue-200 bg-blue-50">
+            <h4 className="font-bold text-lg mb-2">📊 Kết quả tổng quan</h4>
+
+            <p>
+                <span className="font-semibold">Mục tiêu: </span>
+                <span
+                    className={`font-bold ${
+                        adviceData.goalCheck === "đạt"
+                            ? "text-green-600"
+                            : "text-red-600"
+                    }`}
+                >
+                    {adviceData.goalCheck.toUpperCase()}
+                </span>
+            </p>
+
+            <p>
+                <span className="font-semibold">Tiến độ: </span>
+                {adviceData.percentFinish}%
+            </p>
+        </div>
+
+        {/* ===== Nguyên nhân ===== */}
+        {adviceData.reason && (
+            <div className="p-4 rounded-xl border border-yellow-200 bg-yellow-50">
+                <h4 className="font-bold mb-2">⚠️ Nguyên nhân</h4>
+                <p className="whitespace-pre-line">
+                    {adviceData.reason}
+                </p>
+            </div>
+        )}
+
+        {/* ===== Lời khuyên chung ===== */}
+        {adviceData.advice && (
+            <div className="p-4 rounded-xl border border-green-200 bg-green-50">
+                <h4 className="font-bold mb-2">💡 Lời khuyên chung</h4>
+                <p className="whitespace-pre-line">
+                    {adviceData.advice}
+                </p>
+            </div>
+        )}
+
+        {/* ===== Phân tích theo ngày (1–7 ngày đều OK) ===== */}
+        {Array.isArray(adviceData.dailyFoodSuggestions) && (
+            <div className="space-y-4">
+                <h4 className="font-bold text-lg">📅 Chi tiết từng ngày</h4>
+
+                {adviceData.dailyFoodSuggestions.map(
+                    (day: any, index: number) => (
+                        <div
+                            key={index}
+                            className="p-4 rounded-xl border border-gray-200 bg-white shadow-sm"
+                        >
+                            <h5 className="font-bold text-blue-600 mb-2">
+                                {day.date}
+                            </h5>
+
+                            <p className="mb-2">
+                                🔥 Thiếu{" "}
+                                <span className="font-bold text-red-600">
+                                    {day.missingCalories} kcal
+                                </span>
+                            </p>
+
+                            {/* Đã ăn */}
+                            <div className="mb-2">
+                                <p className="font-semibold">🍽️ Đã ăn:</p>
+                                <ul className="list-disc list-inside ml-2">
+                                    {day.eatenFoods?.map(
+                                        (food: string, i: number) => (
+                                            <li key={i}>{food}</li>
+                                        )
+                                    )}
+                                </ul>
+                            </div>
+
+                            {/* Gợi ý */}
+                            <div>
+                                <p className="font-semibold">✅ Gợi ý bổ sung:</p>
+                                <ul className="list-disc list-inside ml-2 text-green-700">
+                                    {day.suggestions?.map(
+                                        (s: string, i: number) => (
+                                            <li key={i}>{s}</li>
+                                        )
+                                    )}
+                                </ul>
+                            </div>
+                        </div>
+                    )
+                )}
+            </div>
+        )}
+    </div>
+)}
+
                                         </div>
                                     </div>
                                 </div>
