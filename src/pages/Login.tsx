@@ -11,7 +11,8 @@ import { jwtDecode } from "jwt-decode";
 
 import logo from "../assets/logo.png";
 import MedicalIllustration from "../assets/login_left_image.png";
-import { clearAuth } from "../redux/slices/authSlice";
+import { clearAuth, setAuth } from "../redux/slices/authSlice";
+import { normalizeUser } from "../utils/normalizeUser";
 declare global {
   interface Window {
     google: any;
@@ -19,7 +20,7 @@ declare global {
 }
 
 export default function Login() {
-  const [username, setUsername] = useState("0379664711");
+  const [username, setUsername] = useState("0379664715");
   const [password, setPassword] = useState("nam123");
   const [errorMsg, setErrorMsg] = useState("");
   const [showUserDetail, setShowUserDetail] = useState(false);
@@ -33,8 +34,6 @@ export default function Login() {
 
   const dispatch = useDispatch<AppDispatch>();
   // ===== Normal login =====
-
-
   interface TokenPayload {
     role: "user" | "admin";
     sub: string; // authId
@@ -69,10 +68,18 @@ export default function Login() {
 
       // Nếu ADMIN → không gọi fetchMe(), không gọi User-Service
       if (decoded.role === "admin") {
-        localStorage.setItem("userId", decoded.sub); // authId
+        dispatch(
+          setAuth({
+            accessToken: res.access_token,
+            refreshToken: res.refresh_token,
+            user: normalizeUser(res.user), // 🔥 LẤY TỪ LOGIN RESPONSE
+          })
+        );
+      
+        localStorage.setItem("userId", res.user.id);
         navigate("/admin");
-        return; // Kết thúc luôn
-      }
+        return;
+      }          
 
       // 🟢 USER THƯỜNG → gọi fetch profile
       const userRes = await dispatch(fetchMe()).unwrap();

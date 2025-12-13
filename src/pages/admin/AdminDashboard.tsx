@@ -69,19 +69,22 @@ export default function AdminDashboard() {
   const [showSettings, setShowSettings] = useState(false);
   const [showAddAdmin, setShowAddAdmin] = useState(false);
   const [showAdminList, setShowAdminList] = useState(false);
+  const user = useSelector((state: CleanRootState) => state.auth.user);
+const isSuperAdmin = user?.isSuperAdmin === true;
+
 
   useEffect(() => {
     dispatch(fetchAllServiceStats())
       .unwrap()
-      .catch(() => notify.error("Không tải được thống kê hệ thống!"));
+      .catch(() => notify.error("Don't load service stats!"));
 
     dispatch(fetchRequestLogsStats())
       .unwrap()
-      .catch(() => notify.error("Không tải được logs yêu cầu!"));
+      .catch(() => notify.error("Don't load request logs stats!"));
   }, [dispatch]);
 
   const handleLogout = () => {
-    notify.success("Đăng xuất thành công!");
+    notify.success("Logout Success!");
 
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
@@ -92,7 +95,7 @@ export default function AdminDashboard() {
 
     navigate("/login");
   };
- 
+
   if (loading || !serviceStats || !requestLogs) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
@@ -197,20 +200,32 @@ export default function AdminDashboard() {
                     <div className="fixed top-[130px] right-[30px] w-56 z-[99999]">
                       <div className="bg-slate-800 border border-slate-700/50 shadow-2xl rounded-xl overflow-hidden">
 
-                        <button
-                          onClick={() => { setShowSettings(false); setShowAddAdmin(true); }}
-                          className="w-full text-left px-5 py-3 hover:bg-slate-700 text-slate-200 flex items-center gap-2"
-                        >
-                          <UserCheck className="w-4 h-4" /> Add Admin
-                        </button>
+                        {/* 🔐 SUPER ADMIN ONLY */}
+                        {isSuperAdmin && (
+                          <>
+                            <button
+                              onClick={() => {
+                                setShowSettings(false);
+                                setShowAddAdmin(true);
+                              }}
+                              className="w-full text-left px-5 py-3 hover:bg-slate-700 text-slate-200 flex items-center gap-2"
+                            >
+                              <UserCheck className="w-4 h-4" /> Add Admin
+                            </button>
 
-                        <button
-                          onClick={() => { setShowSettings(false); setShowAdminList(true); }}
-                          className="w-full text-left px-5 py-3 hover:bg-slate-700 text-slate-200 flex items-center gap-2"
-                        >
-                          <Users className="w-4 h-4" /> Admin List
-                        </button>
+                            <button
+                              onClick={() => {
+                                setShowSettings(false);
+                                setShowAdminList(true);
+                              }}
+                              className="w-full text-left px-5 py-3 hover:bg-slate-700 text-slate-200 flex items-center gap-2"
+                            >
+                              <Users className="w-4 h-4" /> Admin List
+                            </button>
+                          </>
+                        )}
 
+                        {/* 🚪 ALL ADMINS */}
                         <button
                           onClick={() => {
                             setShowSettings(false);
@@ -618,7 +633,7 @@ function SystemStatsView({ serviceStats, requestLogs }: any) {
   });
 
   const weekTotal = weekData.reduce((sum: number, d: any) => sum + (d.totalRequests || 0), 0);
-  
+
   return (
     <div className="space-y-6">
 

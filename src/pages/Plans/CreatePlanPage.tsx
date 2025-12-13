@@ -806,9 +806,12 @@ export default function CreatePlanPage() {
                             <h2 className="text-xl font-bold text-blue-700 mb-2 flex items-center gap-2">
                                 <Check className="w-5 h-5 text-green-600" /> Nutrition Analysis Result
                             </h2>
-                            <p className="text-sm text-red-500 italic">
-                                AI-generated results may contain inaccuracies. Please use discretion and verify before following any recommendations.
-                            </p>
+                            <div className="flex items-start gap-2 rounded-md border border-yellow-300 bg-yellow-50 p-3">
+                                <span className="text-yellow-500 text-xl">⚠️</span>
+                                <p className="text-base font-bold text-yellow-900 animate-glow">
+                                    AI-generated results may contain inaccuracies. Please use discretion and verify before following any recommendations.
+                                </p>
+                            </div>
 
                             <div className="grid grid-cols-1 gap-3 mb-4">
 

@@ -217,9 +217,12 @@ export default function ScanMealPage() {
                       </div>
                       <h2 className="text-2xl font-bold text-gray-800">Analysis Result</h2>
                     </div>
-                    <p className="text-sm text-red-500 italic">
-                      AI-generated results may contain inaccuracies. Please use discretion and verify before following any recommendations.
-                    </p>
+                    <div className="flex items-start gap-2 rounded-md border border-yellow-300 bg-yellow-50 p-3">
+                      <span className="text-yellow-500 text-xl">⚠️</span>
+                      <p className="text-base font-bold text-yellow-900 animate-glow">
+                        AI-generated results may contain inaccuracies. Please use discretion and verify before following any recommendations.
+                      </p>
+                    </div>
 
                     {/* Food Name */}
                     <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-5 border-2 border-blue-200">
@@ -287,7 +290,7 @@ export default function ScanMealPage() {
                             <Sparkles className="w-5 h-5 text-white" />
                           </div>
                           <div>
-                          <h3 className="font-bold text-blue-800 mb-2">Nutrition Suggestion</h3>
+                            <h3 className="font-bold text-blue-800 mb-2">Nutrition Suggestion</h3>
                             <p className="text-gray-700 text-sm leading-relaxed">{result.example.note}</p>
                           </div>
                         </div>

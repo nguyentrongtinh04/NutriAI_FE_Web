@@ -2,6 +2,7 @@ import { AppDispatch } from "../store";
 import { authService } from "../../services/authService";
 import { setAuth, clearAuth } from "../slices/authSlice";
 import { setUser, clearUser } from "../slices/userSlice";
+import { normalizeUser } from "../../utils/normalizeUser";
 
 // ========================
 // 🔹 LOGIN / REGISTER / LOGOUT
@@ -11,13 +12,21 @@ import { setUser, clearUser } from "../slices/userSlice";
 export const loginWithGoogle = (idToken: string, navigate: any) =>
   async (dispatch: AppDispatch) => {
     try {
-      const { access_token, refresh_token, new_user } = await authService.loginWithGoogle(idToken, dispatch, navigate);      ;
-      dispatch(setAuth({ accessToken: access_token, refreshToken: refresh_token }));
+      const { access_token, refresh_token, new_user } =
+        await authService.loginWithGoogle(idToken, dispatch, navigate);
+
       localStorage.setItem("accessToken", access_token);
       localStorage.setItem("refreshToken", refresh_token);
 
-      const user = await authService.fetchUserProfile(access_token);
-      dispatch(setUser(user));
+      const rawUser = await authService.fetchUserProfile(access_token);
+
+      dispatch(
+        setAuth({
+          accessToken: access_token,
+          refreshToken: refresh_token,
+          user: normalizeUser(rawUser),
+        })
+      );
 
       navigate("/home");
       return { new_user };
@@ -27,25 +36,34 @@ export const loginWithGoogle = (idToken: string, navigate: any) =>
     }
   };
 
+
 // Đăng nhập bằng tài khoản
-export const loginWithPassword = (username: string, password: string, navigate: any) =>
+export const loginWithPassword =
+  (username: string, password: string, navigate: any) =>
   async (dispatch: AppDispatch) => {
     try {
-      const { access_token, refresh_token } = await authService.loginWithPassword(username, password);
-      dispatch(setAuth({ accessToken: access_token, refreshToken: refresh_token }));
+      const { access_token, refresh_token } =
+        await authService.loginWithPassword(username, password);
 
       localStorage.setItem("accessToken", access_token);
       localStorage.setItem("refreshToken", refresh_token);
 
-      const user = await authService.fetchUserProfile(access_token);
-      dispatch(setUser(user));
+      const rawUser = await authService.fetchUserProfile(access_token);
+
+      dispatch(
+        setAuth({
+          accessToken: access_token,
+          refreshToken: refresh_token,
+          user: normalizeUser(rawUser), // 🔥 QUAN TRỌNG
+        })
+      );
+
       navigate("/home");
     } catch (err) {
       console.error("Login Error:", err);
       throw err;
     }
   };
-
 // Đăng ký người dùng
 export const register = (payload: any, navigate: any) =>
   async (dispatch: AppDispatch) => {
@@ -61,7 +79,7 @@ export const register = (payload: any, navigate: any) =>
         weight: payload.weight,
       });
 
-      dispatch(setAuth({ accessToken: access_token, refreshToken: refresh_token }));
+      dispatch(setAuth({ accessToken: access_token, refreshToken: refresh_token,user: normalizeUser({}) }));
       localStorage.setItem("accessToken", access_token);
       localStorage.setItem("refreshToken", refresh_token);
 
