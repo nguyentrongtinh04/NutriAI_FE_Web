@@ -36,6 +36,7 @@ export default function CreatePlanPage() {
     const { profile } = useSelector((state: RootState) => state.user);
     const notify = useNotify();
     const [loadingNutrition, setLoadingNutrition] = useState(false);
+    const [confirmedNutrition, setConfirmedNutrition] = useState<any>(null);
 
     const [personalInfo, setPersonalInfo] = useState({
         height: Number(profile?.height) || 170,
@@ -191,6 +192,7 @@ export default function CreatePlanPage() {
             const result = await dispatch(generateNutritionThunk(userInfo)).unwrap();
 
             setNutritionData(result);
+            setConfirmedNutrition(result.nutrition); // ✅ QUAN TRỌNG
             setShowNutritionModal(true);
 
             notify.success("🎉 Nutrition calculation successful!");
@@ -203,35 +205,44 @@ export default function CreatePlanPage() {
         try {
             setCreatingPlan(true);
 
-            const baseInfo = buildUserInfo();
+            if (!confirmedNutrition) {
+                notify.error("Nutrition data missing!");
+                return;
+            }
 
-            const detailedGoal =
-                goals.goal === "lose"
-                    ? `giảm ${goals.change || 0} kg`
-                    : goals.goal === "gain"
-                        ? `tăng ${goals.change || 0} kg`
-                        : goals.goal === "maintain"
-                            ? "duy trì"
-                            : goals.goal === "improve"
-                                ? "cải thiện sức khỏe"
-                                : "hỗ trợ bệnh lý";
-
-            const userInfo = {
-                ...baseInfo,
-                goal: detailedGoal,
-                day: goals.deadline ? Number(goals.deadline) * 7 : 30,
+            // ✅ CHỈ GỬI THÔNG TIN CHIA BỮA
+            const mealInfo = {
+                mealsPerDay: dietInfo.mealsPerDay,
+                mealTimes: Object.values(dietInfo.mealTimes),
+                dateTemplate: planRequirements.planDays,
+                dietaryRestrictions: dietInfo.allergies ? [dietInfo.allergies] : [],
+                budget:
+                    dietInfo.budget <= 80000
+                        ? 'thấp'
+                        : dietInfo.budget >= 200000
+                            ? 'cao'
+                            : 'vừa phải',
+                cookingPreference: planRequirements.cookingStyle,
+                healthConditions: personalInfo.medicalConditions
+                    ? [personalInfo.medicalConditions]
+                    : [],
+                extraNotes: planRequirements.notes,
             };
 
+            console.log("🔥 FINAL NUTRITION SENT", confirmedNutrition);
+
             await dispatch(
-                generateMealPlanThunk({ userInfo, nutrition: nutritionData })
+                generateMealPlanThunk({
+                    userInfo: mealInfo,
+                    nutrition: confirmedNutrition, // ✅ ĐÚNG
+                })
             ).unwrap();
 
             notify.success("🎯 Nutrition plan created successfully!");
+            navigate("/plan-result");
 
-            navigate("/plan-result", { state: { userInfo } });
-
-        } catch (err: any) {
-            notify.error("❌ Failed to create plan. Please try again!");
+        } catch (err) {
+            notify.error("❌ Failed to create plan");
         } finally {
             setCreatingPlan(false);
         }
