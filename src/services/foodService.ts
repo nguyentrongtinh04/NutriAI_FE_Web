@@ -12,4 +12,7 @@ export const foodService = {
 
   getRandom: async (limit = 30) =>
     (await foodApi.get(`/food/random?limit=${limit}`)).data,
+  getSavedFoods: async (userId: string) => 
+    (await foodApi.get(`/food/listSave/${userId}`)).data,
+
 };

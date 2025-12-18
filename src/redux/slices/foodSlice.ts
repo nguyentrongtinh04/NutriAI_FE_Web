@@ -26,6 +26,7 @@ interface FoodState {
   loadingDetail: boolean;
   error: string | null;
   lastAction: "search" | "random" | null;
+  savedFoods: string[];
 }
 
 const initialState: FoodState = {
@@ -35,6 +36,7 @@ const initialState: FoodState = {
   loadingDetail: false,
   error: null,
   lastAction: null,
+  savedFoods: [],
 };
 
 // 🔍 searchFoods
@@ -82,6 +84,15 @@ export const getFeaturedFoods = createAsyncThunk(
       }
     }
   );
+
+  export const getSavedFoods = createAsyncThunk(
+    "foods/getSavedFoods",
+    async (userId: string) => {
+      const data = await foodService.getSavedFoods(userId);
+      return data.map((i: any) => i.food_en);
+    }
+  );
+  
   
 
 const foodSlice = createSlice({
@@ -94,6 +105,13 @@ const foodSlice = createSlice({
     },
     clearDetail(state) {
       state.detail = null;
+    },
+
+    addSavedFood(state, action) {
+      const foodName = action.payload;
+      if (!state.savedFoods.includes(foodName)) {
+        state.savedFoods.push(foodName);
+      }
     },
   },  
   extraReducers: (builder) => {
@@ -180,11 +198,19 @@ const foodSlice = createSlice({
       })
       .addCase(getRandomFoods.rejected, (state) => {
         state.loading = false;
+      })
+      .addCase(getSavedFoods.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(getSavedFoods.fulfilled, (state, action) => {
+        state.loading = false;
+        state.savedFoods = action.payload;
+      })
+      .addCase(getSavedFoods.rejected, (state) => {
+        state.loading = false;
       });
-      
-
   },
 });
 
-export const { clearFood, clearDetail } = foodSlice.actions;
+export const { clearFood, clearDetail, addSavedFood  } = foodSlice.actions;
 export default foodSlice.reducer;

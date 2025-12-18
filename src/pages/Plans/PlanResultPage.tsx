@@ -26,6 +26,8 @@ export default function PlanResultPage() {
   const [flippedMeals, setFlippedMeals] = useState<Set<number>>(new Set());
   const { mealPlan, loading, error } = useSelector((state: RootState) => state.plan);
   const profile = useSelector((state: RootState) => state.user.profile);
+  const location = useLocation();
+  const scheduleMeta = location.state?.scheduleMeta;
   const currentDay = mealPlan.schedule[selectedDay];
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
@@ -34,7 +36,7 @@ export default function PlanResultPage() {
 
   const nutrition = mealPlan?.nutrition;
   const userInfo = mealPlan?.userInfo;
-  
+
   const token =
     useSelector((state: RootState) => state.auth.accessToken) ||
     localStorage.getItem("accessToken");
@@ -53,7 +55,13 @@ export default function PlanResultPage() {
       return newSet;
     });
   };
-
+  if (!mealPlan || !mealPlan.schedule) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p>No meal plan data</p>
+      </div>
+    );
+  }
   if (loading)
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 via-cyan-500 to-teal-400">
@@ -447,19 +455,19 @@ export default function PlanResultPage() {
               <div className="bg-gray-50 rounded-lg p-3 mb-4 text-sm text-gray-700">
                 <p>
                   🎯 <span className="font-semibold">Goal:</span>{" "}
-                  {userInfo?.goal || "Unknown"}
+                  {scheduleMeta?.goal || "Unknown"}
                 </p>
 
                 <p>
-                  ⚖️ Weight: {userInfo?.weight ?? "-"} kg | Height:{" "}
-                  {userInfo?.height ?? "-"} cm
+                  ⚖️ Weight: {scheduleMeta?.weight ?? "-"} kg | Height:{" "}
+                  {scheduleMeta?.height ?? "-"} cm
                 </p>
 
                 <p>
                   👤 Gender:{" "}
-                  {userInfo?.gender === "nam"
+                  {scheduleMeta?.gender === "nam"
                     ? "Male"
-                    : userInfo?.gender === "nữ"
+                    : scheduleMeta?.gender === "nữ"
                       ? "Female"
                       : "Other"}
                 </p>
@@ -487,7 +495,7 @@ export default function PlanResultPage() {
                 type="date"
                 value={startDate}
                 min={new Date().toISOString().split("T")[0]}
-                max={new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
+                max={new Date(Date.now() + 4 * 24 * 60 * 60 * 1000)
                   .toISOString()
                   .split("T")[0]}
                 onChange={(e) => setStartDate(e.target.value)}
@@ -556,24 +564,25 @@ export default function PlanResultPage() {
 
                     const finalData = {
                       userId: profile?._id,
-                    
-                      height: Number(userInfo?.height),
-                      weight: Number(userInfo?.weight),
-                      age: Number(userInfo?.age),
-                    
-                      gender: userInfo?.gender,
-                      goal: userInfo?.goal,
-                    
-                      duration: Number(nutrition?.durationDays),   // ✅ OK
+
+                      height: Number(scheduleMeta?.height),
+                      weight: Number(scheduleMeta?.weight),
+                      age: Number(scheduleMeta?.age),
+
+
+                      gender: scheduleMeta?.gender,
+                      goal: scheduleMeta?.goal,
+
+                      duration: Number(scheduleMeta?.durationDays ?? 0),
                       kgGoal: nutrition?.weightChangeKg ?? 0,       // ✅ OK
-                    
+
                       startDate: new Date(startDate).toISOString(),
                       schedule: formattedSchedule,
-                    
-                      idTemplate: userInfo?.dateTemplate ?? null,
+
+                      // idTemplate: scheduleMeta?.dateTemplate ?? null,
                       nameSchedule: scheduleName,
                       private: true,
-                    };                                                        
+                    };
 
                     try {
                       await dispatch(createScheduleThunk(finalData)).unwrap();

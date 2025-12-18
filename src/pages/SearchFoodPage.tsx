@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "../redux/store";
-import { searchFoods, getFoodDetail, clearFood, getRandomFoods, clearDetail } from "../redux/slices/foodSlice";
+import { searchFoods, getFoodDetail, clearFood, getRandomFoods, clearDetail, addSavedFood, getSavedFoods } from "../redux/slices/foodSlice";
 import { Search, Loader2, UtensilsCrossed, Flame, ArrowLeft, Bookmark, X, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
@@ -10,12 +10,11 @@ import { mealService } from "../services/mealService";
 import { useNotify } from "../components/notifications/NotificationsProvider";
 import { analyzeFoodsBatch, clearFoodWarnings } from "../redux/slices/aiFoodSlice";
 import { useRef } from "react";
-
 export default function SearchFoodPage() {
     const [query, setQuery] = useState("");
     const dispatch = useDispatch<AppDispatch>();
     const navigate = useNavigate();
-    const { list, detail, loading, loadingDetail, lastAction } = useSelector((s: RootState) => s.food);
+    const { list, detail, loading, loadingDetail, lastAction, savedFoods } = useSelector((s: RootState) => s.food);
     const { profile } = useSelector((state: RootState) => state.user);
     const medicalConditions = profile?.medicalConditions ?? [];
     const notify = useNotify();
@@ -27,34 +26,39 @@ export default function SearchFoodPage() {
     }, [dispatch]);
 
     useEffect(() => {
+        if (!profile?._id) return;
+        dispatch(getSavedFoods(profile._id));
+      }, [profile?._id, dispatch]);
+
+    useEffect(() => {
         if (lastAction !== "search") return;
         if (!medicalConditions.length) return;
         if (!list.length) return;
-      
+
         const key = JSON.stringify({
-          q: query,
-          diseases: medicalConditions,
-          foods: list.map(i => i.name_en || i.name),
+            q: query,
+            diseases: medicalConditions,
+            foods: list.map(i => i.name_en || i.name),
         });
-      
+
         if (analyzedRef.current === key) return;
         analyzedRef.current = key;
-      
+
         dispatch(
-          analyzeFoodsBatch({
-            medicalConditions,
-            foods: list.map(item => ({
-              name: item.name_en || item.name,
-              nutrition: {
-                calories: item.calories ?? 0,
-                protein: item.protein ?? 0,
-                carbs: item.carbs ?? 0,
-                fat: item.fat ?? 0,
-              },
-            })),
-          })
+            analyzeFoodsBatch({
+                medicalConditions,
+                foods: list.map(item => ({
+                    name: item.name_en || item.name,
+                    nutrition: {
+                        calories: item.calories ?? 0,
+                        protein: item.protein ?? 0,
+                        carbs: item.carbs ?? 0,
+                        fat: item.fat ?? 0,
+                    },
+                })),
+            })
         );
-      }, [list, lastAction, medicalConditions, query, dispatch]);      
+    }, [list, lastAction, medicalConditions, query, dispatch]);
 
     const handleSearch = () => {
         analyzedRef.current = null;        // 🔥 reset AI
@@ -72,36 +76,31 @@ export default function SearchFoodPage() {
 
     const getFoodWarning = (foodName: string) => {
         return warnings?.find(
-          (w: any) =>
-            w.foodName === foodName && w.riskLevel === "HIGH"
+            (w: any) =>
+                w.foodName === foodName && w.riskLevel === "HIGH"
         );
-      };      
+    };
 
-      const handleDetail = (item: any) => {
+    const handleDetail = (item: any) => {
         const foodName = item.name_en || item.name;
-      
+
         const warning = getFoodWarning(foodName);
-      
+
         if (warning) {
-          notify.warning(
-            `⚠️ ${foodName} is not suitable for your health condition`
-          );
-          return; // 🔥🔥🔥 CHẶN KHÔNG CHO MỞ DETAIL
+            notify.warning(
+                `⚠️ ${foodName} is not suitable for your health condition`
+            );
+            return; // 🔥🔥🔥 CHẶN KHÔNG CHO MỞ DETAIL
         }
-      
+
         // ✅ CHỈ CHẠY KHI KHÔNG CÓ WARNING
         dispatch(getFoodDetail(foodName));
-      };           
+    };
 
     const handleKeyPress = (e: React.KeyboardEvent) => {
         if (e.key === "Enter") {
             handleSearch();
         }
-    };
-
-    const hasSavedBefore = async (userId: string, foodName: string) => {
-        const history = await mealService.getScannedHistory(userId);
-        return history.some((item: any) => item.food_en === foodName);
     };
 
     const { warnings, loading: aiLoading } = useSelector(
@@ -246,6 +245,12 @@ export default function SearchFoodPage() {
                                                     </p>
                                                 )}
 
+                                            {savedFoods.includes(item.name_en || item.name) && (
+                                                <p className="text-xs text-green-600 font-semibold mt-1">
+                                                    ✅ Saved
+                                                </p>
+                                            )}
+
                                             <p className="text-xs text-gray-400 italic mt-2">{item.source}</p>
                                         </div>
                                     </div>
@@ -385,17 +390,16 @@ export default function SearchFoodPage() {
                                                                 navigate("/login?redirect=/search-food", { replace: true });
                                                                 return;
                                                             }
-
-                                                            // ❗ Check trùng trước khi lưu
-                                                            if (await hasSavedBefore(userId, detail.name_en || detail.name)) {
+                                                            if (savedFoods.includes(detail.name_en || detail.name)) {
                                                                 notify.info("ℹ️ You have already saved this meal.");
                                                                 return;
-                                                            }
+                                                              }
 
                                                             await mealService.saveScannedMeal(data);
+
+                                                            dispatch(addSavedFood(detail.name_en || detail.name)); // 🆕
                                                             notify.success("✅ Meal saved to your history!");
-                                                            dispatch(clearFood());
-                                                            dispatch(getRandomFoods(30));
+                                                            dispatch(clearDetail());
                                                         } catch (error: any) {
                                                             console.error("❌ Save meal error:", error);
                                                             notify.error("❌ Failed to save meal. Please try again later.");

@@ -3,12 +3,14 @@ import { aiService } from "../../services/aiService";
 
 interface AiState {
   advice: any | null;
+  diseaseCheck: any | null; // ✅ NEW
   loading: boolean;
   error: string | null;
 }
 
 const initialState: AiState = {
   advice: null,
+  diseaseCheck: null,
   loading: false,
   error: null,
 };
@@ -34,6 +36,28 @@ export const getAiAdviceThunk = createAsyncThunk(
   }
 );
 
+export const checkMealForDiseaseThunk = createAsyncThunk(
+  "ai/checkMealForDisease",
+  async (
+    { diseases, durationDays, mealPlan }: any,
+    { rejectWithValue }
+  ) => {
+    try {
+      const res = await aiService.checkMealForDisease({
+        diseases,
+        durationDays,
+        mealPlan,
+      });
+      return res.data;
+    } catch (err: any) {
+      return rejectWithValue(
+        err.response?.data?.message || "Disease analysis failed"
+      );
+    }
+  }
+);
+
+
 const aiSlice = createSlice({
   name: "ai",
   initialState,
@@ -54,6 +78,17 @@ const aiSlice = createSlice({
         state.advice = action.payload;
       })
       .addCase(getAiAdviceThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      .addCase(checkMealForDiseaseThunk.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(checkMealForDiseaseThunk.fulfilled, (state, action) => {
+        state.loading = false;
+        state.diseaseCheck = action.payload;
+      })
+      .addCase(checkMealForDiseaseThunk.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });

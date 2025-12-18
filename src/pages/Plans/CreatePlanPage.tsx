@@ -231,20 +231,28 @@ export default function CreatePlanPage() {
 
             console.log("🔥 FINAL NUTRITION SENT", confirmedNutrition);
 
-            const fullUserInfo = {
-                ...buildUserInfo(),                     // 🔥 user info đầy đủ
-                day: goals.deadline ? Number(goals.deadline) * 7 : 30,
-              };
-              
-              dispatch(
+            await dispatch(
                 generateMealPlanThunk({
-                  userInfo: fullUserInfo,               // ✅ ĐÚNG
-                  nutrition: confirmedNutrition,
+                    userInfo: mealInfo,
+                    nutrition: confirmedNutrition, // ✅ ĐÚNG
                 })
-              );              
+            ).unwrap();
 
             notify.success("🎯 Nutrition plan created successfully!");
-            navigate("/plan-result");
+            navigate("/plan-result", {
+                state: {
+                    scheduleMeta: {
+                        height: personalInfo.height,
+                        weight: personalInfo.weight,
+                        age: personalInfo.age,
+                        gender: mapGender(personalInfo.gender),
+                        goal: mapGoal(goals.goal),
+                        durationDays: confirmedNutrition.durationDays,
+                        weightChangeKg: confirmedNutrition.weightChangeKg,
+                        dateTemplate: planRequirements.planDays,
+                    },
+                },
+            });
 
         } catch (err) {
             notify.error("❌ Failed to create plan");

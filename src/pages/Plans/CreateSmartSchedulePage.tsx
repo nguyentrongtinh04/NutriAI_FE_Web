@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { X, Calendar, Loader2, Brain, ChevronLeft, ChevronRight, Sparkles, Target, Activity, TrendingUp, TrendingDown } from "lucide-react";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState, AppDispatch } from "../../redux/store";
-import { getAiAdviceThunk } from "../../redux/slices/aiSlice";
+import { getAiAdviceThunk, checkMealForDiseaseThunk } from "../../redux/slices/aiSlice";
 import { planApi } from "../../services/api";
 import { useNotify } from "../../components/notifications/NotificationsProvider";
 
@@ -11,6 +11,7 @@ export default function CreateSmartSchedulePage() {
     const { state } = useLocation();
     const meals = state?.meals || [];
     const [aiResult, setAiResult] = useState<any>(null);
+    const [diseaseResult, setDiseaseResult] = useState<any>(null);
     const notify = useNotify();
     const [aiMode, setAiMode] = useState<"ON" | "OFF">("OFF");
 
@@ -29,6 +30,11 @@ export default function CreateSmartSchedulePage() {
         goal: "",
         activity: "",
     });
+    const [medicalConditions, setMedicalConditions] = useState<string[]>(
+        profile?.medicalConditions || []
+    );
+
+    const [customCondition, setCustomCondition] = useState("");
 
     const [showModal, setShowModal] = useState(false);
     const [scheduleName, setScheduleName] = useState("");
@@ -47,7 +53,7 @@ export default function CreateSmartSchedulePage() {
     const [timeError, setTimeError] = useState("");
     const [bmiWarning, setBmiWarning] = useState("");
     const [mealSelections, setMealSelections] = useState<string[][][]>([
-        Array(mealCount).fill([])
+        Array(mealCount).fill(null).map(() => [])
     ]);
 
     const mealTypes = ["sáng", "trưa", "chiều", "tối", "phụ tối"];
@@ -60,6 +66,21 @@ export default function CreateSmartSchedulePage() {
 
     const maxKgLose = Math.max(0, Number(userInfo.weight) - minWeight);
     const maxKgGain = Math.max(0, maxWeight - Number(userInfo.weight));
+
+    const [hasCheckedDisease, setHasCheckedDisease] = useState(false);
+    const { diseaseCheck } = useSelector((s: RootState) => s.ai);
+    const resetAnalysis = () => {
+        setHasCheckedDisease(false);
+        setDiseaseResult(null);
+        setAiResult(null);
+    };
+    const buildMealPlanForDisease = () =>
+        mealSelections.map((day, dayIndex) => ({
+            dateID: `Day ${dayIndex + 1}`,
+            meals: day.map((mealItems) => ({
+                name: mealItems.join(", "),
+            })),
+        }));
 
     const checkActiveSchedule = async () => {
         try {
@@ -84,6 +105,8 @@ export default function CreateSmartSchedulePage() {
         }
 
         setMealSelections(updated);
+        resetAnalysis();
+
     };
 
     const handleRemoveMeal = (dayIdx: number, mealIdx: number, name: string) => {
@@ -96,6 +119,7 @@ export default function CreateSmartSchedulePage() {
         );
 
         setMealSelections(updated);
+        resetAnalysis();
     };
 
     const getAgeFromDOB = (dob: string | number) => {
@@ -107,30 +131,71 @@ export default function CreateSmartSchedulePage() {
 
     const handleSubmitSchedule = async () => {
         if (!isFormValid()) {
-            notify.warning("⚠️ Vui lòng điền đầy đủ thông tin trước khi phân tích bằng AI!");
+            notify.warning("Please complete all required fields before analyzing.");
             return;
         }
 
         try {
-            const weeksNum = Number(targetWeeks || 0);
-            const totalDays = weeksNum * 7;
+            // =============================
+            // STEP 1: Disease check ONLY
+            // =============================
+            if (!hasCheckedDisease) {
+                if (!isDiseaseCheckValid()) {
+                    notify.warning("Please enter basic information to check disease.");
+                    return;
+                }
+
+                const result = await dispatch(
+                    checkMealForDiseaseThunk({
+                        diseases: medicalConditions,
+                        durationDays: targetWeeks * 7,
+                        mealPlan: buildMealPlanForDisease(),
+                    })
+                ).unwrap();
+
+                // 👉 THÊM
+                setDiseaseResult(result);
+                setAiResult(null);
+                setAiMode("ON"); // mở panel AI
+                setHasCheckedDisease(true);
+                notify.info(
+                    "Disease analysis completed. Click Analyze again to get AI advice."
+                );
+                return;
+            }
+
+            // =============================
+            // STEP 2: AI advice
+            // =============================
+            if (!isFormValid()) {
+                notify.warning("Please complete all required fields before analyzing.");
+                return;
+            }
+
+            if (diseaseCheck?.result !== "ĐẠT" && diseaseCheck?.result !== "PASS") {
+                notify.warning(
+                    "Meal plan is not suitable for your medical conditions. Please adjust and try again."
+                );
+                return;
+            }
+            const totalDays = targetWeeks * 7;
 
             let mergedGoal = "";
-
             if (userInfo.goal === "giảm cân") {
-                mergedGoal = `giảm ${kgChange}kg trong ${totalDays} ngày`;
-            }
-            else if (userInfo.goal === "tăng cân") {
-                mergedGoal = `tăng ${kgChange}kg trong ${totalDays} ngày`;
-            }
-            else if (userInfo.goal === "duy trì") {
-                mergedGoal = "duy trì cân nặng hiện tại";
+                mergedGoal = `lose ${kgChange}kg in ${totalDays} days`;
+            } else if (userInfo.goal === "tăng cân") {
+                mergedGoal = `gain ${kgChange}kg in ${totalDays} days`;
+            } else {
+                mergedGoal = "maintain current weight";
             }
 
             const cleanUserInfo = {
                 userId: profile?._id,
                 gender: userInfo.gender,
-                age: typeof userInfo.age === "string" ? getAgeFromDOB(userInfo.age) : Number(userInfo.age),
+                age:
+                    typeof userInfo.age === "string"
+                        ? getAgeFromDOB(userInfo.age)
+                        : Number(userInfo.age),
                 weight: Number(userInfo.weight),
                 height: Number(userInfo.height),
                 activity: userInfo.activity,
@@ -141,7 +206,7 @@ export default function CreateSmartSchedulePage() {
                 dateID: `Day ${dayIndex + 1}`,
                 meals: day.map((mealItems, mealIndex) => ({
                     name: mealItems.join(", "),
-                    type: mealTypes[mealIndex] ?? "khác",
+                    type: mealTypes[mealIndex] ?? "other",
                     time: `${7 + mealIndex * 5}:00`,
                 })),
             }));
@@ -155,9 +220,10 @@ export default function CreateSmartSchedulePage() {
             ).unwrap();
 
             setAiResult(result);
-            notify.success("🎉 AI đã phân tích dữ liệu của bạn!");
-        } catch (err) {
-            notify.error("❌ Lỗi khi phân tích bằng AI. Vui lòng thử lại!");
+            setDiseaseResult(null);
+            notify.success("AI advice generated successfully!");
+        } catch (err: any) {
+            notify.error(err.message || "AI analysis failed.");
         }
     };
 
@@ -233,6 +299,13 @@ export default function CreateSmartSchedulePage() {
         };
     });
 
+    const isDiseaseCheckValid = () => {
+        if (!medicalConditions.length) return false;
+        if (!targetWeeks) return false;
+        if (!mealSelections.length) return false;
+        return true;
+    };
+
     const isFormValid = () => {
         if (!userInfo.gender) return false;
         if (!userInfo.age || userInfo.age < 10 || userInfo.age > 80) return false;
@@ -262,6 +335,12 @@ export default function CreateSmartSchedulePage() {
     const canCreateSchedule =
         isFormValid() && (aiMode === "OFF" || isGoalAchieved);
     const adviceData = aiResult?.advice?.advice;
+    const forbiddenFoods = new Set(
+        diseaseResult?.foodsShouldChange?.map((f: any) =>
+            f.name.toLowerCase()
+        ) || []
+    );
+
     return (
         <div className="fixed inset-0 bg-gradient-to-br from-blue-600 via-cyan-500 to-teal-500 overflow-hidden">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.1),transparent_50%)] pointer-events-none"></div>
@@ -383,6 +462,67 @@ export default function CreateSmartSchedulePage() {
                                                 />
                                             </div>
                                         </div>
+
+                                        <div className="group/input">
+                                            <label className="block font-semibold mb-2 text-sm text-gray-700 flex items-center gap-2">
+                                                <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></span>
+                                                Medical Conditions
+                                            </label>
+
+                                            {/* Input thêm bệnh */}
+                                            <input
+                                                type="text"
+                                                placeholder="Enter medical condition and press Enter..."
+                                                className="w-full border-2 border-gray-200 rounded-xl p-2.5 mb-2 focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                                                value={customCondition}
+                                                onChange={(e) => setCustomCondition(e.target.value)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === "Enter" && customCondition.trim()) {
+                                                        if (!medicalConditions.includes(customCondition.trim())) {
+                                                            setMedicalConditions([...medicalConditions, customCondition.trim()]);
+                                                            resetAnalysis();
+                                                        }
+                                                        setCustomCondition("");
+                                                    }
+                                                }}
+                                            />
+
+                                            {/* List bệnh */}
+                                            <div className="flex flex-wrap gap-2 mt-2">
+                                                {medicalConditions.map((condition, idx) => {
+                                                    const isFromDB = profile?.medicalConditions?.includes(condition);
+
+                                                    return (
+                                                        <span
+                                                            key={idx}
+                                                            className={`px-3 py-1.5 rounded-full text-sm font-medium flex items-center gap-2
+                        ${isFromDB
+                                                                    ? "bg-red-100 text-red-700 border border-red-300"
+                                                                    : "bg-gray-100 text-gray-700 border border-gray-300"
+                                                                }`}
+                                                        >
+                                                            {condition}
+
+                                                            {/* Chỉ cho xoá nếu KHÔNG phải từ DB */}
+                                                            {!isFromDB && (
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setMedicalConditions(
+                                                                            medicalConditions.filter((c) => c !== condition)
+                                                                        );
+                                                                        setHasCheckedDisease(false);
+                                                                    }}
+                                                                    className="text-gray-600 hover:text-red-600 font-bold"
+                                                                >
+                                                                    ×
+                                                                </button>
+                                                            )}
+                                                        </span>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+
                                         <div className="group/input">
                                             <label className="block font-semibold mb-2 text-sm text-gray-700 flex items-center gap-2">
                                                 <Activity className="w-4 h-4 text-teal-600" />
@@ -531,7 +671,12 @@ export default function CreateSmartSchedulePage() {
                                                 onChange={(e) => {
                                                     const val = Math.max(3, Math.min(5, Number(e.target.value)));
                                                     setMealCount(val);
-                                                    setMealSelections(Array(val).fill([]));
+                                                    setMealSelections(
+                                                        Array(scheduleDays).fill(null).map(() =>
+                                                            Array(val).fill(null).map(() => [])
+                                                        )
+                                                    );
+                                                    resetAnalysis();
                                                 }}
                                             />
                                         </div>
@@ -548,12 +693,14 @@ export default function CreateSmartSchedulePage() {
                                                     const val = Number(e.target.value);
                                                     setScheduleDays(val);
                                                     setCurrentDayIndex(0);
+                                                    setHasCheckedDisease(false);
 
                                                     setMealSelections(
                                                         Array(val).fill(null).map(() =>
                                                             Array(mealCount).fill(null).map(() => [])
                                                         )
                                                     );
+                                                    resetAnalysis();
                                                 }}
                                             >
                                                 <option value={1}>1 ngày</option>
@@ -650,17 +797,34 @@ export default function CreateSmartSchedulePage() {
                                                     />
 
                                                     <div className="flex flex-wrap gap-2 mt-3">
-                                                        {mealSelections[currentDayIndex]?.[mealIndex]?.map((m: string) => (
-                                                            <span key={m} className="group/tag px-3 py-1.5 bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 rounded-full text-sm font-medium flex items-center gap-2 border border-green-200 hover:from-green-200 hover:to-emerald-200 transition-all duration-300 shadow-sm hover:shadow-md">
-                                                                {m}
-                                                                <button
-                                                                    onClick={() => handleRemoveMeal(currentDayIndex, mealIndex, m)}
-                                                                    className="text-green-900 hover:text-red-600 font-bold transition-colors duration-300 hover:scale-125"
+                                                        {mealSelections[currentDayIndex]?.[mealIndex]?.map((m: string) => {
+                                                            const isForbidden = forbiddenFoods.has(m.toLowerCase());
+
+                                                            return (
+                                                                <span
+                                                                    key={m}
+                                                                    className={`group/tag px-3 py-1.5 rounded-full text-sm font-medium flex items-center gap-2 border transition-all duration-300 shadow-sm hover:shadow-md
+        ${isForbidden
+                                                                            ? "bg-red-100 text-red-700 border-red-300 animate-pulse"
+                                                                            : "bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 border-green-200 hover:from-green-200 hover:to-emerald-200"
+                                                                        }
+      `}
+                                                                    title={isForbidden ? "⚠️ Not suitable for your medical condition" : ""}
                                                                 >
-                                                                    ×
-                                                                </button>
-                                                            </span>
-                                                        ))}
+                                                                    {m}
+
+                                                                    <button
+                                                                        onClick={() => handleRemoveMeal(currentDayIndex, mealIndex, m)}
+                                                                        className={`font-bold transition-colors duration-300 hover:scale-125
+          ${isForbidden ? "text-red-800 hover:text-red-900" : "text-green-900 hover:text-red-600"}
+        `}
+                                                                    >
+                                                                        ×
+                                                                    </button>
+                                                                </span>
+                                                            );
+                                                        })}
+
                                                     </div>
                                                 </div>
                                             </div>
@@ -716,109 +880,138 @@ export default function CreateSmartSchedulePage() {
                                         </div>
 
                                         <div className="flex-1 overflow-y-auto">
-                                          {!adviceData ? (
-    <div className="flex items-center justify-center h-full text-gray-500 italic">
-        Không có dữ liệu phân tích
-    </div>
-) : (
-    <div className="space-y-6 text-sm text-gray-800">
 
-        {/* ===== Tổng quan ===== */}
-        <div className="p-4 rounded-xl border border-blue-200 bg-blue-50">
-            <h4 className="font-bold text-lg mb-2">📊 Kết quả tổng quan</h4>
+                                            {/* ===================== */}
+                                            {/* CHƯA CÓ AI ADVICE */}
+                                            {/* ===================== */}
+                                            {!adviceData ? (
+                                                diseaseResult ? (
+                                                    <div className="space-y-6 text-sm text-gray-800">
 
-            <p>
-                <span className="font-semibold">Mục tiêu: </span>
-                <span
-                    className={`font-bold ${
-                        adviceData.goalCheck === "đạt"
-                            ? "text-green-600"
-                            : "text-red-600"
-                    }`}
-                >
-                    {adviceData.goalCheck.toUpperCase()}
-                </span>
-            </p>
+                                                        {/* ===== KẾT QUẢ BỆNH LÝ ===== */}
+                                                        <div className="p-4 rounded-xl border border-red-200 bg-red-50">
+                                                            <h4 className="font-bold text-lg mb-2">🩺 Medical Condition Analysis Result</h4>
 
-            <p>
-                <span className="font-semibold">Tiến độ: </span>
-                {adviceData.percentFinish}%
-            </p>
-        </div>
+                                                            <p>
+                                                                Result: {" "}
+                                                                <span
+                                                                    className={`font-bold ${diseaseResult.result === "ĐẠT" || diseaseResult.result === "PASS"
+                                                                        ? "text-green-600"
+                                                                        : "text-red-600"
+                                                                        }`}
+                                                                >
+                                                                    {diseaseResult.result}
+                                                                </span>
+                                                            </p>
+                                                        </div>
 
-        {/* ===== Nguyên nhân ===== */}
-        {adviceData.reason && (
-            <div className="p-4 rounded-xl border border-yellow-200 bg-yellow-50">
-                <h4 className="font-bold mb-2">⚠️ Nguyên nhân</h4>
-                <p className="whitespace-pre-line">
-                    {adviceData.reason}
-                </p>
-            </div>
-        )}
+                                                        {/* ===== DANH SÁCH THỰC PHẨM CẦN ĐIỀU CHỈNH ===== */}
+                                                        {Array.isArray(diseaseResult.foodsShouldChange) &&
+                                                            diseaseResult.foodsShouldChange.length > 0 && (
+                                                                <div className="p-4 rounded-xl border border-yellow-200 bg-yellow-50">
+                                                                    <h5 className="font-bold mb-2">⚠️ Foods That Need Adjustment</h5>
 
-        {/* ===== Lời khuyên chung ===== */}
-        {adviceData.advice && (
-            <div className="p-4 rounded-xl border border-green-200 bg-green-50">
-                <h4 className="font-bold mb-2">💡 Lời khuyên chung</h4>
-                <p className="whitespace-pre-line">
-                    {adviceData.advice}
-                </p>
-            </div>
-        )}
+                                                                    <ul className="list-disc list-inside space-y-1">
+                                                                        {diseaseResult.foodsShouldChange.map((f: any, i: number) => (
+                                                                            <li key={i}>
+                                                                                <b>{f.name}</b>: {f.reason}
+                                                                            </li>
+                                                                        ))}
+                                                                    </ul>
+                                                                </div>
+                                                            )}
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex items-center justify-center h-full text-gray-500 italic">
+                                                        No analysis data available
+                                                    </div>
+                                                )
+                                            ) : (
+                                                /* ===================== */
+                                                /* AI ADVICE (GIỮ NGUYÊN UI CŨ) */
+                                                /* ===================== */
+                                                <div className="space-y-6 text-sm text-gray-800">
 
-        {/* ===== Phân tích theo ngày (1–7 ngày đều OK) ===== */}
-        {Array.isArray(adviceData.dailyFoodSuggestions) && (
-            <div className="space-y-4">
-                <h4 className="font-bold text-lg">📅 Chi tiết từng ngày</h4>
+                                                    {/* ===== Tổng quan ===== */}
+                                                    <div className="p-4 rounded-xl border border-blue-200 bg-blue-50">
+                                                        <h4 className="font-bold text-lg mb-2">📊 Result Overview</h4>
 
-                {adviceData.dailyFoodSuggestions.map(
-                    (day: any, index: number) => (
-                        <div
-                            key={index}
-                            className="p-4 rounded-xl border border-gray-200 bg-white shadow-sm"
-                        >
-                            <h5 className="font-bold text-blue-600 mb-2">
-                                {day.date}
-                            </h5>
+                                                        <p>
+                                                            <span className="font-semibold">Goals: </span>
+                                                            <span
+                                                                className={`font-bold ${adviceData.goalCheck === "đạt"
+                                                                    ? "text-green-600"
+                                                                    : "text-red-600"
+                                                                    }`}
+                                                            >
+                                                                {adviceData.goalCheck.toUpperCase()}
+                                                            </span>
+                                                        </p>
 
-                            <p className="mb-2">
-                                🔥 Thiếu{" "}
-                                <span className="font-bold text-red-600">
-                                    {day.missingCalories} kcal
-                                </span>
-                            </p>
+                                                        <p>
+                                                            <span className="font-semibold">Progress: </span>
+                                                            {adviceData.percentFinish}%
+                                                        </p>
+                                                    </div>
 
-                            {/* Đã ăn */}
-                            <div className="mb-2">
-                                <p className="font-semibold">🍽️ Đã ăn:</p>
-                                <ul className="list-disc list-inside ml-2">
-                                    {day.eatenFoods?.map(
-                                        (food: string, i: number) => (
-                                            <li key={i}>{food}</li>
-                                        )
-                                    )}
-                                </ul>
-                            </div>
+                                                    {/* ===== Nguyên nhân ===== */}
+                                                    {adviceData.reason && (
+                                                        <div className="p-4 rounded-xl border border-yellow-200 bg-yellow-50">
+                                                            <h4 className="font-bold mb-2">⚠️ Reason</h4>
+                                                            <p className="whitespace-pre-line">{adviceData.reason}</p>
+                                                        </div>
+                                                    )}
 
-                            {/* Gợi ý */}
-                            <div>
-                                <p className="font-semibold">✅ Gợi ý bổ sung:</p>
-                                <ul className="list-disc list-inside ml-2 text-green-700">
-                                    {day.suggestions?.map(
-                                        (s: string, i: number) => (
-                                            <li key={i}>{s}</li>
-                                        )
-                                    )}
-                                </ul>
-                            </div>
-                        </div>
-                    )
-                )}
-            </div>
-        )}
-    </div>
-)}
+                                                    {/* ===== Lời khuyên chung ===== */}
+                                                    {adviceData.advice && (
+                                                        <div className="p-4 rounded-xl border border-green-200 bg-green-50">
+                                                            <h4 className="font-bold mb-2">💡 General Advice</h4>
+                                                            <p className="whitespace-pre-line">{adviceData.advice}</p>
+                                                        </div>
+                                                    )}
 
+                                                    {/* ===== Phân tích theo ngày ===== */}
+                                                    {Array.isArray(adviceData.dailyFoodSuggestions) && (
+                                                        <div className="space-y-4">
+                                                            <h4 className="font-bold text-lg">📅 Daily Breakdown</h4>
+
+                                                            {adviceData.dailyFoodSuggestions.map((day: any, index: number) => (
+                                                                <div
+                                                                    key={index}
+                                                                    className="p-4 rounded-xl border border-gray-200 bg-white shadow-sm"
+                                                                >
+                                                                    <h5 className="font-bold text-blue-600 mb-2">{day.date}</h5>
+
+                                                                    <p className="mb-2">
+                                                                        🔥 Missing{" "}
+                                                                        <span className="font-bold text-red-600">
+                                                                            {day.missingCalories} kcal
+                                                                        </span>
+                                                                    </p>
+
+                                                                    <div className="mb-2">
+                                                                        <p className="font-semibold">🍽️ Consumed:</p>
+                                                                        <ul className="list-disc list-inside ml-2">
+                                                                            {day.eatenFoods?.map((food: string, i: number) => (
+                                                                                <li key={i}>{food}</li>
+                                                                            ))}
+                                                                        </ul>
+                                                                    </div>
+
+                                                                    <div>
+                                                                        <p className="font-semibold">✅ Suggestions:</p>
+                                                                        <ul className="list-disc list-inside ml-2 text-green-700">
+                                                                            {day.suggestions?.map((s: string, i: number) => (
+                                                                                <li key={i}>{s}</li>
+                                                                            ))}
+                                                                        </ul>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
