@@ -25,6 +25,7 @@ interface FoodState {
   loading: boolean;
   loadingDetail: boolean;
   error: string | null;
+  lastAction: "search" | "random" | null;
 }
 
 const initialState: FoodState = {
@@ -33,6 +34,7 @@ const initialState: FoodState = {
   loading: false,
   loadingDetail: false,
   error: null,
+  lastAction: null,
 };
 
 // 🔍 searchFoods
@@ -90,18 +92,56 @@ const foodSlice = createSlice({
       state.detail = null;
       state.list = [];
     },
-  },
+    clearDetail(state) {
+      state.detail = null;
+    },
+  },  
   extraReducers: (builder) => {
     builder
       // Search
       .addCase(searchFoods.pending, (state) => {
         state.loading = true;
         state.error = null;
+        state.lastAction = "search";
       })
       .addCase(searchFoods.fulfilled, (state, action) => {
         state.loading = false;
-        state.list = action.payload;
+        state.lastAction = "search";
+        const query = action.meta.arg.toLowerCase().trim();
+      
+        // 1️⃣ Sort kết quả mới (ưu tiên match nhất)
+        const sortedNew = [...action.payload].sort((a, b) => {
+          const aName = (a.name_en || a.name || "").toLowerCase();
+          const bName = (b.name_en || b.name || "").toLowerCase();
+      
+          if (aName === query && bName !== query) return -1;
+          if (bName === query && aName !== query) return 1;
+      
+          if (aName.startsWith(query) && !bName.startsWith(query)) return -1;
+          if (bName.startsWith(query) && !aName.startsWith(query)) return 1;
+      
+          if (aName.includes(query) && !bName.includes(query)) return -1;
+          if (bName.includes(query) && !aName.includes(query)) return 1;
+      
+          return 0;
+        });
+      
+        // 2️⃣ Merge với list cũ (giữ history, không trùng)
+        const mergedList = [
+          ...sortedNew,
+          ...state.list.filter(
+            oldItem =>
+              !sortedNew.some(
+                newItem =>
+                  (newItem.name_en || newItem.name) ===
+                  (oldItem.name_en || oldItem.name)
+              )
+          ),
+        ];
+      
+        state.list = mergedList;
       })
+           
       .addCase(searchFoods.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
@@ -136,6 +176,7 @@ const foodSlice = createSlice({
       .addCase(getRandomFoods.fulfilled, (state, action) => {
         state.loading = false;
         state.list = action.payload;
+        state.lastAction = "random";
       })
       .addCase(getRandomFoods.rejected, (state) => {
         state.loading = false;
@@ -145,5 +186,5 @@ const foodSlice = createSlice({
   },
 });
 
-export const { clearFood } = foodSlice.actions;
+export const { clearFood, clearDetail } = foodSlice.actions;
 export default foodSlice.reducer;

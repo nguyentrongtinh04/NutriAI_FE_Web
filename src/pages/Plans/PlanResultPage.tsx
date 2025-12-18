@@ -31,6 +31,10 @@ export default function PlanResultPage() {
   const navigate = useNavigate();
   const notify = useNotify();
 
+
+  const nutrition = mealPlan?.nutrition;
+  const userInfo = mealPlan?.userInfo;
+  
   const token =
     useSelector((state: RootState) => state.auth.accessToken) ||
     localStorage.getItem("accessToken");
@@ -39,8 +43,6 @@ export default function PlanResultPage() {
   const [showModal, setShowModal] = useState(false);
   const [scheduleName, setScheduleName] = useState("");
   const [startDate, setStartDate] = useState<string>("");
-  const location = useLocation();
-  const userInfo = location.state?.userInfo;
   const [showWarning, setShowWarning] = useState(false);
 
   const toggleMealFlip = (mealIndex: number) => {
@@ -447,15 +449,17 @@ export default function PlanResultPage() {
                   🎯 <span className="font-semibold">Goal:</span>{" "}
                   {userInfo?.goal || "Unknown"}
                 </p>
+
                 <p>
-                  ⚖️ Weight: {userInfo?.weight || "-"} kg | Height:{" "}
-                  {userInfo?.height || "-"} cm
+                  ⚖️ Weight: {userInfo?.weight ?? "-"} kg | Height:{" "}
+                  {userInfo?.height ?? "-"} cm
                 </p>
+
                 <p>
                   👤 Gender:{" "}
-                  {userInfo?.gender === "male"
+                  {userInfo?.gender === "nam"
                     ? "Male"
-                    : userInfo?.gender === "female"
+                    : userInfo?.gender === "nữ"
                       ? "Female"
                       : "Other"}
                 </p>
@@ -552,20 +556,24 @@ export default function PlanResultPage() {
 
                     const finalData = {
                       userId: profile?._id,
+                    
                       height: Number(userInfo?.height),
                       weight: Number(userInfo?.weight),
-                      gender:
-                        mealPlan.userInfo?.gender === "nam" ? "nam" : "nữ",
                       age: Number(userInfo?.age),
+                    
+                      gender: userInfo?.gender,
                       goal: userInfo?.goal,
-                      kgGoal: userInfo?.kgGoal ?? 0,
-                      duration: Number(userInfo?.day),
+                    
+                      duration: Number(nutrition?.durationDays),   // ✅ OK
+                      kgGoal: nutrition?.weightChangeKg ?? 0,       // ✅ OK
+                    
                       startDate: new Date(startDate).toISOString(),
                       schedule: formattedSchedule,
-                      idTemplate: mealPlan.userInfo?.dateTemplate ?? null,
+                    
+                      idTemplate: userInfo?.dateTemplate ?? null,
                       nameSchedule: scheduleName,
                       private: true,
-                    };
+                    };                                                        
 
                     try {
                       await dispatch(createScheduleThunk(finalData)).unwrap();

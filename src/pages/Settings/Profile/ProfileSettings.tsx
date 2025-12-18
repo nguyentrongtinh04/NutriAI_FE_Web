@@ -37,7 +37,7 @@ export default function HealthInformation() {
   const [editedHealthData, setEditedHealthData] = useState<any>({
     height: "",
     weight: "",
-    medicalHistory: "",
+    medicalConditions: [],
     currentMedications: "",
     allergies: "",
     chronicConditions: "",
@@ -63,7 +63,7 @@ export default function HealthInformation() {
       setEditedHealthData({
         height: profile.height || "",
         weight: profile.weight || "",
-        medicalHistory: profile.medicalHistory || "",
+        medicalConditions: profile.medicalConditions || [],
         currentMedications: profile.currentMedications || "",
         allergies: profile.allergies || "",
         chronicConditions: profile.chronicConditions || "",
@@ -100,6 +100,7 @@ export default function HealthInformation() {
       await dispatch(updateHealth({
         height: editedHealthData.height,
         weight: editedHealthData.weight,
+        medicalConditions: editedHealthData.medicalConditions,
       }) as any).unwrap();
 
       notify.success("🎉 Cập nhật thông tin sức khỏe thành công!");
@@ -136,8 +137,14 @@ export default function HealthInformation() {
   const handleUserInputChange = (field: string, value: string) => {
     setEditedUserData((prev: any) => ({ ...prev, [field]: value }));
   };
-  const handleHealthInputChange = (field: string, value: string) => {
-    setEditedHealthData((prev: any) => ({ ...prev, [field]: value }));
+  const handleHealthInputChange = (
+    field: string,
+    value: string | string[]
+  ) => {
+    setEditedHealthData((prev: any) => ({
+      ...prev,
+      [field]: value,
+    }));
   };
 
   // BMI
@@ -648,6 +655,45 @@ export default function HealthInformation() {
                             </span>
                           </div>
                         </div>
+                      </div>
+                    </div>
+                    {/* Medical Conditions */}
+                    <div>
+                      <h4 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                        <AlertTriangle className="w-5 h-5 text-red-500" />
+                        Medical Conditions
+                      </h4>
+
+                      <div className="p-4 bg-gradient-to-r from-red-50 to-orange-50 rounded-xl border border-red-200/50">
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            placeholder="Enter conditions, separated by commas"
+                            value={editedHealthData.medicalConditions.join(", ")}
+                            onChange={(e) =>
+                              handleHealthInputChange(
+                                "medicalConditions",
+                                e.target.value.split(",").map((s) => s.trim())
+                              )
+                            }
+                            className="w-full bg-white/70 border border-red-200/50 rounded-lg px-4 py-3"
+                          />
+                        ) : (
+                          <div className="flex flex-wrap gap-2">
+                            {editedHealthData.medicalConditions?.length ? (
+                              editedHealthData.medicalConditions.map((c: string, i: number) => (
+                                <span
+                                  key={i}
+                                  className="px-3 py-1 rounded-full text-sm bg-red-100 text-red-700 font-medium"
+                                >
+                                  {c}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="text-gray-500 italic">No medical conditions</span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>

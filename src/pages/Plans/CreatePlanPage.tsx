@@ -231,12 +231,17 @@ export default function CreatePlanPage() {
 
             console.log("🔥 FINAL NUTRITION SENT", confirmedNutrition);
 
-            await dispatch(
+            const fullUserInfo = {
+                ...buildUserInfo(),                     // 🔥 user info đầy đủ
+                day: goals.deadline ? Number(goals.deadline) * 7 : 30,
+              };
+              
+              dispatch(
                 generateMealPlanThunk({
-                    userInfo: mealInfo,
-                    nutrition: confirmedNutrition, // ✅ ĐÚNG
+                  userInfo: fullUserInfo,               // ✅ ĐÚNG
+                  nutrition: confirmedNutrition,
                 })
-            ).unwrap();
+              );              
 
             notify.success("🎯 Nutrition plan created successfully!");
             navigate("/plan-result");

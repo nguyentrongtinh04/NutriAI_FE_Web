@@ -10,7 +10,7 @@ import foodReducer from "./slices/foodSlice";
 import planReducer from "./slices/planSlice";
 import systemStatsReducer from "./slices/systemStatsSlice";
 import aiReducer from "./slices/aiSlice";
-
+import aiFoodReducer from "./slices/aiFoodSlice";
 const rootReducer = combineReducers({
   auth: authReducer,
   user: userReducer,
@@ -19,6 +19,7 @@ const rootReducer = combineReducers({
   plan: planReducer,
   system: systemStatsReducer,
   ai: aiReducer,
+  aiFood: aiFoodReducer,
 });
 
 const persistConfig = {

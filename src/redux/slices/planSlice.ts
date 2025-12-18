@@ -123,8 +123,12 @@ const planSlice = createSlice({
       })
       .addCase(generateMealPlanThunk.fulfilled, (state, action) => {
         state.loading = false;
-        state.mealPlan = action.payload; // ✅ lưu mealPlan vào Redux
-      })
+      
+        state.mealPlan = {
+          ...action.payload,              // data từ BE (schedule, nutrition, ...)
+          userInfo: action.meta.arg.userInfo, // 🔥 GIỮ userInfo TỪ FE
+        };
+      })      
       .addCase(generateMealPlanThunk.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;

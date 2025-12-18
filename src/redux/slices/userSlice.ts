@@ -15,6 +15,7 @@ export interface User {
   DOB?: string;
   height?: string;
   weight?: string;
+  medicalConditions?: string[];
   BMI?: string;
   activityLevel?: number;
   email?: string;
@@ -73,11 +74,15 @@ export const updateInfo = createAsyncThunk(
 
 export const updateHealth = createAsyncThunk(
   "user/updateHealth",
-  async (payload: { height?: string; weight?: string }) => {
-    const res = await userService.updateHealth(payload);
-    return res;
+  async (payload: {
+    height?: string;
+    weight?: string;
+    medicalConditions?: string[];
+  }) => {
+    return await userService.updateHealth(payload);
   }
 );
+
 
 export const updateAvatar = createAsyncThunk(
   "user/updateAvatar",

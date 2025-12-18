@@ -19,6 +19,7 @@ export const IP_AI = `${DEPLOY}/schedule/Ai-schedule`;
 export const IP_ADMIN = `${DEPLOY}/admin`;
 export const IP_CHATBOT = `${DEPLOY}/chatbot`;
 export const IP_SCHEDULE_RESULT = `${DEPLOY}/schedule/result`;
+export const IP_AI_FOOD = `${DEPLOY}/mealscan`;
 
 // -------------------------------
 // 🟢 Tạo axios instance giống FE cũ
@@ -32,7 +33,9 @@ export const aiApi = axios.create({ baseURL: IP_AI });
 export const adminApi = axios.create({ baseURL: IP_ADMIN });
 export const chatbotApi = axios.create({ baseURL: IP_CHATBOT });
 export const scheduleResultApi = axios.create({ baseURL: IP_SCHEDULE_RESULT });
-
+export const aiFoodApi = axios.create({
+  baseURL: IP_AI_FOOD,
+});
 // -------------------------------
 // 🟢 Gắn accessToken vào mỗi request
 // -------------------------------
@@ -54,6 +57,7 @@ const attachToken = (config: any) => {
   adminApi,
   chatbotApi,
   scheduleResultApi,
+  aiFoodApi,
 ].forEach((api) => api.interceptors.request.use(attachToken));
 
 // -------------------------------
@@ -125,6 +129,7 @@ const attachResponseInterceptor = (instance: any) => {
   adminApi,
   chatbotApi,
   scheduleResultApi,
+  aiFoodApi,
 ].forEach(attachResponseInterceptor);
 
 console.log("scheduleResultApi baseURL:", scheduleResultApi);

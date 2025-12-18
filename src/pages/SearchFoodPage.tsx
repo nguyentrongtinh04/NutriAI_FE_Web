@@ -1,40 +1,97 @@
 import React, { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "../redux/store";
-import { searchFoods, getFoodDetail, clearFood, getRandomFoods } from "../redux/slices/foodSlice";
+import { searchFoods, getFoodDetail, clearFood, getRandomFoods, clearDetail } from "../redux/slices/foodSlice";
 import { Search, Loader2, UtensilsCrossed, Flame, ArrowLeft, Bookmark, X, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import { mealService } from "../services/mealService";
 import { useNotify } from "../components/notifications/NotificationsProvider";
-import { clearMeal } from "../redux/slices/mealSlice";
+import { analyzeFoodsBatch, clearFoodWarnings } from "../redux/slices/aiFoodSlice";
+import { useRef } from "react";
 
 export default function SearchFoodPage() {
     const [query, setQuery] = useState("");
     const dispatch = useDispatch<AppDispatch>();
     const navigate = useNavigate();
-    const { list, detail, loading, loadingDetail } = useSelector((s: RootState) => s.food);
+    const { list, detail, loading, loadingDetail, lastAction } = useSelector((s: RootState) => s.food);
     const { profile } = useSelector((state: RootState) => state.user);
+    const medicalConditions = profile?.medicalConditions ?? [];
     const notify = useNotify();
-    console.log("User Profile:", profile);
+    const analyzedRef = useRef<string | null>(null);
+
     useEffect(() => {
         // Gọi API random khi load trang
         dispatch(getRandomFoods(30));
     }, [dispatch]);
 
+    useEffect(() => {
+        if (lastAction !== "search") return;
+        if (!medicalConditions.length) return;
+        if (!list.length) return;
+      
+        const key = JSON.stringify({
+          q: query,
+          diseases: medicalConditions,
+          foods: list.map(i => i.name_en || i.name),
+        });
+      
+        if (analyzedRef.current === key) return;
+        analyzedRef.current = key;
+      
+        dispatch(
+          analyzeFoodsBatch({
+            medicalConditions,
+            foods: list.map(item => ({
+              name: item.name_en || item.name,
+              nutrition: {
+                calories: item.calories ?? 0,
+                protein: item.protein ?? 0,
+                carbs: item.carbs ?? 0,
+                fat: item.fat ?? 0,
+              },
+            })),
+          })
+        );
+      }, [list, lastAction, medicalConditions, query, dispatch]);      
+
     const handleSearch = () => {
+        analyzedRef.current = null;        // 🔥 reset AI
+        dispatch(clearFoodWarnings());     // 🔥 clear cảnh báo cũ
+        dispatch(clearFood());             // 🔥 clear list cũ
+        dispatch(clearDetail());
+
         if (!query.trim()) {
             dispatch(getRandomFoods(30));
             return;
         }
-        dispatch(clearFood());
+
         dispatch(searchFoods(query));
     };
 
-    const handleDetail = (name: string) => {
-        dispatch(getFoodDetail(name));
-    };
+    const getFoodWarning = (foodName: string) => {
+        return warnings?.find(
+          (w: any) =>
+            w.foodName === foodName && w.riskLevel === "HIGH"
+        );
+      };      
+
+      const handleDetail = (item: any) => {
+        const foodName = item.name_en || item.name;
+      
+        const warning = getFoodWarning(foodName);
+      
+        if (warning) {
+          notify.warning(
+            `⚠️ ${foodName} is not suitable for your health condition`
+          );
+          return; // 🔥🔥🔥 CHẶN KHÔNG CHO MỞ DETAIL
+        }
+      
+        // ✅ CHỈ CHẠY KHI KHÔNG CÓ WARNING
+        dispatch(getFoodDetail(foodName));
+      };           
 
     const handleKeyPress = (e: React.KeyboardEvent) => {
         if (e.key === "Enter") {
@@ -46,6 +103,10 @@ export default function SearchFoodPage() {
         const history = await mealService.getScannedHistory(userId);
         return history.some((item: any) => item.food_en === foodName);
     };
+
+    const { warnings, loading: aiLoading } = useSelector(
+        (state: RootState) => state.aiFood
+    );
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-500 via-cyan-500 to-teal-500 relative overflow-hidden">
@@ -83,12 +144,7 @@ export default function SearchFoodPage() {
                                 <input
                                     value={query}
                                     onChange={(e) => {
-                                        const value = e.target.value;
-                                        setQuery(value);
-                                        if (value.trim() === "") {
-                                            // Khi xóa sạch nội dung → gọi lại random 30 món
-                                            dispatch(getRandomFoods(30));
-                                        }
+                                        setQuery(e.target.value);
                                     }}
 
                                     onKeyPress={handleKeyPress}
@@ -98,7 +154,7 @@ export default function SearchFoodPage() {
                             </div>
                             <button
                                 onClick={handleSearch}
-                                disabled={loading}
+                                disabled={false}
                                 className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:from-gray-400 disabled:to-gray-500 text-white px-8 py-4 rounded-xl flex items-center gap-3 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:scale-100 font-semibold"
                             >
                                 {loading ? (
@@ -131,7 +187,7 @@ export default function SearchFoodPage() {
                                 transition={{ delay: idx * 0.05 }}
                                 whileHover={{ scale: 1.03, y: -5 }}
                                 className="relative group cursor-pointer"
-                                onClick={() => handleDetail(item.name_en || item.name)}
+                                onClick={() => handleDetail(item)}
                             >
                                 <div className="absolute -inset-1 bg-gradient-to-r from-green-400 to-emerald-500 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
                                 <div className="relative bg-white/90 backdrop-blur-sm rounded-2xl p-5 shadow-lg hover:shadow-2xl transition-all duration-300 border border-green-100">
@@ -154,12 +210,14 @@ export default function SearchFoodPage() {
                                             <h2 className="font-bold text-lg text-gray-800 mb-1 line-clamp-2">
                                                 {item.name_vi || item.name_en || item.name}
                                             </h2>
+
                                             {item.brand && (
                                                 <p className="text-sm text-gray-500 mb-2 flex items-center gap-1">
                                                     <Sparkles className="w-3 h-3" />
                                                     {item.brand}
                                                 </p>
                                             )}
+
                                             {item.calories && (
                                                 <div className="flex items-center gap-2 mb-2">
                                                     <Flame className="w-4 h-4 text-orange-500" />
@@ -168,6 +226,7 @@ export default function SearchFoodPage() {
                                                     </span>
                                                 </div>
                                             )}
+
                                             {item.protein !== undefined && (
                                                 <div className="flex gap-3 text-xs text-gray-600">
                                                     <span className="font-medium">💪 {item.protein}g</span>
@@ -175,6 +234,18 @@ export default function SearchFoodPage() {
                                                     <span className="font-medium">🥑 {item.fat}g</span>
                                                 </div>
                                             )}
+
+                                            {/* 🔥🔥🔥 DÁN NGAY DƯỚI ĐÂY 🔥🔥🔥 */}
+                                            {warnings?.some(
+                                                (w: any) =>
+                                                    w.foodName === (item.name_en || item.name) &&
+                                                    w.riskLevel === "HIGH"
+                                            ) && (
+                                                    <p className="text-xs text-red-600 font-semibold mt-1">
+                                                        ⚠️ Not suitable for your health condition
+                                                    </p>
+                                                )}
+
                                             <p className="text-xs text-gray-400 italic mt-2">{item.source}</p>
                                         </div>
                                     </div>
@@ -183,6 +254,7 @@ export default function SearchFoodPage() {
                         ))}
                     </motion.div>
                 )}
+
 
                 {!loading && list.length === 0 && query && (
                     <motion.div
@@ -206,7 +278,7 @@ export default function SearchFoodPage() {
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-                            onClick={() => dispatch(clearFood())}
+                            onClick={() => dispatch(clearDetail())}
                         >
                             <motion.div
                                 initial={{ scale: 0.9, y: 20 }}
@@ -223,7 +295,7 @@ export default function SearchFoodPage() {
 
                                         <button
                                             className="absolute top-4 right-4 z-10 p-2 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white transition-all duration-300"
-                                            onClick={() => dispatch(clearFood())}
+                                            onClick={() => dispatch(clearDetail())}
                                         >
                                             <X className="w-5 h-5" />
                                         </button>
@@ -281,7 +353,7 @@ export default function SearchFoodPage() {
                                                             if (!userId) {
                                                                 notify.warning("⚠️ You need to log in to save meals.");
                                                                 // XÓA food detail modal + item đang xem
-                                                                dispatch(clearFood());
+                                                                dispatch(clearDetail());
 
                                                                 navigate("/login?redirect=/search-food", { replace: true });
                                                                 return;
@@ -335,16 +407,12 @@ export default function SearchFoodPage() {
                                                     Save Meal
                                                 </button>
                                                 <button
-                                                    onClick={() => dispatch(clearFood())}
+                                                    onClick={() => dispatch(clearDetail())}
                                                     className="px-6 bg-gray-100 hover:bg-gray-200 text-gray-700 py-4 rounded-xl font-semibold transition-all duration-300"
                                                 >
                                                     Close
                                                 </button>
                                             </div>
-
-                                            <p className="text-xs text-gray-400 text-center mt-4 italic">
-                                                Source: {detail.source}
-                                            </p>
                                         </div>
                                     )}
                                 </div>
